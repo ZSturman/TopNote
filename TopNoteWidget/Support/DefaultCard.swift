@@ -99,11 +99,8 @@ func getSampleFlashCard(hasBeenFlipped: Bool) -> Card {
             lastRemovedFromQueue: nil,
             folder: nil,
             tags: [],
-            //toDos: [],
             back: "Paris",
-            //potentialAnswers: [:],
             rating: [],
-            //isCorrect: [],
             archived: false,
             hasBeenFlipped: hasBeenFlipped
         )
@@ -112,71 +109,6 @@ func getSampleFlashCard(hasBeenFlipped: Bool) -> Card {
     return sampleFlashCard
 }
 
-//func getSampleQuizCard(hasBeenFlipped: Bool) -> Card {
-//    // Sample card for Flash Card type
-//    let sampleQuizCard: Card = {
-//        return Card(
-//            createdAt: Date(),
-//            cardType: .quiz,
-//            priorityTypeRaw: .high,
-//            content: "What is 2 + 2?",
-//            isEssential: true,
-//            skipCount: 0,
-//            seenCount: 1,
-//            timeOnTop: Date(),
-//            timeInQueue: Date(),
-//            spacedTimeFrame: 240,
-//            dynamicTimeframe: true,
-//            nextTimeInQueue: Date().addingTimeInterval(3600),
-//            lastRemovedFromQueue: nil,
-//            folder: nil,
-//            tags: [],
-//            //toDos: [],
-//            back: nil,
-//            //potentialAnswers: ["3": false, "4": true, "5": false],
-//            rating: [],
-//            //isCorrect: [],
-//            archived: false,
-//            hasBeenFlipped: hasBeenFlipped
-//        )
-//    }()
-//    
-//    return sampleQuizCard
-//}
-
-
-//func getSampleToDoCard(hasBeenFlipped: Bool) -> Card {
-//    // Sample card for To Do type
-//    let sampleToDoCard: Card = {
-//        return Card(
-//            createdAt: Date(),
-//            cardType: .toDo,
-//            priorityTypeRaw: .low,
-//            content: "Daily Tasks",
-//            isEssential: false,
-//            skipCount: 0,
-//            seenCount: 1,
-//            timeOnTop: Date(),
-//            timeInQueue: Date(),
-//            spacedTimeFrame: 240,
-//            dynamicTimeframe: true,
-//            nextTimeInQueue: Date().addingTimeInterval(3600),
-//            lastRemovedFromQueue: nil,
-//            folder: nil,
-//            tags: [],
-//            back: nil,
-//            //potentialAnswers: [:],
-//            rating: [],
-//            //isCorrect: [],
-//            archived: false,
-//            hasBeenFlipped: hasBeenFlipped
-//        )
-//    }()
-//    
-//    return sampleToDoCard
-//}
-    
-    
 func getSampleNoTypeCard() -> Card {
     // Sample card for None type (plain content)
     let sampleNoCardCard: Card = {
@@ -196,11 +128,8 @@ func getSampleNoTypeCard() -> Card {
             lastRemovedFromQueue: nil,
             folder: nil,
             tags: [],
-           // toDos: [],
             back: nil,
-           // potentialAnswers: [:],
             rating: [],
-           //isCorrect: [],
             archived: false,
             hasBeenFlipped: false
         )

@@ -12,6 +12,5 @@ import SwiftUI
 struct TopNoteWidgetBundle: WidgetBundle {
     var body: some Widget {
         TopNoteWidget()
-        //TopNoteWidgetControl()
     }
 }

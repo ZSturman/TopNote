@@ -9,12 +9,13 @@ import Foundation
 import SwiftUI
 
 struct RemoveFromArchiveIcon: View {
+    var iconSize: CGFloat = 1
     var body: some View {
     
  
-            IconContainer(baseSymbol: "",
+            IconContainer(
                         overlaySymbol: "tray.and.arrow.up",
-                        overlayScale: 1)
+                        overlayScale: iconSize)
           
         
     }

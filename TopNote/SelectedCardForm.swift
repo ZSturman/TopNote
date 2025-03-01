@@ -47,14 +47,14 @@ struct SelectedCardForm: View {
                             SpacedTimeframeInputView(card: card, onFinished: {
                                 isEditingSpacedRepetition = false
                             })
+                            .id(card.spacedTimeFrame)
                         } else {
                             ReadOnlySpacedTimeframe(card: card)
-                                .contentShape(Rectangle()) // Ensure the entire area is tappable
-                                .onTapGesture {
-                                    // Clear any focused text fields and toggle editing mode
-                                    focusedField = nil
-                                    isEditingSpacedRepetition = true
-                                }
+                               .contentShape(Rectangle())
+                               .onTapGesture {
+                                   focusedField = nil
+                                   isEditingSpacedRepetition = true
+                               }
                         }
                     }
                 }
@@ -93,9 +93,11 @@ struct SelectedCardForm: View {
                 }
             }
             .toolbar {
-                ToolbarItem(placement: .keyboard) {
-                    Button("Done") {
-                        focusedField = nil
+                if focusedField != .tags {
+                    ToolbarItem(placement: .keyboard) {
+                        Button("Done") {
+                            focusedField = nil
+                        }
                     }
                 }
             }
@@ -117,7 +119,7 @@ struct SelectedCardForm: View {
         isEditingSpacedRepetition = true
     }
     
-
+    
 }
 
 

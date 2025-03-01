@@ -82,7 +82,7 @@ struct TopNoteWidgetEntryView: View {
                         VStack(alignment: .leading) {
                             HStack {
                                 cardPriority(for: entry.card)
-                                    .font(.caption2)
+                  
                                 Spacer()
                                 HStack(spacing: 0) {
                                     Spacer()
@@ -145,7 +145,8 @@ struct TopNoteWidgetEntryView: View {
             Image(systemName: "staroflife.fill")
         case .med:
             HStack {
-                Image(systemName: "staroflife.fill")
+                Text(Image(systemName: "staroflife.fill"))
+                    .kerning(0.5)
                 Image(systemName: "staroflife.fill")
             }
         case .high:

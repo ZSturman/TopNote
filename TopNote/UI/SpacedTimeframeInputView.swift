@@ -2,100 +2,160 @@ import SwiftUI
 import WidgetKit
 
 struct SpacedTimeframeInputView: View {
-    var card: Card
+    let card: Card
     var onFinished: () -> Void
+
+    // Keep a copy of the original hours to allow canceling
+    @State private var originalHours: Int = 0
     
+    // Local state for the breakdown values
+    @State private var selectedMonths: Int = 0
+    @State private var selectedDays: Int = 0
+    @State private var selectedHours: Int = 0
     
-    @State private var timeValue: Int
+    @State private var newMonthsValue: Int?
+    @State private var newDaysValue: Int?
+    @State private var newHoursValue: Int?
+    
+    // A flag to ensure we initialize only once.
+    @State private var didInitialize: Bool = false
     
     init(card: Card, onFinished: @escaping () -> Void) {
         self.card = card
         self.onFinished = onFinished
-        _timeValue = State(initialValue: card.spacedTimeFrame)
     }
     
-    @State private var isEditingTime: Bool = false
-    @State private var isDays: Bool = false
-    
-
-    
-    /// Computes the breakdown into months, days, and remaining hours.
-    private var breakdown: (months: Int, days: Int, hours: Int) {
-        let months = card.spacedTimeFrame / 720          // 720 hours in a month (30 days)
-        let remainderAfterMonths = card.spacedTimeFrame % 720
+    /// Convert a total number of hours into months, days, and hours.
+    /// (Assuming 1 month = 720 hours and 1 day = 24 hours)
+    private static func breakdownHours(_ totalHours: Int) -> (months: Int, days: Int, hours: Int) {
+        let months = totalHours / 720
+        let remainderAfterMonths = totalHours % 720
         let days = remainderAfterMonths / 24
-        let remainingHours = remainderAfterMonths % 24
-        return (months, days, remainingHours)
+        let hours = remainderAfterMonths % 24
+        return (months, days, hours)
     }
     
-    /// Formatter for integer input.
-    private var numberFormatter: NumberFormatter {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .none
-        return formatter
+    /// Convert months, days, and hours back into total hours.
+    private func convertBackToHours(months: Int, days: Int, hours: Int) -> Int {
+        (months * 720) + (days * 24) + hours
     }
     
-    private func formatTimeInterval(_ interval: TimeInterval) -> String {
-        let secondsInMinute: Double = 60
-        let secondsInHour: Double = 3600
-        let secondsInDay: Double = 86400
-        
-        if interval >= secondsInDay {
-            return String(format: "%.1f days", interval / secondsInDay)
-        } else if interval >= secondsInHour {
-            return String(format: "%.1f hours", interval / secondsInHour)
-        } else {
-            return String(format: "%.1f minutes", interval / secondsInMinute)
-        }
+    /// The total hours computed from the picker values.
+    private var newTotalHours: Int {
+
+        convertBackToHours(months: newMonthsValue ?? selectedMonths, days: newDaysValue ?? selectedDays, hours: newHoursValue ?? selectedHours)
     }
     
     var body: some View {
-        
-        if card.archived {
-            Text("To put card back in rotation be sure to remove it from 'Archive'")
-        }
-        // Segmented control to switch between hours and days
-        Picker("Unit", selection: $isDays) {
-            Text("Hours").tag(false)
-            Text("Days").tag(true)
-        }
-        .pickerStyle(SegmentedPickerStyle())
-        .padding(.vertical, 5)
-        
-        Text("\(breakdown.months) months, \(breakdown.days) days, \(breakdown.hours) hours")
-            .font(.caption)
-            .foregroundColor(.gray)
-            .padding(.horizontal)
-        
-        // Determine the range based on unit
-        let range = isDays ? Array(1...365) : Array(1...8760)
-        Picker("Time Value", selection: $timeValue) {
-            ForEach(range, id: \.self) { value in
-                Text("\(value)")
-            }
-        }
-        .labelsHidden()
-        .pickerStyle(WheelPickerStyle())
-        .frame(height: 100)
-        
-        // Button to finish editing
-        Button("Done") {
-            // Convert timeValue to hours if unit is days
-            let updatedTimeValue = isDays ? timeValue * 24 : timeValue
-            if updatedTimeValue != card.spacedTimeFrame {
-                Task {
-                    do {
-                        try await card.manuallyUpdateSpacedTimeFrame(newValue: updatedTimeValue)
-                        WidgetCenter.shared.reloadAllTimelines()
-                    } catch {
-                        print("Error updating spaced time frame: \(error)")
+        VStack(spacing: 20) {
+            Text("Select Timeframe")
+                .font(.headline)
+                .foregroundColor(.white)
+            
+            HStack(spacing: 0) {
+                // Picker for months: 0...12
+                Picker("Months", selection: $selectedMonths) {
+                    ForEach(0...12, id: \.self) { month in
+                        Text("\(month)").tag(month)
                     }
                 }
+                .pickerStyle(WheelPickerStyle())
+                .frame(width: 100, height: 150)
+                .clipped()
+                .onChange(of: selectedMonths) { oldValue, newValue in
+                    newMonthsValue = newValue
+                }
+                
+                // Picker for days: 0...30
+                Picker("Days", selection: $selectedDays) {
+                    ForEach(0...30, id: \.self) { day in
+                        Text("\(day)").tag(day)
+                    }
+                }
+                .pickerStyle(WheelPickerStyle())
+                .frame(width: 100, height: 150)
+                .clipped()
+                .onChange(of: selectedDays) { oldValue, newValue in
+                    newDaysValue = newValue
+                    print("Days changed from \(oldValue) to \(newValue)")
+                }
+                
+                // Picker for hours: 0...23
+                Picker("Hours", selection: $selectedHours) {
+                    ForEach(0...23, id: \.self) { hour in
+                        Text("\(hour)").tag(hour)
+                    }
+                }
+                .pickerStyle(WheelPickerStyle())
+                .frame(width: 100, height: 150)
+                .clipped()
+                .onChange(of: selectedHours) { oldValue, newValue in
+                    newHoursValue = newValue
+                    
+                }
             }
-            onFinished()
+            
+            HStack {
+                // Cancel button resets the local state to the original breakdown.
+                Button(action: {
+                    let breakdown = Self.breakdownHours(originalHours)
+                    selectedMonths = breakdown.months
+                    selectedDays = breakdown.days
+                    selectedHours = breakdown.hours
+                    onFinished()
+                }) {
+                    Text("Cancel")
+                        .foregroundColor(.red)
+                }
+                .padding(.leading, 20)
+                
+                Spacer()
+                
+                // Done button converts the local state back into hours.
+                Button(action: {
+                    let updatedHours = newTotalHours
+                    print("Updated Hours: \(updatedHours)")
+                    
+                    if updatedHours != card.spacedTimeFrame {
+                        Task {
+                            do {
+                                print("New Hours: \(updatedHours)")
+                                try await card.manuallyUpdateSpacedTimeFrame(newValue: updatedHours)
+                                WidgetCenter.shared.reloadAllTimelines()
+                                onFinished()
+                            } catch {
+                                print("Error updating spacedTimeFrame: \(error)")
+                                onFinished()
+                            }
+                        }
+                    } else {
+                        print("newTotalHours: \(newTotalHours)")
+                        print("updatedHours: \(updatedHours)")
+                        print("they already match")
+                        onFinished()
+                    }
+                }) {
+                    Text("Done")
+                        .foregroundColor(.green)
+                }
+                .padding(.trailing, 20)
+            }
+            .padding(.top, 10)
         }
-        .padding(.top, 5)
-        
-        
+        .onAppear {
+            // Initialize only once so that any user changes remain intact.
+            if !didInitialize {
+                let breakdown = Self.breakdownHours(card.spacedTimeFrame)
+                selectedMonths = breakdown.months
+                selectedDays   = breakdown.days
+                selectedHours  = breakdown.hours
+                originalHours  = card.spacedTimeFrame
+                didInitialize = true
+                print("Months: \(selectedMonths)")
+                print("Days: \(selectedDays)")
+                print("SelectedHours: \(selectedHours)")
+                print("Original Hours: \(originalHours)")
+            }
+        }
     }
 }

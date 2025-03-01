@@ -10,12 +10,12 @@ import SwiftUI
 
 struct NextIcon: View {
     var removeBorder: Bool = false
+    var iconSize: CGFloat = 1
     
     var body: some View {
         if removeBorder {
-            IconContainer(baseSymbol: "",
-                          overlaySymbol: "checkmark.rectangle.stack",
-                          overlayScale: 1.2)
+            IconContainer(overlaySymbol: "checkmark.rectangle.stack",
+                          overlayScale: iconSize)
         } else {
             
             

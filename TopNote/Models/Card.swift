@@ -321,6 +321,7 @@ extension Card {
             
         } else if isSkip {
             self.skipCount += 1
+            try await updateSpacedTimeframe(multiplier: 0.5)
         }
         // Record the date when the card was removed.
         self.lastRemovedFromQueue = removalDate

@@ -70,7 +70,9 @@ struct FlashCardWidgetView: View {
             HStack {
                 Button(intent: ArchiveCardIntent(), label: {
                     VStack {
-                        Image(systemName: "archivebox")
+                        ArchiveIcon(iconSize: 2.5)
+                        
+                        
                         
                     }
                     .font(.footnote)
@@ -81,29 +83,27 @@ struct FlashCardWidgetView: View {
                 
                 
                 Button(intent: ShowFlashcardBackIntent()) {
+                    VStack {
+                        
+                        FlipIcon(removeBorder: true, iconSize: 3)
+                        
+                    }
+                    .font(.footnote)
                     
                     
-                    Image(systemName: "arrow.2.circlepath")
-                    
-                    
-                        .font(.footnote)
                 }
                 .buttonStyle(.bordered)
-                .frame(width: 44, height: 44)
+                
                 .buttonBorderShape(.circle)
                 
                 if isEssential {
                     Button(intent: SkipCardIntent()) {
-                        //Image(systemName: "clock.arrow.trianglehead.2.counterclockwise.rotate.90")
-                        ZStack {
+
                             
                             
-                            Image(systemName: "return.right")
-                                .font(.footnote)
-                            Text("\(skipCount)")
-                                .font(.footnote)
-                        }
-                            
+                            SkipIcon(skipCount: skipCount, removeBorder: true, removePaddingAndExtraFontSize: true, iconSize: 3.5)
+                        
+                        
                     }
                     
                     .buttonStyle(.bordered)
@@ -111,8 +111,7 @@ struct FlashCardWidgetView: View {
                     .buttonBorderShape(.circle)
                 } else {
                     Button(intent: NextCardIntent()) {
-                        Image(systemName: "rectangle.on.rectangle.angled")
-                            .font(.footnote)
+                        NextIcon( removeBorder: true, iconSize: 3)
                     }
                     
                     .buttonStyle(.bordered)
@@ -125,7 +124,6 @@ struct FlashCardWidgetView: View {
                 Button(intent: ArchiveCardIntent(), label: {
                     HStack {
                         Image(systemName: "archivebox")
-
                     }
                     .font(.footnote)
                 })
@@ -138,7 +136,7 @@ struct FlashCardWidgetView: View {
                 Button(intent: ShowFlashcardBackIntent()) {
                     HStack {
                         Spacer()
-                        Image(systemName: "arrow.2.circlepath")
+                        Image(systemName: "rectangle.2.swap")
                         Text("Flip")
                         Spacer()
                     }
@@ -151,7 +149,7 @@ struct FlashCardWidgetView: View {
                     Button(intent: SkipCardIntent()) {
                         HStack {
                             Spacer()
-                            Image(systemName: "clock.arrow.trianglehead.2.counterclockwise.rotate.90")
+                            Image(systemName: "arrow.trianglehead.counterclockwise.rotate.90")
                             Text("Skip")
                             Spacer()
                         }
@@ -164,7 +162,7 @@ struct FlashCardWidgetView: View {
                     Button(intent: NextCardIntent()) {
                         HStack {
                             Spacer()
-                            Image(systemName: "rectangle.on.rectangle.angled")
+                            Image(systemName: "checkmark.rectangle.stack")
                             Text("Next")
                             Spacer()
                         }
@@ -313,7 +311,7 @@ struct FlashCardWidgetView_Previews: PreviewProvider {
             .previewContext(WidgetPreviewContext(family: .systemMedium))
             .previewDisplayName("Flashcard - Medium - Flipped")
             
-
+            
             
         }
     }

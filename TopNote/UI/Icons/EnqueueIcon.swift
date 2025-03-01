@@ -10,14 +10,10 @@ import Foundation
 import SwiftUI
 
 struct EnqueueIcon: View {
+    var iconSize: CGFloat = 1
+    
     var body: some View {
-        
- 
-            IconContainer(baseSymbol: "",
-                        overlaySymbol: "rectangle.stack",
-                        overlayScale: 1)
-          
-        
+        IconContainer(overlaySymbol: "rectangle.stack", overlayScale: iconSize)
     }
 }
 

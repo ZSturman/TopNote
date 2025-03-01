@@ -9,7 +9,7 @@ import SwiftUI
 
 
 struct IconContainer: View {
-    let baseSymbol: String
+    var baseSymbol: String? = nil
     let overlaySymbol: String
     /// Scale factor for the overlay relative to the container’s size
     let overlayScale: CGFloat
@@ -20,10 +20,14 @@ struct IconContainer: View {
         GeometryReader { geometry in
             let containerSize = min(geometry.size.width, geometry.size.height)
             ZStack {
-                Image(systemName: baseSymbol)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .foregroundColor(baseColor)
+                if baseSymbol != nil {
+                    
+                    
+                    Image(systemName: baseSymbol ?? "")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .foregroundColor(baseColor)
+                }
                 Image(systemName: overlaySymbol)
                     .resizable()
                     .aspectRatio(contentMode: .fit)

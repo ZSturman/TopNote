@@ -59,7 +59,7 @@ struct NoCardTypeWidgetView: View {
                             
                         } else {
                             Button(intent: NextCardIntent()) {
-                                Image(systemName: "rectangle.on.rectangle.angled")
+                                Image(systemName: "checkmark.rectangle.stack")
                                 Text("Next")
                                 
                             }
@@ -97,7 +97,7 @@ struct NoCardTypeWidgetView: View {
                             Button(intent: NextCardIntent()) {
                                 HStack {
                                     Spacer()
-                                    Image(systemName: "rectangle.on.rectangle.angled")
+                                    Image(systemName: "checkmark.rectangle.stack")
                                     Text("Next")
                                     Spacer()
                                 }

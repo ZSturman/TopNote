@@ -9,12 +9,24 @@ import Foundation
 import SwiftUI
 
 struct FlipIcon: View {
+    var removeBorder: Bool = false
+    var iconSize: CGFloat = 1
+    
     var body: some View {
-
-            IconContainer(baseSymbol: "rectangle",
-                        overlaySymbol: "rectangle.2.swap",
-                        overlayScale: 0.5)
-           
+        if removeBorder {
+            IconContainer(
+                          overlaySymbol: "rectangle.2.swap",
+                          overlayScale: iconSize)
+            
+        } else {
+            
+            
         
+            IconContainer(baseSymbol: "rectangle",
+                          overlaySymbol: "rectangle.2.swap",
+                          overlayScale: 0.5)
+            
+            
+        }
     }
 }

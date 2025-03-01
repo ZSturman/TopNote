@@ -9,12 +9,13 @@ import Foundation
 import SwiftUI
 
 struct TagIcon: View {
+    var iconSize: CGFloat = 1
     var body: some View {
-        // Dynamic: arrow.triangle.2.circlepath + bolt.fill
+   
  
-            IconContainer(                    baseSymbol: "",
+            IconContainer(
                                               overlaySymbol: "tag",
-                                              overlayScale: 1)
+                                              overlayScale: iconSize)
             
         
     }

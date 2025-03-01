@@ -9,13 +9,10 @@ import Foundation
 import SwiftUI
 
 struct ArchiveIcon: View {
+    
+    var iconSize: CGFloat = 1
+    
     var body: some View {
-        // Dynamic: arrow.triangle.2.circlepath + bolt.fill
- 
-            IconContainer(baseSymbol: "",
-                        overlaySymbol: "archivebox",
-                        overlayScale: 1)
-          
-        
+        IconContainer(overlaySymbol: "archivebox", overlayScale: iconSize)
     }
 }

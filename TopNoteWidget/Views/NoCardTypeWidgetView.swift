@@ -109,7 +109,7 @@ struct NoCardTypeWidgetView: View {
                         }
                         
                     }
-                    //WidgetSkipOrNextButton(isEssential: isEssential)
+            
                 }
             }
             
@@ -143,7 +143,7 @@ struct NoCardTypeWidgetView: View {
     /// Splits text into regular text components and URLs separately
     private func splitTextByURLs(_ text: String) -> [String] {
         let urlRegex = try! NSRegularExpression(
-            pattern: #"(https?|ftp|file|mailto):\/\/[^\s/$.?#].[^\s]*|www\.[^\s/$.?#].[^\s]*|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(\/\S*)?"#,
+            pattern: #"(?:https?:\/\/|www\.)?[a-zA-Z0-9.-]+\.(com|org|net)(\/\S*)?"#,
             options: []
         )
 
@@ -174,8 +174,6 @@ struct NoCardTypeWidgetView: View {
         
         return result
     }
-    
-
     
 }
 

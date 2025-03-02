@@ -80,6 +80,25 @@ struct SelectedCardForm: View {
                 }
                 
                 Section {
+                    Button() {
+                        Task {
+                            do {
+                                try await card.removeFromQueue(at: Date(), isSkip: false, toArchive: true)
+                            } catch {
+                                print("Error removing card from queue: \(error)")
+                            }
+                        }
+                    } label: {
+                        HStack {
+                            Spacer()
+                            Image(systemName: "archive")
+                            Text("Archive")
+                            Spacer()
+                        }
+                    }
+                }
+                
+                Section {
                     Button(role: .destructive) {
                         modelContext.delete(card)
                     } label: {

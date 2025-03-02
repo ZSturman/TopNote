@@ -5,13 +5,12 @@ import WidgetKit
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var folders: [Folder]
-    @Query private var allCards: [Card]
-    @Query private var tags: [Tag]
-    //@State private var selectedTags: [Tag] = []
-    //@State private var deselectedTags: [Tag] = []
+    @Query var folders: [Folder]
+    @Query var allCards: [Card]
+    @Query var tags: [Tag]
+ 
     
-    @State private var tagSelectionStates: [UUID: TagSelectionState] = [:]
+    @State var tagSelectionStates: [UUID: TagSelectionState] = [:]
     @State private var selectedFolder: FolderSelection? = .allCards
     @State private var selectedCard: Card?
     @State private var showNewFolderInput: Bool = false
@@ -20,9 +19,7 @@ struct ContentView: View {
     
     @State var urlId: String = ""
     
-    enum TagSelectionState {
-        case selected, deselected, neutral
-    }
+
     
     private var selectedCardBinding: Binding<Card?> {
         Binding<Card?>(
@@ -102,49 +99,10 @@ struct ContentView: View {
                         }
                     }
                 }
-                
-                Section(header: Text("Tags")) {
-                    ForEach(tags.sorted { $0.name < $1.name }) { tag in
-                        HStack {
-                            Text(tag.name)
-                            // Show a textual indicator of the current tag state.
-                            switch tagSelectionStates[tag.id] ?? .neutral {
-                            case .neutral:
-                                Text("Neutral")
-                                    .foregroundColor(.gray)
-                            case .selected:
-                                Text("Selected")
-                                    .foregroundColor(.green)
-                            case .deselected:
-                                Text("Deselected")
-                                    .foregroundColor(.red)
-                            }
-                        }
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            // Cycle the state: neutral -> selected -> deselected -> neutral.
-                            let currentState = tagSelectionStates[tag.id] ?? .neutral
-                            let newState: TagSelectionState
-                            switch currentState {
-                            case .neutral:
-                                newState = .selected
-                            case .selected:
-                                newState = .deselected
-                            case .deselected:
-                                newState = .neutral
-                            }
-                            tagSelectionStates[tag.id] = newState
-                        }
-                        .swipeActions(edge: .trailing) {
-                            Button(role: .destructive) {
-                                modelContext.delete(tag)
-                            } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
-                            
-                        }
-                    }
+                if tags.count > 0 {
+                    TagsSection(tags: tags, tagSelectionStates: $tagSelectionStates)
                 }
+
             }
             // .searchable
             .toolbar {
@@ -195,256 +153,18 @@ struct ContentView: View {
                 }
                 
                 List(selection: selectedCardBinding) {
-                    
-                    Section(header: Text("Enqueue")) {
-                        ForEach(enqueuedCardsSorted) { card in
-                            NavigationLink(value: card) {
-                                HStack {
-                                    selectedCardType(cardType: card.cardType)
-                                    Text(card.content)
-                                        .lineLimit(1)
-                                }
-                            }
-                            .contextMenu {
-                                
-                                Button {
-                                    Task {
-                                        do {
-                                            if card.isEssential {
-                                                try await card.removeFromQueue(at: Date(), isSkip: true)
-                                            } else {
-                                                try await card.removeFromQueue(at: Date(), isSkip: false)
-                                            }
-                                        } catch {
-                                            print("Error removing card from archive: \(error)")
-                                        }
-                                    }
-                                } label: {
-                                    if card.isEssential {
-                                        Label("Skip", systemImage: "arrow.trianglehead.counterclockwise.rotate.90")
-                                    } else {
-                                        Label("Next", systemImage: "checkmark.rectangle.stack")
-                                    }
-                                }
-                                
-                                
-                                Button {
-                                    Task {
-                                        do {
-                                            try await card.removeFromQueue(at: Date(), isSkip: false, toArchive: true)
-                                        } catch {
-                                            print("Error removing card from archive: \(error)")
-                                        }
-                                    }
-                                } label: {
-                                    Label("Archive", systemImage: "archivebox")
-                                }
-                                
-
-                                
-                                Divider()
-
-                                Button(role: .destructive) {
-                                    modelContext.delete(card)
-                                    cleanupOrphanTags()
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-                             
-                            }
-                            .swipeActions(edge: .leading) {
-                                Button(action: {
-                                    Task {
-                                        do {
-                                            try await card.removeFromQueue(at: Date(), isSkip: false, toArchive: true)
-                                        } catch {
-                                            print("Error removing card from archive: \(error)")
-                                        }
-                                    }
-                                }) {
-                                    Label("Archive", systemImage: "archive")
-                                }
-                                
-                                Button(action: {
-                                    Task {
-                                        do {
-                                            if card.isEssential {
-                                                try await card.removeFromQueue(at: Date(), isSkip: true)
-                                            } else {
-                                                try await card.removeFromQueue(at: Date(), isSkip: false)
-                                            }
-                                           
-                                        } catch {
-                                            print("Error removing card from archive: \(error)")
-                                        }
-                                    }
-                                }) {
-                                    if card.isEssential {
-                                        Label("Skip", systemImage: "arrow.trianglehead.counterclockwise.rotate.90")
-                                    } else {
-                                        Label("Next", systemImage: "checkmark.rectangle.stack")
-                                        
-                                    }
-                                  
-                                }
-                            }
-                            
-                            
-                            .swipeActions(edge: .trailing) {
-                                Button(role: .destructive) {
-                                    modelContext.delete(card)
-                                    cleanupOrphanTags()
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-                                
-                                
-                            }
-                        }
-                    }
-                    
-                    
-                    Section(header: Text("Upcoming")) {
-                        ForEach(upcomingCardsSorted) { card in
-                            NavigationLink(value: card) {
-                                HStack {
-                                    selectedCardType(cardType: card.cardType)
-                                    Text(card.content)
-                                        .lineLimit(1)
-                                }
-                            }
-                            .contextMenu {
-                                Button(action: {
-                                    Task {
-                                        do {
-                                            try await card.addCardToQueue(currentDate: Date())
-                                        } catch {
-                                            print("Error removing card from archive: \(error)")
-                                        }
-                                    }
-                                }) {
-                                    Label("Enqueue", systemImage: "rectangle.stack")
-                                }
-                                Button {
-                                    Task {
-                                        do {
-                                            try await card.removeFromQueue(at: Date(), isSkip: false, toArchive: true)
-                                        } catch {
-                                            print("Error removing card from archive: \(error)")
-                                        }
-                                    }
-                                } label: {
-                                    Label("Archive", systemImage: "archivebox")
-                                }
-                                Divider()
-
-
-                                Button(role: .destructive) {
-                                    modelContext.delete(card)
-                                    cleanupOrphanTags()
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-                            }
-                            .swipeActions(edge: .leading) {
-                                Button(action: {
-                                    Task {
-                                        do {
-                                            try await card.removeFromQueue(at: Date(), isSkip: false, toArchive: true)
-                                        } catch {
-                                            print("Error removing card from archive: \(error)")
-                                        }
-                                    }
-                                }) {
-                                    Label("Archive", systemImage: "archive")
-                                }
-                                
-                                Button(action: {
-                                    Task {
-                                        do {
-                                            try await card.addCardToQueue(currentDate: Date())
-                                        } catch {
-                                            print("Error removing card from archive: \(error)")
-                                        }
-                                    }
-                                }) {
-                                    Label("Enqueue", systemImage: "rectangle.stack")
-                                }
-                                
-                            }
-                            
-                            
-                            .swipeActions(edge: .trailing) {
-                                Button(role: .destructive) {
-                                    modelContext.delete(card)
-                                    cleanupOrphanTags()
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-                                
-                            }
-                        }
-                        
-                    }
-                    
-                    Section(header: Text("Archived")) {
-                        ForEach(archivedCardsSorted) { card in
-                            NavigationLink(value: card) {
-                                HStack {
-                                    selectedCardType(cardType: card.cardType)
-                                    Text(card.content)
-                                        .lineLimit(1)
-                                }
-                            }.contextMenu {
-                                Button(action: {
-                                    Task {
-                                        do {
-                                            try await card.removeCardFromArchive()
-                                        } catch {
-                                            print("Error removing card from archive: \(error)")
-                                        }
-                                    }
-                                }) {
-                                    Label("Unarchive", systemImage: "tray.and.arrow.up")
-                                }
-                                
-                            }
-                            .swipeActions(edge: .leading) {
-                                Button(action: {
-                                    Task {
-                                        do {
-                                            try await card.removeCardFromArchive()
-                                        } catch {
-                                            print("Error removing card from archive: \(error)")
-                                        }
-                                    }
-                                }) {
-                                    Label("Unarchive", systemImage: "tray.and.arrow.up")
-                                }
-                            }
-                            
-                            Divider()
-                            
-                            
-                            .swipeActions(edge: .trailing) {
-                                Button(role: .destructive) {
-                                    modelContext.delete(card)
-                                    cleanupOrphanTags()
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-                      
-                            }
-                        }
-                        
-                    }
+                    EnqueuedSection(enqueuedCardsSorted: enqueuedCardsSorted)
+                    UpcomingSection(upcomingCardsSorted: upcomingCardsSorted)
+                    ArchivedSection(archivedCardsSorted: archivedCardsSorted)
                 }
                 .navigationTitle(selection.name)
                 
                 
-            } else {
-                Text("Select a folder")
-                    .foregroundColor(.gray)
+            }
+                else {
+                    Text("Select a folder")
+                        .foregroundColor(.gray)
+                //SelectedFolderStatView(folder: selectedFolder, cards: filteredCards)
             }
             
         } detail: {
@@ -452,19 +172,40 @@ struct ContentView: View {
             NavigationStack {
                 if let card = selectedCard {
                     SelectedCardView(card: card, onAddCard: { addCard() }, isNew:isNew)
-                } else {
-                    Text("Select a card")
-                        .foregroundColor(.gray)
+                } else   {
+    
+                    VStack {
+                        Text("Selected Folder Stats")
+                        if filteredCards.count > 0 {
+                            //Text(selectedFolder?.name)
+                            Text("\(filteredCards.count)")
+                        } else {
+                            Text("No cards")
+                        }
+                    }
                 }
             }
             .onChange(of: allCards) { _, newAllCards in
                 if let selected = selectedCard, !newAllCards.contains(where: { $0.id == selected.id }) {
                     selectedCard = nil
+                    cleanupOrphanTags()
                 }
             }
+
             .toolbar {
                 if UIDevice.current.userInterfaceIdiom != .phone {
-                    ToolbarItemGroup(placement: .topBarLeading) {
+                    if selectedCard != nil {
+                        
+                        
+                        ToolbarItemGroup(placement: .topBarLeading) {
+                            Button {
+                                selectedCard = nil
+                            } label: {
+                                Image(systemName: "chevron.left")
+                            }
+                        }
+                    }
+                    ToolbarItemGroup(placement: .topBarTrailing) {
                         Button {
                             addCard()
                         } label: {
@@ -545,6 +286,9 @@ struct ContentView: View {
                 cleanUpEmptyCards()
             }
         }
+        .onChange(of: selectedFolder) {
+            selectedCard = nil
+        }
     }
     
     
@@ -606,19 +350,6 @@ struct ContentView: View {
         }
     }
     
-    @ViewBuilder
-    private func selectedCardType(cardType: CardType) -> some View {
-        switch cardType {
-        case .flashCard:
-            FlashCardIcon()
-                .frame(width: 40, height: 40)
-        case .none:
-            PlainCardIcon()
-                .frame(width: 40, height: 40)
-        }
-        
-    }
-    
     private func sortOrder(for card: Card) -> Int {
         guard let priority = PriorityType(rawValue: card.priorityRaw) else {
             return 3 // Default to lowest priority if unknown
@@ -638,6 +369,18 @@ struct ContentView: View {
 
 
 //#Preview {
+//    var previewModelContainer: ModelContainer = {
+//        let schema = Schema([Card.self, Folder.self, Tag.self])
+//
+//        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+//
+//        do {
+//            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+//        } catch {
+//            fatalError("Could not create ModelContainer: \(error)")
+//        }
+//    }()
+//    
 //    ContentView()
-//        .modelContainer(previewContainer)
+//        .modelContainer(previewModelContainer)
 //}

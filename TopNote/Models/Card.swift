@@ -16,6 +16,15 @@ enum CardType: String, CaseIterable, Identifiable {
     case none = "Plain"
     
     var id: String { self.rawValue }
+    
+    var systemImage: String {
+        switch self {
+        case .flashCard:
+            return "rectangle.on.rectangle.angled"
+        case .none:
+            return "line.3.horizontal"
+        }
+    }
 
 }
 

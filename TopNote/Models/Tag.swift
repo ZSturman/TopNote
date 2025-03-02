@@ -26,3 +26,8 @@ final class Tag {
         self.name = name
     }
 }
+
+
+enum TagSelectionState {
+    case selected, deselected, neutral
+}

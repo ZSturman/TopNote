@@ -15,7 +15,7 @@ struct SelectedCardView: View {
     var isNew: Bool =  false
     @State private var showingTagSelection: Bool = false
     @State private var showingSpacedTimeframeOptions: Bool = false
-    @State private var isShowingStats: Bool = false
+    //@State private var isShowingStats: Bool = false
     
     var body: some View {
         VStack {
@@ -27,30 +27,30 @@ struct SelectedCardView: View {
         .padding()
         .toolbar {
             if let card = card {
-                if UIDevice.current.userInterfaceIdiom == .phone {
-                    ToolbarItemGroup {
-                        
-                        Button(action: { isShowingStats = true }) {
-                            Text("STATS")
-                        }
-                    }
-                    
-                    ToolbarItemGroup(placement: .bottomBar) {
-                        selectedCardToolbar(card: card)
-                    }
-                } else {
+//                if UIDevice.current.userInterfaceIdiom == .phone {
+//                    ToolbarItemGroup {
+//                        
+//                        Button(action: { isShowingStats = true }) {
+//                            Text("STATS")
+//                        }
+//                    }
+//                    
+//                    ToolbarItemGroup(placement: .bottomBar) {
+//                        selectedCardToolbar(card: card)
+//                    }
+//                } else {
                     ToolbarItemGroup(placement: .automatic) {
                         Spacer()
                         selectedCardToolbar(card: card)
                     }
-                }
+               // }
             }
         }
-        .navigationDestination(isPresented: $isShowingStats) {
-            if let card = card {
-                SelectedCardStatView(card: card)
-            }
-        }
+//        .navigationDestination(isPresented: $isShowingStats) {
+//            if let card = card {
+//                SelectedCardStatView(card: card)
+//            }
+//        }
     }
     
     @ViewBuilder
@@ -59,8 +59,6 @@ struct SelectedCardView: View {
         let iconSize: CGFloat = 35
         
         HStack {
-            ArchiveOptions(card: card, iconSize: iconSize)
-            Spacer()
             QueueOptions(card: card, iconSize:iconSize)
             
             Spacer()

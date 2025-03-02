@@ -19,11 +19,11 @@ struct SelectedCardType: View {
     private func selectedCardTypeIcon() -> some View {
         switch cardType {
         case .flashCard:
-            FlashCardIcon()
-                .frame(width: 30, height: 30)
+            Image(systemName: "rectangle.on.rectangle.angled")
+                .font(.caption)
         case .none:
-            PlainCardIcon()
-                .frame(width: 30, height: 30)
+            Image(systemName: "list.dash.header.rectangle")
+                .font(.caption)
         }
     }
 }

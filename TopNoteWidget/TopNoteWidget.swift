@@ -81,8 +81,8 @@ struct TopNoteWidgetEntryView: View {
                     GeometryReader { geo in
                         VStack(alignment: .leading) {
                             HStack {
-                                cardPriority(for: entry.card)
-                  
+                                cardFolder(for: entry.card)
+                                cardTags(for: entry.card)
                                 Spacer()
                                 HStack(spacing: 0) {
                                     Spacer()
@@ -90,17 +90,25 @@ struct TopNoteWidgetEntryView: View {
                                     Text("\(entry.queueCardCount)")
                                 }
                             }
-                            .font(.caption2)
+                            .font(.caption)
+                            .lineLimit(1)
+                            .foregroundColor(.gray)
                             .frame(height: geo.size.height * 0.01)
-                            //debugTimeline()
-                            
                             cardContentView(for: entry.card)
-                            
-                            widgetFooter()
-                            
                         }
-                        //.padding(8)
                     }
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func cardTags(for card: Card) -> some View {
+        if family != .systemSmall {
+            HStack {
+                ForEach(entry.card.tags ?? []) { tag in
+                    Text(tag.name)
+                        .lineLimit(1)
                 }
             }
         }
@@ -108,13 +116,11 @@ struct TopNoteWidgetEntryView: View {
 
     
     @ViewBuilder
-    private func widgetFooter() -> some View {
+    private func cardFolder(for card: Card) -> some View {
         if family != .systemSmall {
             if entry.card.folder != nil {
                 HStack {
-                    Spacer()
-                    Text(entry.card.folder?.name ?? "")
-                        .font(.caption)
+                    Text("[\(entry.card.folder?.name ?? "")]")
                 }
             }
         }
@@ -135,28 +141,7 @@ struct TopNoteWidgetEntryView: View {
             }
         }
     }
-    
-    @ViewBuilder
-    private func cardPriority(for card: Card) -> some View {
-        switch card.priority {
-        case .none:
-            Text("")
-        case .low:
-            Image(systemName: "staroflife.fill")
-        case .med:
-            HStack {
-                Text(Image(systemName: "staroflife.fill"))
-                    .kerning(0.5)
-                Image(systemName: "staroflife.fill")
-            }
-        case .high:
-            HStack {
-                Image(systemName: "staroflife.fill")
-                Image(systemName: "staroflife.fill")
-                Image(systemName: "staroflife.fill")
-            }
-        }
-    }
+
     
     @ViewBuilder
     private func cardContentView(for card: Card) -> some View {

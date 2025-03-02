@@ -41,45 +41,44 @@ struct ReadOnlySpacedTimeframe: View {
             HStack {
                 if card.archived {
                     HStack {
-                        
+                        Text("Removed from queue rotation. Remove from archive to re-queue.")
                         Spacer()
-                        Text("Removed from queue rotation")
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                        Spacer()
+                        timelineDisplay()
                     }
+                    .font(.caption)
+                    .foregroundColor(.gray)
                 } else {
                     if !card.isEnqueue(currentDate: Date()) {
-                        
-                        
-                        
-                        
-                        
-                        
-                        
                         
                         let timeRemaining = card.timeUntilNextInQueue(currentDate: Date())
                         let formattedTime = formatTimeInterval(timeRemaining)
                         Text("Enqueued in: \(formattedTime)")
                             .font(.caption)
                         Spacer()
-                        Text("\(breakdown.months) months, \(breakdown.days) days, \(breakdown.hours) hours")
-                            .font(.caption)
-                        
-                            .padding(.horizontal)
-                        
+                     
+
                     }
+                    Spacer()
+                    timelineDisplay()
+                    Image(systemName: "chevron.down")
                     
                 }
-                
-                
-                Spacer()
-                Text("\(breakdown.months) months, \(breakdown.days) days, \(breakdown.hours) hours")
-                    .font(.caption)
+             
             }
             
             
             
+        }
+    }
+    
+    @ViewBuilder
+    private func timelineDisplay() -> some View {
+        if breakdown.months > 0 {
+            Text("\(breakdown.months) months, \(breakdown.days) days, \(breakdown.hours) hours")
+        } else if breakdown.days > 0 {
+            Text("\(breakdown.days) days, \(breakdown.hours) hours")
+        } else {
+            Text("\(breakdown.hours) hours")
         }
     }
 }

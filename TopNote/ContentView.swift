@@ -158,6 +158,7 @@ struct ContentView: View {
                     ArchivedSection(archivedCardsSorted: archivedCardsSorted)
                 }
                 .navigationTitle(selection.name)
+                .listStyle(.sidebar)
                 
                 
             }
@@ -176,9 +177,12 @@ struct ContentView: View {
     
                     VStack {
                         Text("Selected Folder Stats")
-                        if filteredCards.count > 0 {
-                            //Text(selectedFolder?.name)
-                            Text("\(filteredCards.count)")
+                        if selectedFolder != nil {
+                            if filteredCards.count > 0 {
+                                SelectedFolderStatView(cards: filteredCards)
+                            } else {
+                                Text("No cards")
+                            }
                         } else {
                             Text("No cards")
                         }

@@ -9,7 +9,6 @@ import Foundation
 import SwiftUI
 
 struct SelectedFolderStatView: View {
-    var folder: FolderSelection = .allCards
     var cards: [Card]
 
     

@@ -50,10 +50,6 @@ struct ArchivedSection: View {
                         Label("Unarchive", systemImage: "tray.and.arrow.up")
                     }
                 }
-                
-                Divider()
-                
-                
                 .swipeActions(edge: .trailing) {
                     Button(role: .destructive) {
                         modelContext.delete(card)

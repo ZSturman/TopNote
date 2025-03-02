@@ -151,10 +151,6 @@ struct SpacedTimeframeInputView: View {
                 selectedHours  = breakdown.hours
                 originalHours  = card.spacedTimeFrame
                 didInitialize = true
-                print("Months: \(selectedMonths)")
-                print("Days: \(selectedDays)")
-                print("SelectedHours: \(selectedHours)")
-                print("Original Hours: \(originalHours)")
             }
         }
     }

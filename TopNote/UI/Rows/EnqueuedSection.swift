@@ -13,6 +13,7 @@ struct EnqueuedSection: View {
     @Environment(\.modelContext) private var modelContext
     var enqueuedCardsSorted: [Card]
     
+    
     var body: some View {
         Section(header: Text("Enqueue")) {
             ForEach(enqueuedCardsSorted) { card in
@@ -119,5 +120,6 @@ struct EnqueuedSection: View {
                 }
             }
         }
+        
     }
 }

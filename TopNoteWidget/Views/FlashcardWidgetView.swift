@@ -60,6 +60,7 @@ struct FlashCardWidgetView: View {
                     bottomButtonRow()
                 }
             }
+            
         }
     }
     

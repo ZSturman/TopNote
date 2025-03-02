@@ -71,9 +71,20 @@ struct TopNoteWidgetEntryView: View {
         formatter.dateFormat = "dd/MM HH:mm"
         return formatter
     }()
+   
+    var backlogColor: Color {
+        if entry.queueCardCount < 3 {
+            return .primary
+        } else if entry.queueCardCount < 8 {
+            return .yellow
+        } else if entry.queueCardCount < 15 {
+            return .orange
+        } else {
+            return .red
+        }
+    }
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
             Link(destination: entry.card.url) {
                 if entry.queueCardCount == 0 {
                     Text("All caught up!")
@@ -89,16 +100,21 @@ struct TopNoteWidgetEntryView: View {
                                     Image(systemName: "square.3.layers.3d")
                                     Text("\(entry.queueCardCount)")
                                 }
+                                .foregroundColor(backlogColor)
                             }
+                            
                             .font(.caption)
                             .lineLimit(1)
-                            .foregroundColor(.gray)
+                            .opacity(0.7)
                             .frame(height: geo.size.height * 0.01)
                             cardContentView(for: entry.card)
                         }
                     }
-                }
+                
+                
+                
             }
+
         }
     }
     
@@ -147,7 +163,11 @@ struct TopNoteWidgetEntryView: View {
     private func cardContentView(for card: Card) -> some View {
         switch card.cardType {
         case .flashCard:
-            FlashCardWidgetView(front: card.content, back: card.back ?? "No back side", isCardFlipped: card.hasBeenFlipped, isEssential: card.isEssential)
+          
+
+
+                FlashCardWidgetView(front: card.content, back: card.back ?? "No back side", isCardFlipped: card.hasBeenFlipped, isEssential: card.isEssential)
+                         
         case .none:
             NoCardTypeWidgetView(content: card.content, isEssential: card.isEssential)
         }
@@ -161,10 +181,12 @@ struct TopNoteWidget: Widget {
         AppIntentConfiguration(kind: kind, intent: ConfigurationAppIntent.self, provider: Provider()) { entry in
             TopNoteWidgetEntryView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
+                
         }
         .configurationDisplayName("Top Note Widget")
         .description("Displays a card from your collection.")
-        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
+      
     }
 }
 
@@ -174,7 +196,7 @@ struct TopNoteWidgetEntryView_Previews: PreviewProvider {
         return CardEntry(
             date: Date(),
             card: card,
-            queueCardCount: 1,
+            queueCardCount: 30,
             totalNumberOfCards: 10,
             nextCardForQueue: nil,
             nextUpdateDate: Date()
@@ -186,22 +208,14 @@ struct TopNoteWidgetEntryView_Previews: PreviewProvider {
             TopNoteWidgetEntryView(entry: sampleEntry(for: .systemSmall, with: getSampleFlashCard(hasBeenFlipped: false)))
                 .containerBackground(.fill.tertiary, for: .widget)
                 .previewContext(WidgetPreviewContext(family: .systemSmall))
-                .previewDisplayName("Top Note Widget - FlashCard (Small, Not Flipped)")
+                .previewDisplayName("Top Note Widget - FlashCard")
+    
             
-            TopNoteWidgetEntryView(entry: sampleEntry(for: .systemSmall, with: getSampleFlashCard(hasBeenFlipped: true)))
-                .containerBackground(.fill.tertiary, for: .widget)
-                .previewContext(WidgetPreviewContext(family: .systemSmall))
-                .previewDisplayName("Top Note Widget - FlashCard (Small, Flipped)")
-            
-            TopNoteWidgetEntryView(entry: sampleEntry(for: .systemMedium, with: getSampleFlashCard(hasBeenFlipped: false)))
+            TopNoteWidgetEntryView(entry: sampleEntry(for: .systemMedium, with: getSampleNoTypeCard()) )
                 .containerBackground(.fill.tertiary, for: .widget)
                 .previewContext(WidgetPreviewContext(family: .systemMedium))
-                .previewDisplayName("Top Note Widget - Quiz (Medium)")
+                .previewDisplayName("Top Note Widget -Plain")
             
-            TopNoteWidgetEntryView(entry: sampleEntry(for: .systemLarge, with: getSampleFlashCard(hasBeenFlipped: true)))
-                .containerBackground(.fill.tertiary, for: .widget)
-                .previewContext(WidgetPreviewContext(family: .systemMedium))
-                .previewDisplayName("Top Note Widget - ToDo (Large)")
         }
     }
 }

@@ -19,6 +19,7 @@ struct ContentView: View {
     
     @State var urlId: String = ""
     
+    
 
     
     private var selectedCardBinding: Binding<Card?> {
@@ -176,7 +177,7 @@ struct ContentView: View {
                 } else   {
     
                     VStack {
-                        Text("Selected Folder Stats")
+                
                         if selectedFolder != nil {
                             if filteredCards.count > 0 {
                                 SelectedFolderStatView(cards: filteredCards)
@@ -293,6 +294,7 @@ struct ContentView: View {
         .onChange(of: selectedFolder) {
             selectedCard = nil
         }
+        
     }
     
     

@@ -7,12 +7,34 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		EF68B8E12D766B9900E9FEE0 /* Testing.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EFE4208E2D751B42009C18FD /* Testing.framework */; };
 		EFBE070F2D63E4DC004B39A0 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EFBE070E2D63E4DC004B39A0 /* WidgetKit.framework */; };
 		EFBE07112D63E4DC004B39A0 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EFBE07102D63E4DC004B39A0 /* SwiftUI.framework */; };
 		EFBE07202D63E4DF004B39A0 /* TopNoteWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = EFBE070C2D63E4DC004B39A0 /* TopNoteWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		EF07D68B2D77DC2C00C181E4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EFBE06EA2D63E4C3004B39A0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = EFBE06F12D63E4C3004B39A0;
+			remoteInfo = TopNote;
+		};
+		EF4D5DDF2D74E4D4002FC7BB /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EFBE06EA2D63E4C3004B39A0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = EFBE06F12D63E4C3004B39A0;
+			remoteInfo = TopNote;
+		};
+		EF68B8E22D766EFA00E9FEE0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EFBE06EA2D63E4C3004B39A0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = EFBE070B2D63E4DC004B39A0;
+			remoteInfo = TopNoteWidgetExtension;
+		};
 		EFBE071E2D63E4DF004B39A0 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = EFBE06EA2D63E4C3004B39A0 /* Project object */;
@@ -37,14 +59,29 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		EF07D6852D77DC2C00C181E4 /* TopNoteUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TopNoteUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		EF4D5DDB2D74E4D4002FC7BB /* TopNoteTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TopNoteTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EFBE06F22D63E4C3004B39A0 /* TopNote.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TopNote.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EFBE070C2D63E4DC004B39A0 /* TopNoteWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TopNoteWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		EFBE070E2D63E4DC004B39A0 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		EFBE07102D63E4DC004B39A0 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		EFBE07282D63E58F004B39A0 /* TopNoteWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TopNoteWidgetExtension.entitlements; sourceTree = "<group>"; };
+		EFE4208E2D751B42009C18FD /* Testing.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Testing.framework; path = Platforms/iPhoneOS.platform/Developer/Library/Frameworks/Testing.framework; sourceTree = DEVELOPER_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		EF07D67D2D77D31B00C181E4 /* Exceptions for "TopNote" folder in "TopNoteTests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Models/Card.swift,
+				"Models/Card+Extensions.swift",
+				Models/Enums.swift,
+				Models/Folder.swift,
+				Models/RatingModels.swift,
+				Models/Tag.swift,
+			);
+			target = EF4D5DDA2D74E4D4002FC7BB /* TopNoteTests */;
+		};
 		EFBE07022D63E4C5004B39A0 /* Exceptions for "TopNote" folder in "TopNote" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -63,10 +100,11 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Models/Card.swift,
+				"Models/Card+Extensions.swift",
+				Models/Enums.swift,
 				Models/Folder.swift,
-				Models/SampleDeck.swift,
+				Models/RatingModels.swift,
 				Models/Tag.swift,
-				Support/PreviewSampleData.swift,
 				"UI/Helpers/ResponsiveButtons+Icons.swift",
 				UI/Icons/ArchiveIcon.swift,
 				UI/Icons/DynamicIcon.swift,
@@ -89,11 +127,17 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		EF4D5DDC2D74E4D4002FC7BB /* Tests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Tests;
+			sourceTree = "<group>";
+		};
 		EFBE06F42D63E4C3004B39A0 /* TopNote */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				EFBE07022D63E4C5004B39A0 /* Exceptions for "TopNote" folder in "TopNote" target */,
 				EFBE07272D63E4FC004B39A0 /* Exceptions for "TopNote" folder in "TopNoteWidgetExtension" target */,
+				EF07D67D2D77D31B00C181E4 /* Exceptions for "TopNote" folder in "TopNoteTests" target */,
 			);
 			path = TopNote;
 			sourceTree = "<group>";
@@ -109,6 +153,21 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		EF07D6822D77DC2C00C181E4 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EF4D5DD82D74E4D4002FC7BB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EF68B8E12D766B9900E9FEE0 /* Testing.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		EFBE06EF2D63E4C3004B39A0 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -134,6 +193,7 @@
 				EFBE07282D63E58F004B39A0 /* TopNoteWidgetExtension.entitlements */,
 				EFBE06F42D63E4C3004B39A0 /* TopNote */,
 				EFBE07122D63E4DC004B39A0 /* TopNoteWidget */,
+				EF4D5DDC2D74E4D4002FC7BB /* Tests */,
 				EFBE070D2D63E4DC004B39A0 /* Frameworks */,
 				EFBE06F32D63E4C3004B39A0 /* Products */,
 			);
@@ -144,6 +204,8 @@
 			children = (
 				EFBE06F22D63E4C3004B39A0 /* TopNote.app */,
 				EFBE070C2D63E4DC004B39A0 /* TopNoteWidgetExtension.appex */,
+				EF4D5DDB2D74E4D4002FC7BB /* TopNoteTests.xctest */,
+				EF07D6852D77DC2C00C181E4 /* TopNoteUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -151,6 +213,7 @@
 		EFBE070D2D63E4DC004B39A0 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				EFE4208E2D751B42009C18FD /* Testing.framework */,
 				EFBE070E2D63E4DC004B39A0 /* WidgetKit.framework */,
 				EFBE07102D63E4DC004B39A0 /* SwiftUI.framework */,
 			);
@@ -160,6 +223,50 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		EF07D6842D77DC2C00C181E4 /* TopNoteUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EF07D68D2D77DC2C00C181E4 /* Build configuration list for PBXNativeTarget "TopNoteUITests" */;
+			buildPhases = (
+				EF07D6812D77DC2C00C181E4 /* Sources */,
+				EF07D6822D77DC2C00C181E4 /* Frameworks */,
+				EF07D6832D77DC2C00C181E4 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				EF07D68C2D77DC2C00C181E4 /* PBXTargetDependency */,
+			);
+			name = TopNoteUITests;
+			packageProductDependencies = (
+			);
+			productName = TopNoteUITests;
+			productReference = EF07D6852D77DC2C00C181E4 /* TopNoteUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		EF4D5DDA2D74E4D4002FC7BB /* TopNoteTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EF4D5DE32D74E4D4002FC7BB /* Build configuration list for PBXNativeTarget "TopNoteTests" */;
+			buildPhases = (
+				EF4D5DD72D74E4D4002FC7BB /* Sources */,
+				EF4D5DD82D74E4D4002FC7BB /* Frameworks */,
+				EF4D5DD92D74E4D4002FC7BB /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				EF68B8E32D766EFA00E9FEE0 /* PBXTargetDependency */,
+				EF4D5DE02D74E4D4002FC7BB /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				EF4D5DDC2D74E4D4002FC7BB /* Tests */,
+			);
+			name = TopNoteTests;
+			packageProductDependencies = (
+			);
+			productName = TopNoteTests;
+			productReference = EF4D5DDB2D74E4D4002FC7BB /* TopNoteTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		EFBE06F12D63E4C3004B39A0 /* TopNote */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = EFBE07032D63E4C5004B39A0 /* Build configuration list for PBXNativeTarget "TopNote" */;
@@ -213,9 +320,17 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1600;
+				LastSwiftUpdateCheck = 1630;
 				LastUpgradeCheck = 1630;
 				TargetAttributes = {
+					EF07D6842D77DC2C00C181E4 = {
+						CreatedOnToolsVersion = 16.3;
+						TestTargetID = EFBE06F12D63E4C3004B39A0;
+					};
+					EF4D5DDA2D74E4D4002FC7BB = {
+						CreatedOnToolsVersion = 16.3;
+						TestTargetID = EFBE06F12D63E4C3004B39A0;
+					};
 					EFBE06F12D63E4C3004B39A0 = {
 						CreatedOnToolsVersion = 16.0;
 					};
@@ -240,11 +355,27 @@
 			targets = (
 				EFBE06F12D63E4C3004B39A0 /* TopNote */,
 				EFBE070B2D63E4DC004B39A0 /* TopNoteWidgetExtension */,
+				EF4D5DDA2D74E4D4002FC7BB /* TopNoteTests */,
+				EF07D6842D77DC2C00C181E4 /* TopNoteUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		EF07D6832D77DC2C00C181E4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EF4D5DD92D74E4D4002FC7BB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		EFBE06F02D63E4C3004B39A0 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -262,6 +393,20 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		EF07D6812D77DC2C00C181E4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EF4D5DD72D74E4D4002FC7BB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		EFBE06EE2D63E4C3004B39A0 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -279,6 +424,21 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		EF07D68C2D77DC2C00C181E4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = EFBE06F12D63E4C3004B39A0 /* TopNote */;
+			targetProxy = EF07D68B2D77DC2C00C181E4 /* PBXContainerItemProxy */;
+		};
+		EF4D5DE02D74E4D4002FC7BB /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = EFBE06F12D63E4C3004B39A0 /* TopNote */;
+			targetProxy = EF4D5DDF2D74E4D4002FC7BB /* PBXContainerItemProxy */;
+		};
+		EF68B8E32D766EFA00E9FEE0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = EFBE070B2D63E4DC004B39A0 /* TopNoteWidgetExtension */;
+			targetProxy = EF68B8E22D766EFA00E9FEE0 /* PBXContainerItemProxy */;
+		};
 		EFBE071F2D63E4DF004B39A0 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = EFBE070B2D63E4DC004B39A0 /* TopNoteWidgetExtension */;
@@ -287,6 +447,92 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		EF07D68E2D77DC2C00C181E4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = MF8J7AY2X3;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = zacharysturman.TopNoteUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = TopNote;
+			};
+			name = Debug;
+		};
+		EF07D68F2D77DC2C00C181E4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = MF8J7AY2X3;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = zacharysturman.TopNoteUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = TopNote;
+			};
+			name = Release;
+		};
+		EF4D5DE12D74E4D4002FC7BB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = YES;
+				DEVELOPMENT_TEAM = MF8J7AY2X3;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				MACOSX_DEPLOYMENT_TARGET = 11.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = zacharysturman.TopNoteTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "xrsimulator xros watchsimulator watchos macosx iphonesimulator iphoneos driverkit appletvsimulator appletvos";
+				SUPPORTS_MACCATALYST = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TopNote.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TopNote";
+			};
+			name = Debug;
+		};
+		EF4D5DE22D74E4D4002FC7BB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = YES;
+				DEVELOPMENT_TEAM = MF8J7AY2X3;
+				ENABLE_TESTABILITY = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				MACOSX_DEPLOYMENT_TARGET = 11.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = zacharysturman.TopNoteTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TopNote.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TopNote";
+			};
+			name = Release;
+		};
 		EFBE07042D63E4C5004B39A0 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -358,6 +604,7 @@
 		EFBE07062D63E4C5004B39A0 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -414,6 +661,8 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
+				SUPPORTS_MACCATALYST = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -422,6 +671,7 @@
 		EFBE07072D63E4C5004B39A0 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -471,6 +721,8 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
+				SUPPORTS_MACCATALYST = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -533,6 +785,24 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		EF07D68D2D77DC2C00C181E4 /* Build configuration list for PBXNativeTarget "TopNoteUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EF07D68E2D77DC2C00C181E4 /* Debug */,
+				EF07D68F2D77DC2C00C181E4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		EF4D5DE32D74E4D4002FC7BB /* Build configuration list for PBXNativeTarget "TopNoteTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EF4D5DE12D74E4D4002FC7BB /* Debug */,
+				EF4D5DE22D74E4D4002FC7BB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		EFBE06ED2D63E4C3004B39A0 /* Build configuration list for PBXProject "TopNote" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

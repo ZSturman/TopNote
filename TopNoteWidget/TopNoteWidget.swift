@@ -51,7 +51,7 @@ struct Provider: AppIntentTimelineProvider {
                 nextCardForQueue: nextCardForQueue,
                 nextUpdateDate: updateDate
             )
-            return Timeline(entries: [entry], policy: .after(updateDate))
+            return Timeline(entries: [entry], policy:.after(Date().addingTimeInterval(60 * 5)))
         } catch {
             print("Error updating queue: \(error)")
             let entry = errorCardEntry()
@@ -180,6 +180,7 @@ struct TopNoteWidget: Widget {
     var body: some WidgetConfiguration {
         AppIntentConfiguration(kind: kind, intent: ConfigurationAppIntent.self, provider: Provider()) { entry in
             TopNoteWidgetEntryView(entry: entry)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .containerBackground(.fill.tertiary, for: .widget)
                 
         }

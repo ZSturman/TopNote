@@ -37,3 +37,23 @@ struct AddToArchiveButton: View {
         .help("Add to archive")
     }
 }
+
+
+struct ArchiveButton: View {
+    var card: Card
+    
+    var body: some View {
+        Button {
+            Task {
+                do {
+                    try await card.removeFromQueue(at: Date(), isSkip: false, toArchive: true)
+                } catch {
+                    print("Error removing card from archive: \(error)")
+                }
+            }
+        } label: {
+            Label("Archive", systemImage: "archivebox")
+        }
+        .help("Add to archive")
+    }
+}

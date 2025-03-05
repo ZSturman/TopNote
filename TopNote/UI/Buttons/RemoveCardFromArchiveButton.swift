@@ -38,3 +38,21 @@ struct RemoveFromArchiveButton: View {
         .help("Unarchive")
     }
 }
+
+struct UnarchiveButton: View {
+    var card: Card
+    
+    var body: some View {
+        Button(action: {
+            Task {
+                do {
+                    try await card.removeCardFromArchive()
+                } catch {
+                    print("Error removing card from archive: \(error)")
+                }
+            }
+        }) {
+            Label("Unarchive", systemImage: "tray.and.arrow.up")
+        }
+    }
+}

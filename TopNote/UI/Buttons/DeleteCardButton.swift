@@ -14,14 +14,12 @@ struct DeleteCardButton: View {
     var card: Card
     
     var body: some View {
-        Button(action: {
+        Button(role: .destructive) {
             modelContext.delete(card)
-        }, label: {
-            VStack {
-                Image(systemName: "trash")
-                //Text("Delete")
-            }
-        })
-        .help("Delete")
+            
+        } label: {
+            Label("Delete", systemImage: "trash")
+        }
+        .help("Delete this card")
     }
 }

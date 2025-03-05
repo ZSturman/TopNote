@@ -34,7 +34,7 @@ struct FlashCardWidgetView: View {
                         
                         Text(back)
                             .font(.footnote)
-                            .multilineTextAlignment(.center)
+                            //.multilineTextAlignment(.center)
                             .truncationMode(.tail)
                             .lineLimit(nil)
                             .minimumScaleFactor(0.8)

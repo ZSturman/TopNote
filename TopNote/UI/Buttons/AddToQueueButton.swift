@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftData
 import SwiftUI
 
 struct AddToQueueButton: View {
@@ -13,8 +14,6 @@ struct AddToQueueButton: View {
     var iconSize: CGFloat = 50
     
         
-    
-    
     var body: some View {
         Button(action: {
             Task {
@@ -38,5 +37,24 @@ struct AddToQueueButton: View {
             }
         }
         .help("Add to queue")
+    }
+}
+
+
+struct EnqueueButton: View {
+    var card: Card
+    
+    var body: some View {
+        Button(action: {
+            Task {
+                do {
+                    try await card.addCardToQueue(currentDate: Date())
+                } catch {
+                    print("Error removing card from archive: \(error)")
+                }
+            }
+        }) {
+            Label("Enqueue", systemImage: "rectangle.stack")
+        }
     }
 }

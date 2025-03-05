@@ -112,7 +112,7 @@ struct SelectedCardForm: View {
                         } label: {
                             HStack {
                                 Spacer()
-                                Image(systemName: "archive")
+                                Image(systemName: "archivebox")
                                 Text("Archive")
                                 Spacer()
                             }

@@ -27,30 +27,13 @@ struct SelectedCardView: View {
         .padding()
         .toolbar {
             if let card = card {
-//                if UIDevice.current.userInterfaceIdiom == .phone {
-//                    ToolbarItemGroup {
-//                        
-//                        Button(action: { isShowingStats = true }) {
-//                            Text("STATS")
-//                        }
-//                    }
-//                    
-//                    ToolbarItemGroup(placement: .bottomBar) {
-//                        selectedCardToolbar(card: card)
-//                    }
-//                } else {
                     ToolbarItemGroup(placement: .automatic) {
                         Spacer()
                         selectedCardToolbar(card: card)
                     }
-               // }
+         
             }
         }
-//        .navigationDestination(isPresented: $isShowingStats) {
-//            if let card = card {
-//                SelectedCardStatView(card: card)
-//            }
-//        }
     }
     
     @ViewBuilder

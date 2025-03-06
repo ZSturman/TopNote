@@ -37,7 +37,7 @@ struct TagInputView: View {
         VStack(alignment: .leading) {
             TextField("Add a tag", text: $newTag, onCommit: {
                 addTag()
-                // Do not force focus; let the user decide when to dismiss.
+                
             })
             .textFieldStyle(RoundedBorderTextFieldStyle())
             .focused($isTagFieldFocused)
@@ -139,8 +139,7 @@ struct TagInputView: View {
         }
         newTag = ""
         WidgetCenter.shared.reloadAllTimelines()
-        // Optionally, you can remove focus after selecting a tag by uncommenting the next line:
-        // isTagFieldFocused = false
+
     }
     
     private func removeTag(_ tag: Tag) {

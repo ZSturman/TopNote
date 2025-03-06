@@ -41,7 +41,7 @@ struct Provider: AppIntentTimelineProvider {
                 return Timeline(entries: [entry], policy: .after(updateDate))
             }
             
-
+            
             
             let entry = CardEntry(
                 date: currentDate,
@@ -64,14 +64,14 @@ struct Provider: AppIntentTimelineProvider {
 struct TopNoteWidgetEntryView: View {
     var entry: Provider.Entry
     @Environment(\.widgetFamily) var family
-
+    
     private let customDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         // "dd" = day, "MM" = month, "HH" = 24-hour, "mm" = minutes
         formatter.dateFormat = "dd/MM HH:mm"
         return formatter
     }()
-   
+    
     var backlogColor: Color {
         if entry.queueCardCount < 3 {
             return .primary
@@ -83,8 +83,9 @@ struct TopNoteWidgetEntryView: View {
             return .red
         }
     }
-
+    
     var body: some View {
+        VStack {
             Link(destination: entry.card.url) {
                 if entry.queueCardCount == 0 {
                     Text("All caught up!")
@@ -102,7 +103,6 @@ struct TopNoteWidgetEntryView: View {
                                 }
                                 .foregroundColor(backlogColor)
                             }
-                            
                             .font(.caption)
                             .lineLimit(1)
                             .opacity(0.7)
@@ -110,11 +110,8 @@ struct TopNoteWidgetEntryView: View {
                             cardContentView(for: entry.card)
                         }
                     }
-                
-                
-                
+                }
             }
-
         }
     }
     
@@ -129,7 +126,7 @@ struct TopNoteWidgetEntryView: View {
             }
         }
     }
-
+    
     
     @ViewBuilder
     private func cardFolder(for card: Card) -> some View {
@@ -157,17 +154,17 @@ struct TopNoteWidgetEntryView: View {
             }
         }
     }
-
+    
     
     @ViewBuilder
     private func cardContentView(for card: Card) -> some View {
         switch card.cardType {
         case .flashCard:
-          
-
-
-                FlashCardWidgetView(front: card.content, back: card.back ?? "No back side", isCardFlipped: card.hasBeenFlipped, isEssential: card.isEssential)
-                         
+            
+            
+            
+            FlashCardWidgetView(front: card.content, back: card.back ?? "No back side", isCardFlipped: card.hasBeenFlipped, isEssential: card.isEssential)
+            
         case .none:
             NoCardTypeWidgetView(content: card.content, isEssential: card.isEssential)
         }
@@ -182,12 +179,12 @@ struct TopNoteWidget: Widget {
             TopNoteWidgetEntryView(entry: entry)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .containerBackground(.fill.tertiary, for: .widget)
-                
+            
         }
         .configurationDisplayName("Top Note Widget")
         .description("Displays a card from your collection.")
-        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
-      
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge])
+        
     }
 }
 
@@ -210,7 +207,7 @@ struct TopNoteWidgetEntryView_Previews: PreviewProvider {
                 .containerBackground(.fill.tertiary, for: .widget)
                 .previewContext(WidgetPreviewContext(family: .systemSmall))
                 .previewDisplayName("Top Note Widget - FlashCard")
-    
+            
             
             TopNoteWidgetEntryView(entry: sampleEntry(for: .systemMedium, with: getSampleNoTypeCard()) )
                 .containerBackground(.fill.tertiary, for: .widget)

@@ -34,7 +34,7 @@ struct CardTypePicker: View {
             }
             .tag(CardType.none)
         }
-        .pickerStyle(.segmented)
+
         .onChange(of: selectedType) { _, newValue in
             Task {
                 do {

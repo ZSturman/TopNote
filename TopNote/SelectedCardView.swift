@@ -15,7 +15,7 @@ struct SelectedCardView: View {
     var isNew: Bool =  false
     @State private var showingTagSelection: Bool = false
     @State private var showingSpacedTimeframeOptions: Bool = false
-    //@State private var isShowingStats: Bool = false
+
     
     var body: some View {
         VStack {
@@ -47,7 +47,9 @@ struct SelectedCardView: View {
             Spacer()
             if UIDevice.current.userInterfaceIdiom == .phone {
                 Button {
-                    onAddCard()
+                    DispatchQueue.main.async {
+                        onAddCard()
+                    }
                 } label: {
                     Image(systemName: "square.and.pencil")
                 }

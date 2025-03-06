@@ -28,11 +28,13 @@ struct ContentInput: View {
             ZStack(alignment: .topLeading) {
                 if content.isEmpty {
                     Text("Enter your content here...")
+                        .font(.subheadline)
                         .foregroundColor(.gray)
                         .padding(.top, 8)
                         .padding(.leading, 5)
                 }
                 TextEditor(text: $content)
+                    .font(.subheadline)
                     .padding(4)
             }
             .frame(minHeight: 100)

@@ -9,6 +9,7 @@ struct ContentView: View {
     @Query var allCards: [Card]
     @Query var tags: [Tag]
  
+    //@State private var searchText: String = ""
     
     @State var tagSelectionStates: [UUID: TagSelectionState] = [:]
     @State private var selectedFolder: FolderSelection? = .allCards
@@ -19,26 +20,23 @@ struct ContentView: View {
     
     @State var urlId: String = ""
     
-    
-
-    
     private var selectedCardBinding: Binding<Card?> {
         Binding<Card?>(
             get: { self.selectedCard },
             set: { newValue in
                 if newValue == nil, let card = self.selectedCard {
                     if card.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        
-                        modelContext.delete(card)
-                        cleanupOrphanTags()
-                        
+                        // Check if the card is still in modelContext before deletion
+                        if allCards.contains(where: { $0.id == card.id }) {
+                            modelContext.delete(card)
+                            cleanupOrphanTags()
+                        }
                     }
                 }
                 self.selectedCard = newValue
             }
         )
     }
-    
     
     // Filter cards based on the tag selection state.
     private func filterCards(cards: [Card]) -> [Card] {
@@ -92,7 +90,9 @@ struct ContentView: View {
                         }
                         .swipeActions(edge: .trailing) {
                             Button(role: .destructive) {
-                                modelContext.delete(folder)
+                                DispatchQueue.main.async {
+                                    modelContext.delete(folder)
+                                }
                             } label: {
                                 Label("Delete", systemImage: "trash")
                             }
@@ -138,12 +138,9 @@ struct ContentView: View {
                     return lhsTuple < rhsTuple
                 }
 
-
-                // Sort upcoming cards ensuring isEssential comes first, then by priority, then lastRemovedFromQueue
+                // Sort upcoming cards by createdAt (most recent first)
                 let upcomingCardsSorted = upcomingCards.sorted { lhs, rhs in
-                    let lhsTuple = (lhs.isEssential ? 0 : 1, sortOrder(for: lhs), lhs.lastRemovedFromQueue ?? Date.distantPast)
-                    let rhsTuple = (rhs.isEssential ? 0 : 1, sortOrder(for: rhs), rhs.lastRemovedFromQueue ?? Date.distantPast)
-                    return lhsTuple < rhsTuple
+                    return lhs.createdAt > rhs.createdAt
                 }
 
                 // Sort archived cards ensuring isEssential comes first, then by priority, then lastRemovedFromQueue
@@ -158,6 +155,7 @@ struct ContentView: View {
                     UpcomingSection(upcomingCardsSorted: upcomingCardsSorted)
                     ArchivedSection(archivedCardsSorted: archivedCardsSorted)
                 }
+                //.searchable(text: $searchText)
                 .navigationTitle(selection.name)
                 .listStyle(.sidebar)
                 
@@ -166,7 +164,7 @@ struct ContentView: View {
                 else {
                     Text("Select a folder")
                         .foregroundColor(.gray)
-                //SelectedFolderStatView(folder: selectedFolder, cards: filteredCards)
+            
             }
             
         } detail: {
@@ -212,7 +210,9 @@ struct ContentView: View {
                     }
                     ToolbarItemGroup(placement: .topBarTrailing) {
                         Button {
-                            addCard()
+                            DispatchQueue.main.async {
+                                addCard()
+                            }
                         } label: {
                             Image(systemName: "square.and.pencil")
                         }
@@ -233,7 +233,9 @@ struct ContentView: View {
                         }
                         Spacer()
                         Button {
-                            addCard()
+                            DispatchQueue.main.async {
+                                addCard()
+                            }
                         } label: {
                             Image(systemName: "square.and.pencil")
                         }
@@ -245,7 +247,9 @@ struct ContentView: View {
                                 Text(allCards.count.description)
                                 Spacer()
                                 Button {
-                                    addCard()
+                                    DispatchQueue.main.async {
+                                        addCard()
+                                    }
                                 } label: {
                                     Image(systemName: "square.and.pencil")
                                 }
@@ -254,7 +258,9 @@ struct ContentView: View {
                                 Text(folder.unwrappedCards.count.description)
                                 Spacer()
                                 Button {
-                                    addCard()
+                                    DispatchQueue.main.async {
+                                        addCard()
+                                    }
                                 } label: {
                                     Image(systemName: "square.and.pencil")
                                 }
@@ -299,6 +305,8 @@ struct ContentView: View {
     
     
     private func addCard() {
+        // Reset the currently selected card before adding a new one
+        selectedCard = nil
         
         let folderForNewCard: Folder?
         if let selection = selectedFolder {
@@ -311,8 +319,7 @@ struct ContentView: View {
         } else {
             folderForNewCard = nil
         }
-        
-        
+
         let newCard = Card(
             createdAt: Date(),
             cardType: .none,
@@ -323,21 +330,21 @@ struct ContentView: View {
             nextTimeInQueue: Calendar.current.date(byAdding: .hour, value: 240, to: Date()) ?? Date(),
             folder: folderForNewCard
         )
-        
+
         if let folder = folderForNewCard {
-            if folder.cards == nil {
-                folder.cards = [newCard]
-            } else {
-                folder.cards?.append(newCard)
-            }
+            folder.cards?.append(newCard)
             selectedFolder = .folder(folder)
         } else {
             selectedFolder = .allCards
         }
-        
+
         modelContext.insert(newCard)
-        isNew = true
-        selectedCard = newCard
+
+        // Ensure we are working on the main thread
+        DispatchQueue.main.async {
+            self.isNew = true
+            self.selectedCard = newCard
+        }
     }
     
     func cleanupOrphanTags() {
@@ -372,21 +379,3 @@ struct ContentView: View {
         }
     }
 }
-
-
-//#Preview {
-//    var previewModelContainer: ModelContainer = {
-//        let schema = Schema([Card.self, Folder.self, Tag.self])
-//
-//        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-//
-//        do {
-//            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-//        } catch {
-//            fatalError("Could not create ModelContainer: \(error)")
-//        }
-//    }()
-//    
-//    ContentView()
-//        .modelContainer(previewModelContainer)
-//}

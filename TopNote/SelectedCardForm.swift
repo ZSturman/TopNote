@@ -41,6 +41,10 @@ struct SelectedCardForm: View {
                     }
                 }
                 
+                Section("Tags") {
+                    TagInputView(card: card)
+                }
+                
                 Section("Spaced repetition") {
                     HStack {
                         if isEditingSpacedRepetition {
@@ -59,10 +63,8 @@ struct SelectedCardForm: View {
                     }
                 }
                 
-                // 4. Single line text input
-                Section("Tags") {
-                    TagInputView(card: card)
-                }
+          
+
                 
                 Section("Type") {
                     CardTypePicker(card: card)

@@ -51,7 +51,7 @@ struct Provider: AppIntentTimelineProvider {
                 nextCardForQueue: nextCardForQueue,
                 nextUpdateDate: updateDate
             )
-            return Timeline(entries: [entry], policy:.after(Date().addingTimeInterval(60 * 5)))
+            return Timeline(entries: [entry], policy:.after(Calendar.current.date(byAdding: .minute, value: 5, to: currentDate) ?? Date()))
         } catch {
             print("Error updating queue: \(error)")
             let entry = errorCardEntry()
@@ -96,12 +96,8 @@ struct TopNoteWidgetEntryView: View {
                                 cardFolder(for: entry.card)
                                 cardTags(for: entry.card)
                                 Spacer()
-                                HStack(spacing: 0) {
-                                    Spacer()
-                                    Image(systemName: "square.3.layers.3d")
-                                    Text("\(entry.queueCardCount)")
-                                }
-                                .foregroundColor(backlogColor)
+                                cardQueueCountView()
+
                             }
                             .font(.caption)
                             .lineLimit(1)
@@ -116,15 +112,32 @@ struct TopNoteWidgetEntryView: View {
     }
     
     @ViewBuilder
+    private func smallWidgetView() -> some View {
+        VStack {
+            cardQueueCountView()
+                .font(.largeTitle)
+        }
+    }
+    
+    @ViewBuilder
+    private func cardQueueCountView() -> some View {
+        HStack(spacing: 0) {
+            Image(systemName: "square.3.layers.3d")
+            Text("\(entry.queueCardCount)")
+        }
+        .foregroundColor(backlogColor)
+    }
+    
+    @ViewBuilder
     private func cardTags(for card: Card) -> some View {
-        if family != .systemSmall {
+     
             HStack {
                 ForEach(entry.card.tags ?? []) { tag in
                     Text(tag.name)
                         .lineLimit(1)
                 }
             }
-        }
+        
     }
     
     
@@ -160,11 +173,7 @@ struct TopNoteWidgetEntryView: View {
     private func cardContentView(for card: Card) -> some View {
         switch card.cardType {
         case .flashCard:
-            
-            
-            
             FlashCardWidgetView(front: card.content, back: card.back ?? "No back side", isCardFlipped: card.hasBeenFlipped, isEssential: card.isEssential)
-            
         case .none:
             NoCardTypeWidgetView(content: card.content, isEssential: card.isEssential)
         }

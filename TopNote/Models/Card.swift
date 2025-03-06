@@ -112,6 +112,7 @@ final class Card {
         get { PriorityType(rawValue: priorityRaw) ?? .low }
         set { priorityRaw = newValue.rawValue }
     }
+
     
     // MARK: - Initializer
     
@@ -134,7 +135,8 @@ final class Card {
         back: String? = nil,
         rating: [[RatingType: Date]] = [],
         archived: Bool = false,
-        hasBeenFlipped: Bool = false
+        hasBeenFlipped: Bool = false,
+        //deleted: Date? = nil
     ) {
         self.id = UUID()
         self.createdAt = createdAt
@@ -156,6 +158,7 @@ final class Card {
         self.rating = rating
         self.archived = archived
         self.hasBeenFlipped = hasBeenFlipped
+        //self.deleted = deleted
     }
     
     // MARK: - Public Methods

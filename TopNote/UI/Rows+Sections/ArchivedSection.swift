@@ -29,6 +29,8 @@ struct ArchivedSection: View {
                 }.contextMenu {
                     UnarchiveButton(card: card)
                     MoveToFolderPicker(card: card)
+                    Divider()
+                    DeleteCardButton(card: card)
                     
                 }
                 .swipeActions(edge: .leading) {

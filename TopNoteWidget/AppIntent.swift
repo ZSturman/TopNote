@@ -9,33 +9,45 @@ import WidgetKit
 import AppIntents
 import SwiftData
 
+ 
+
 struct ConfigurationAppIntent: WidgetConfigurationIntent {
     static var title: LocalizedStringResource { "Top Note Widget"}
     static var description: IntentDescription { "Displays a card from your collection." }
 
 
-    @Parameter(title: "Show Flashcards", default: true)
-    var showFlashCards: Bool
+    @Parameter(title: "Card Type", default: [.flashcard, .note, .todo])
+    var showCardType: [CardType]
     
-    @Parameter(title: "Show Cards with no type", default: true)
-    var showNoCardType: Bool
-
-    enum CardType: String, AppEnum {
-        case flashCard = "Flash Card"
-        case noType = "No Type"
-
-        static var typeDisplayRepresentation: TypeDisplayRepresentation {
-            "Card Type"
-        }
-
-        static var caseDisplayRepresentations: [CardType: DisplayRepresentation] {
-            [
-                .flashCard: "Flash Card",
-                .noType: "No Type"
-            ]
+    @Parameter(title: "Folders", default: [])
+    var showFolders: [Folder]
+    
+    /// Since AppIntents parameters require static default values and Folder represents user data,
+    /// the default is set to an empty array.
+    /// To provide all folders by default when no specific folders are selected,
+    /// use this computed property to get all folders dynamically.
+    var effectiveFolders: [Folder] {
+        get {
+            if showFolders.isEmpty {
+                // Fetch all folders dynamically.
+                // This is a placeholder; adapt the fetch logic as needed.
+                do {
+                    let container = try ModelContainer(for: Folder.self)
+                    let context = ModelContext(container)
+                    let allFolders = try context.fetch(FetchDescriptor<Folder>())
+                    return allFolders
+                } catch {
+                    // If fetching fails, return empty array as fallback.
+                    return []
+                }
+            } else {
+                return showFolders
+            }
         }
     }
 }
+
+//let folders = fetchAllFolders() + [Folder.noFolder]
 
 // FLASHGCARD
 struct SubmitFlashcardRatingTypeIntent: AppIntent {
@@ -43,43 +55,168 @@ struct SubmitFlashcardRatingTypeIntent: AppIntent {
 
     @Parameter(title: "Selected Rating")
     var selectedRating: Int
+    
+    @Parameter(title: "Card")
+    var card: CardEntity
 
-    init(selectedRating: Int) {
+    init(selectedRating: Int, card: CardEntity) {
         self.selectedRating = selectedRating
+        self.card = card
     }
 
     init() {}
 
     func perform() async throws -> some IntentResult {
-
-        let container = try ModelContainer(for: Card.self)
+        let container = sharedModelContainer
         let context = ModelContext(container)
-        let queueManager = QueueManager(context: context)
-        let currentDate = Date()
+        // Fetch Card model by id
+        let cardID = card.id
+        let fetchDescriptor = FetchDescriptor<Card>(predicate: #Predicate { card in
+            card.id == cardID
+        })
+        let cards = try context.fetch(fetchDescriptor)
         
-        // Remove the top card as a skip action.
-        try await queueManager.submitFlashcardRating(currentDate: currentDate, configuration: ConfigurationAppIntent(), rating: selectedRating)
+        if let cardModel = cards.first {
+            let currentDate = Date()
+            // Convert selectedRating (Int) to RatingType
+            let ratingCases = RatingType.allCases
+            if selectedRating >= 0 && selectedRating < ratingCases.count {
+                let ratingType = ratingCases[selectedRating]
+                cardModel.submitFlashcardRating(ratingType, at: currentDate)
+                try? context.save()
+                WidgetCenter.shared.reloadAllTimelines()
+            }
+        }
         
         return .result()
     }
 }
 
-
-
-struct ShowFlashcardBackIntent: AppIntent {
-    static var title: LocalizedStringResource = "Show Back"
+struct CompleteTodoIntent: AppIntent {
+    static var title: LocalizedStringResource = "Complete Todo"
+    
+    @Parameter(title: "Card")
+    var card: CardEntity
+    
+    init(card: CardEntity) {
+        self.card = card
+    }
+    
+    init() {}
     
     func perform() async throws -> some IntentResult {
-        let container = try ModelContainer(for: Card.self)
+        let container = sharedModelContainer
         let context = ModelContext(container)
-        let queueManager = QueueManager(context: context)
-        let currentDate = Date()
+        let cardID = card.id
+        let fetchDescriptor = FetchDescriptor<Card>(predicate: #Predicate { card in
+            card.id == cardID
+        })
+        let cards = try context.fetch(fetchDescriptor)
         
-        // Remove the top card as a skip action.
-        try await queueManager.showFlashcardBack(currentDate: currentDate, configuration: ConfigurationAppIntent())
-
+        if let cardModel = cards.first {
+            let currentDate = Date()
+            cardModel.markAsComplete(at: currentDate)
+            try? context.save()
+            WidgetCenter.shared.reloadAllTimelines()
+        }
+        
         return .result()
     }
+}
+
+struct CardEntityQuery: EntityQuery {
+//    @Dependency(key: "ModelContainer")
+//    private var modelContainer: ModelContainer
+    
+    let container = sharedModelContainer
+  
+
+    func entities(for identifiers: [CardEntity.ID]) async throws -> [CardEntity] {
+        let context = ModelContext(container)
+        let fetchDescriptor = FetchDescriptor<Card>()
+        let cards = try context.fetch(fetchDescriptor)
+        
+        // Map each Card to a CardEntity.
+        let entities = cards.map { card in
+            CardEntity(
+                id: card.id,
+                createdAt: card.createdAt,
+                cardTypeRaw: card.cardTypeRaw,
+                content: card.content,
+                answer: card.answer,
+                isRecurring: card.isRecurring,
+                skipCount: card.skipCount,
+                seenCount: card.seenCount,
+                repeatInterval: card.repeatInterval,
+                nextTimeInQueue: card.nextTimeInQueue,
+                folder: card.folder,
+                isArchived: card.isArchived,
+                answerRevealed: card.answerRevealed,
+                skipEnabled: card.skipEnabled
+            )
+        }
+        
+        // If identifiers are provided, filter by them; otherwise, return all.
+        if identifiers.isEmpty {
+            return entities
+        } else {
+            return entities.filter { identifiers.contains($0.id) }
+        }
+    }
+}
+
+
+
+
+
+struct ShowFlashcardAnswer: AppIntent {
+    static var title: LocalizedStringResource = "Show Back"
+    
+    @Parameter(title: "Card")
+    var card: CardEntity
+    
+    init(card: CardEntity) {
+        self.card = card
+    }
+    
+    init() {}
+    
+    func perform() async throws -> some IntentResult {
+        //let context = ModelContext(modelContainer)
+        let container = sharedModelContainer
+        let context = ModelContext(container)
+        
+        // Capture card.id in a local constant
+        let cardID = card.id
+        let fetchDescriptor = FetchDescriptor<Card>(predicate: #Predicate { card in
+            card.id == cardID
+        })
+        let cards = try context.fetch(fetchDescriptor)
+        
+        if let card = cards.first {
+            let currentDate = Date()
+            card.showAnswer(at: currentDate)
+            try? context.save()
+            
+            WidgetCenter.shared.reloadAllTimelines()
+        }
+        
+        return .result()
+    }
+    
+//    func perform() async throws -> some IntentResult {
+//        let container = try ModelContainer(for: Card.self)
+//        let context = ModelContext(container)
+//        let queueManager = QueueManager(context: context)
+//        let currentDate = Date()
+//        
+//        
+//
+//        
+//        try await queueManager.revealTopCardAnswer(currentDate: currentDate, configuration: ConfigurationAppIntent())
+//        WidgetCenter.shared.reloadAllTimelines()
+//        return .result()
+//    }
 }
 
 
@@ -90,14 +227,31 @@ struct ShowFlashcardBackIntent: AppIntent {
 struct SkipCardIntent: AppIntent {
     static var title: LocalizedStringResource = "Skip Card"
     
+    @Parameter(title: "Card")
+    var card: CardEntity
+    
+    init(card: CardEntity) {
+        self.card = card
+    }
+    
+    init() {}
+    
     func perform() async throws -> some IntentResult {
-        let container = try ModelContainer(for: Card.self)
+        let container = sharedModelContainer
         let context = ModelContext(container)
-        let queueManager = QueueManager(context: context)
-        let currentDate = Date()
+        let cardID = card.id
+        let fetchDescriptor = FetchDescriptor<Card>(predicate: #Predicate { card in
+            card.id == cardID
+        })
+        let cards = try context.fetch(fetchDescriptor)
         
-        // Remove the top card as a skip action.
-        try await queueManager.removeTopCard(currentDate: currentDate, configuration: ConfigurationAppIntent(), isSkip: true)
+        if let cardModel = cards.first {
+            let currentDate = Date()
+            cardModel.skip(at: currentDate)
+            try? context.save()
+            WidgetCenter.shared.reloadAllTimelines()
+        }
+        
         return .result()
     }
 }
@@ -106,29 +260,31 @@ struct SkipCardIntent: AppIntent {
 struct NextCardIntent: AppIntent {
     static var title: LocalizedStringResource = "Next Card"
     
-    func perform() async throws -> some IntentResult {
-        let container = try ModelContainer(for: Card.self)
-        let context = ModelContext(container)
-        let queueManager = QueueManager(context: context)
-        let currentDate = Date()
-        
-        // Remove the top card as a "next" action (without incrementing skipCount).
-        try await queueManager.removeTopCard(currentDate: currentDate, configuration: ConfigurationAppIntent(), isSkip: false)
-        return .result()
+    @Parameter(title: "Card")
+    var card: CardEntity
+    
+    init(card: CardEntity) {
+        self.card = card
     }
-}
-
-struct ArchiveCardIntent: AppIntent {
-    static var title: LocalizedStringResource = "Archive Card"
+    
+    init() {}
     
     func perform() async throws -> some IntentResult {
-        let container = try ModelContainer(for: Card.self)
+        let container = sharedModelContainer
         let context = ModelContext(container)
-        let queueManager = QueueManager(context: context)
-        let currentDate = Date()
+        let cardID = card.id
+        let fetchDescriptor = FetchDescriptor<Card>(predicate: #Predicate { card in
+            card.id == cardID
+        })
+        let cards = try context.fetch(fetchDescriptor)
         
-        // Remove the top card as a "next" action (without incrementing skipCount).
-        try await queueManager.removeTopCard(currentDate: currentDate, configuration: ConfigurationAppIntent(), isSkip: false, toArchive: true)
+        if let cardModel = cards.first {
+            let currentDate = Date()
+            cardModel.next(at: currentDate)
+            try? context.save()
+            WidgetCenter.shared.reloadAllTimelines()
+        }
+        
         return .result()
     }
 }

@@ -7,7 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		EF41C96E2E4CC784006A392C /* AppIconV1.icon in Resources */ = {isa = PBXBuildFile; fileRef = EF41C96D2E4CC783006A392C /* AppIconV1.icon */; };
+		EF41C96F2E4CC784006A392C /* AppIconV1.icon in Resources */ = {isa = PBXBuildFile; fileRef = EF41C96D2E4CC783006A392C /* AppIconV1.icon */; };
 		EF68B8E12D766B9900E9FEE0 /* Testing.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EFE4208E2D751B42009C18FD /* Testing.framework */; };
+		EF6B30DE2E4D0CA7005A2796 /* AppIconV2.icon in Resources */ = {isa = PBXBuildFile; fileRef = EF6B30DD2E4D0CA6005A2796 /* AppIconV2.icon */; };
+		EF6B30DF2E4D0CA7005A2796 /* AppIconV2.icon in Resources */ = {isa = PBXBuildFile; fileRef = EF6B30DD2E4D0CA6005A2796 /* AppIconV2.icon */; };
+		EF6B30E12E4D1194005A2796 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = EF6B30E02E4D1194005A2796 /* AppIcon.icon */; };
+		EF6B30E22E4D1194005A2796 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = EF6B30E02E4D1194005A2796 /* AppIcon.icon */; };
 		EFBE070F2D63E4DC004B39A0 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EFBE070E2D63E4DC004B39A0 /* WidgetKit.framework */; };
 		EFBE07112D63E4DC004B39A0 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EFBE07102D63E4DC004B39A0 /* SwiftUI.framework */; };
 		EFBE07202D63E4DF004B39A0 /* TopNoteWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = EFBE070C2D63E4DC004B39A0 /* TopNoteWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -60,7 +66,10 @@
 
 /* Begin PBXFileReference section */
 		EF07D6852D77DC2C00C181E4 /* TopNoteUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TopNoteUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		EF41C96D2E4CC783006A392C /* AppIconV1.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIconV1.icon; sourceTree = "<group>"; };
 		EF4D5DDB2D74E4D4002FC7BB /* TopNoteTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TopNoteTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		EF6B30DD2E4D0CA6005A2796 /* AppIconV2.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIconV2.icon; sourceTree = "<group>"; };
+		EF6B30E02E4D1194005A2796 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		EFBE06F22D63E4C3004B39A0 /* TopNote.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TopNote.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EFBE070C2D63E4DC004B39A0 /* TopNoteWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TopNoteWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		EFBE070E2D63E4DC004B39A0 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
@@ -74,11 +83,9 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Models/Card.swift,
-				"Models/Card+Extensions.swift",
 				Models/Enums.swift,
 				Models/Folder.swift,
 				Models/RatingModels.swift,
-				Models/Tag.swift,
 			);
 			target = EF4D5DDA2D74E4D4002FC7BB /* TopNoteTests */;
 		};
@@ -100,27 +107,10 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Models/Card.swift,
-				"Models/Card+Extensions.swift",
 				Models/Enums.swift,
 				Models/Folder.swift,
 				Models/RatingModels.swift,
-				Models/Tag.swift,
-				"UI/Helpers/ResponsiveButtons+Icons.swift",
-				UI/Icons/ArchiveIcon.swift,
-				UI/Icons/DynamicIcon.swift,
-				UI/Icons/EnqueueIcon.swift,
-				UI/Icons/EssentialIcon.swift,
-				UI/Icons/FlashCardIcon.swift,
-				UI/Icons/FlipIcon.swift,
-				UI/Icons/IconContainer.swift,
-				UI/Icons/NextIcon.swift,
-				UI/Icons/PlainCardIcon.swift,
-				UI/Icons/PriorityIcon.swift,
-				UI/Icons/RemoveFromArchiveIcon.swift,
-				UI/Icons/SkipIcon.swift,
-				UI/Icons/SpacedRepetionIcon.swift,
-				UI/Icons/TagIcon.swift,
-				UI/SelectedCardStatView.swift,
+				SharedModel.swift,
 			);
 			target = EFBE070B2D63E4DC004B39A0 /* TopNoteWidgetExtension */;
 		};
@@ -215,7 +205,10 @@
 			children = (
 				EFE4208E2D751B42009C18FD /* Testing.framework */,
 				EFBE070E2D63E4DC004B39A0 /* WidgetKit.framework */,
+				EF6B30E02E4D1194005A2796 /* AppIcon.icon */,
 				EFBE07102D63E4DC004B39A0 /* SwiftUI.framework */,
+				EF41C96D2E4CC783006A392C /* AppIconV1.icon */,
+				EF6B30DD2E4D0CA6005A2796 /* AppIconV2.icon */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -321,7 +314,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1630;
-				LastUpgradeCheck = 1630;
+				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					EF07D6842D77DC2C00C181E4 = {
 						CreatedOnToolsVersion = 16.3;
@@ -380,6 +373,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EF6B30E22E4D1194005A2796 /* AppIcon.icon in Resources */,
+				EF6B30DE2E4D0CA7005A2796 /* AppIconV2.icon in Resources */,
+				EF41C96F2E4CC784006A392C /* AppIconV1.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -387,6 +383,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EF6B30DF2E4D0CA7005A2796 /* AppIconV2.icon in Resources */,
+				EF6B30E12E4D1194005A2796 /* AppIcon.icon in Resources */,
+				EF41C96E2E4CC784006A392C /* AppIconV1.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -538,23 +537,29 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = TopNote/TopNote.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_ASSET_PATHS = "\"TopNote/Preview Content\"";
+				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TopNote/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Top Note";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.3.3;
 				PRODUCT_BUNDLE_IDENTIFIER = zacharysturman.TopNote;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = NO;
@@ -572,23 +577,29 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = TopNote/TopNote.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_ASSET_PATHS = "\"TopNote/Preview Content\"";
+				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TopNote/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Top Note";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.3.3;
 				PRODUCT_BUNDLE_IDENTIFIER = zacharysturman.TopNote;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = NO;
@@ -663,6 +674,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
 				SUPPORTS_MACCATALYST = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
@@ -725,6 +737,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
 				SUPPORTS_MACCATALYST = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;

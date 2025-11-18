@@ -298,6 +298,7 @@ final class Card {
             }
             
         }
+        WidgetCenter.shared.reloadAllTimelines()
     }
     
     func markAsComplete(at currentDate: Date) {
@@ -323,7 +324,7 @@ final class Card {
                 archive(at: currentDate)
                 self.isComplete = true
             }
-
+        WidgetCenter.shared.reloadAllTimelines()
     }
     
     func markAsNotComplete(at currentDate: Date) {
@@ -341,11 +342,12 @@ final class Card {
                 as: .notComplete
             )
         }
-                    
+        WidgetCenter.shared.reloadAllTimelines()
     }
     
     func showAnswer(at currentDate: Date) {
         self.answerRevealed = true
+        WidgetCenter.shared.reloadAllTimelines()
     }
     
     func skip(at currentDate: Date) {
@@ -357,6 +359,7 @@ final class Card {
                     from: currentDate,
                     as: .skip
                 )
+        WidgetCenter.shared.reloadAllTimelines()
     }
     
     func next(at currentDate: Date) {
@@ -382,8 +385,7 @@ final class Card {
                 )
                 archive(at: currentDate)
             }
-  
-        
+        WidgetCenter.shared.reloadAllTimelines()
     }
     
     func archive(at currentDate: Date) {
@@ -398,6 +400,7 @@ final class Card {
         }
         self.isArchived = true
         self.nextTimeInQueue = .distantFuture
+        WidgetCenter.shared.reloadAllTimelines()
     }
     
     func unarchive(at currentDate: Date) {
@@ -413,7 +416,9 @@ final class Card {
             from: currentDate,
             as: .unarchive
         )
+        WidgetCenter.shared.reloadAllTimelines()
     }
+    
 
         
     /// Add card to the queue.
@@ -429,6 +434,7 @@ final class Card {
         self.seenCount += 1
         self.nextTimeInQueue = currentDate
         self.enqueues.append(currentDate)
+        WidgetCenter.shared.reloadAllTimelines()
     }
     
     // add tag to the card
@@ -469,8 +475,10 @@ final class Card {
         switch (dequeued) {
         case .skip:
             if cardType == .note {
-                // Special rule for notes
-                nextInterval = Int(2.0 - skipPolicy.skipMultiplier)
+                // Notes should always have MORE time added when skipped
+                // Use the reciprocal to ensure we always increase the interval
+                let multiplier = skipPolicy.skipMultiplier > 0 ? (1.0 / skipPolicy.skipMultiplier) : 2.0
+                nextInterval = Int(Double(baseInterval) * max(multiplier, 2.0)) // Minimum 2x interval
             } else {
                 nextInterval = Int(Double(baseInterval) * skipPolicy.skipMultiplier)
             }
@@ -590,6 +598,76 @@ final class Card {
             }
         }
     }
+    
+    /// Returns the base recurring schedule derived from initialRepeatInterval
+    var displayedBaseSchedule: String {
+        guard isRecurring else { return "Not recurring" }
+        
+        let hours = initialRepeatInterval
+        switch hours {
+        case 24: return "Daily"
+        case 48: return "Every 2 Days"
+        case 72: return "Every 3 Days"
+        case 168: return "Weekly"
+        case 240: return "Every 10 Days"
+        case 336: return "Biweekly"
+        case 720: return "Monthly"
+        default:
+            // For custom intervals
+            if hours < 48 {
+                return "\(hours) hours"
+            } else if hours < 168 {
+                let days = hours / 24
+                return "Every \(days) days"
+            } else if hours < 720 {
+                let weeks = hours / 168
+                return "Every \(weeks) weeks"
+            } else {
+                let months = hours / 720
+                return "Every \(months) months"
+            }
+        }
+    }
+    
+    /// Returns the current calculated interval (may differ due to spaced repetition)
+    var displayedCurrentInterval: String {
+        let hours = repeatInterval
+        
+        if hours < 48 {
+            return "\(hours) hours"
+        } else if hours < 168 {
+            let days = hours / 24
+            return "\(days) day\(days == 1 ? "" : "s")"
+        } else if hours < 720 {
+            let weeks = hours / 168
+            return "\(weeks) week\(weeks == 1 ? "" : "s")"
+        } else {
+            let months = hours / 720
+            return "\(months) month\(months == 1 ? "" : "s")"
+        }
+    }
+    
+    /// Shows schedule info for card row - includes both base and current if they differ
+    var displayedScheduleForRow: String {
+        guard isRecurring else { return "" }
+        
+        // If intervals match, just show base schedule
+        if repeatInterval == initialRepeatInterval {
+            return "Repeats: \(displayedBaseSchedule)"
+        } else {
+            // Show that it's been adjusted
+            return "Repeats: \(displayedBaseSchedule) → \(displayedCurrentInterval)"
+        }
+    }
+    
+    /// Shows detailed schedule info for details view
+    var displayedScheduleDetails: (base: String, current: String, isAdjusted: Bool) {
+        let base = displayedBaseSchedule
+        let current = displayedCurrentInterval
+        let isAdjusted = repeatInterval != initialRepeatInterval
+        
+        return (base, current, isAdjusted)
+    }
 
     
     var displayedRecurringMessageShort: String {
@@ -659,12 +737,31 @@ struct CardExport: Codable {
     let folder: String // folder name or empty string
     /// The card's priority as a string (e.g., 'High', 'Medium', etc.)
     let priority: String
+    /// Array of dates when the card was enqueued
+    let enqueues: [Date]
+    /// Array of dates when the card was skipped
+    let skips: [Date]
+    /// Array of dates when the card was removed from the queue
+    let removals: [Date]
+    /// Array of dates when the card was completed
+    let completes: [Date]
+    /// Array of rating events with rating type and date
+    let ratings: [[String: Date]]
 }
 
 // MARK: - Card Export Extension
 extension Card {
     var exportDTO: CardExport {
-        CardExport(
+        // Convert rating array to exportable format
+        let ratingsForExport = rating.map { dict -> [String: Date] in
+            var newDict: [String: Date] = [:]
+            for (key, value) in dict {
+                newDict[key.rawValue] = value
+            }
+            return newDict
+        }
+        
+        return CardExport(
             createdAt: createdAt,
             cardType: cardTypeRaw,
             content: content,
@@ -684,7 +781,12 @@ extension Card {
             ratingHardPolicy: ratingHardPolicy,
             tags: unwrappedTags.map { $0.name },
             folder: folder?.name ?? "",
-            priority: priorityRaw
+            priority: priorityRaw,
+            enqueues: enqueues,
+            skips: skips,
+            removals: removals,
+            completes: completes,
+            ratings: ratingsForExport
         )
     }
 

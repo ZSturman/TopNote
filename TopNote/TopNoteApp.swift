@@ -8,6 +8,7 @@ import SwiftUI
 import SwiftData
 import UserNotifications
 import UIKit
+import TipKit
 
 @main
 struct TopNoteApp: App {
@@ -21,14 +22,27 @@ struct TopNoteApp: App {
             fatalError("Could not create ModelContainer: \(error)")
         }
     }()
-
+    
     @Environment(\.scenePhase) private var scenePhase
-
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
-                // 3) Inject both the SwiftData container and your manager
+            // 3) Inject both the SwiftData container and your manager
                 .modelContainer(sharedModelContainer)
+                .task {
+
+                        do {
+                            try Tips.configure([
+                                .displayFrequency(.immediate),
+                                .datastoreLocation(.applicationDefault)
+                            ])
+                        } catch {
+                            // Configuration failures shouldn't crash the app
+                            print("Tips.configure failed: \(error)")
+                        }
+                    
+                }
                 .task {
                     // Request permission for badges once on first launch
                     await requestBadgeAuthorizationIfNeeded()
@@ -43,9 +57,9 @@ struct TopNoteApp: App {
                 }
         }
     }
-
+    
     // MARK: - Badge Authorization
-
+    
     private func requestBadgeAuthorizationIfNeeded() async {
         let center = UNUserNotificationCenter.current()
         let settings = await center.notificationSettings()
@@ -59,14 +73,14 @@ struct TopNoteApp: App {
             }
         }
     }
-
+    
     // MARK: - Badge Update
-
+    
     @MainActor
     private func updateAppBadge() async {
         let context = ModelContext(sharedModelContainer)
         let count = queuedCardsCount(using: context)
-
+        
         if #available(iOS 17.0, *) {
             // Preferred API on iOS 17+
             UNUserNotificationCenter.current().setBadgeCount(count) { error in
@@ -80,7 +94,7 @@ struct TopNoteApp: App {
             setBadgeNumberLegacy(count)
         }
     }
-
+    
     private func queuedCardsCount(using context: ModelContext) -> Int {
         let now = Date()
         // Count cards that are due (in queue) and not archived

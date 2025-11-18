@@ -14,6 +14,7 @@ struct ContentView: View {
     var body: some View {
         NavigationSplitView {
             FolderList(selectedFolder: $selectedFolder, tagSelectionStates: $tagSelectionStates)
+    
         } detail: {
             
             // Pass selectedCardID for deep-link URL selection

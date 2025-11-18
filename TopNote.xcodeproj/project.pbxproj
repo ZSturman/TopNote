@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		EF41C96E2E4CC784006A392C /* AppIconV1.icon in Resources */ = {isa = PBXBuildFile; fileRef = EF41C96D2E4CC783006A392C /* AppIconV1.icon */; };
 		EF41C96F2E4CC784006A392C /* AppIconV1.icon in Resources */ = {isa = PBXBuildFile; fileRef = EF41C96D2E4CC783006A392C /* AppIconV1.icon */; };
-		EF68B8E12D766B9900E9FEE0 /* Testing.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EFE4208E2D751B42009C18FD /* Testing.framework */; };
 		EF6B30DE2E4D0CA7005A2796 /* AppIconV2.icon in Resources */ = {isa = PBXBuildFile; fileRef = EF6B30DD2E4D0CA6005A2796 /* AppIconV2.icon */; };
 		EF6B30DF2E4D0CA7005A2796 /* AppIconV2.icon in Resources */ = {isa = PBXBuildFile; fileRef = EF6B30DD2E4D0CA6005A2796 /* AppIconV2.icon */; };
 		EF6B30E12E4D1194005A2796 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = EF6B30E02E4D1194005A2796 /* AppIcon.icon */; };
@@ -20,26 +19,19 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		EF07D68B2D77DC2C00C181E4 /* PBXContainerItemProxy */ = {
+		EF48D3BB2EC96B05000F9E21 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = EFBE06EA2D63E4C3004B39A0 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = EFBE06F12D63E4C3004B39A0;
 			remoteInfo = TopNote;
 		};
-		EF4D5DDF2D74E4D4002FC7BB /* PBXContainerItemProxy */ = {
+		EF48D3C82EC96B21000F9E21 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = EFBE06EA2D63E4C3004B39A0 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = EFBE06F12D63E4C3004B39A0;
 			remoteInfo = TopNote;
-		};
-		EF68B8E22D766EFA00E9FEE0 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = EFBE06EA2D63E4C3004B39A0 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = EFBE070B2D63E4DC004B39A0;
-			remoteInfo = TopNoteWidgetExtension;
 		};
 		EFBE071E2D63E4DF004B39A0 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -65,9 +57,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		EF07D6852D77DC2C00C181E4 /* TopNoteUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TopNoteUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EF41C96D2E4CC783006A392C /* AppIconV1.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIconV1.icon; sourceTree = "<group>"; };
-		EF4D5DDB2D74E4D4002FC7BB /* TopNoteTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TopNoteTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		EF48D3B52EC96B05000F9E21 /* UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = UITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		EF48D3C42EC96B21000F9E21 /* UnitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = UnitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EF6B30DD2E4D0CA6005A2796 /* AppIconV2.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIconV2.icon; sourceTree = "<group>"; };
 		EF6B30E02E4D1194005A2796 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		EFBE06F22D63E4C3004B39A0 /* TopNote.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TopNote.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -79,16 +71,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		EF07D67D2D77D31B00C181E4 /* Exceptions for "TopNote" folder in "TopNoteTests" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Models/Card.swift,
-				Models/Enums.swift,
-				Models/Folder.swift,
-				Models/RatingModels.swift,
-			);
-			target = EF4D5DDA2D74E4D4002FC7BB /* TopNoteTests */;
-		};
 		EFBE07022D63E4C5004B39A0 /* Exceptions for "TopNote" folder in "TopNote" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -111,15 +93,21 @@
 				Models/Folder.swift,
 				Models/RatingModels.swift,
 				SharedModel.swift,
+				Tips.swift,
 			);
 			target = EFBE070B2D63E4DC004B39A0 /* TopNoteWidgetExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		EF4D5DDC2D74E4D4002FC7BB /* Tests */ = {
+		EF48D3B62EC96B05000F9E21 /* UITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = Tests;
+			path = UITests;
+			sourceTree = "<group>";
+		};
+		EF48D3C52EC96B21000F9E21 /* UnitTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = UnitTests;
 			sourceTree = "<group>";
 		};
 		EFBE06F42D63E4C3004B39A0 /* TopNote */ = {
@@ -127,7 +115,6 @@
 			exceptions = (
 				EFBE07022D63E4C5004B39A0 /* Exceptions for "TopNote" folder in "TopNote" target */,
 				EFBE07272D63E4FC004B39A0 /* Exceptions for "TopNote" folder in "TopNoteWidgetExtension" target */,
-				EF07D67D2D77D31B00C181E4 /* Exceptions for "TopNote" folder in "TopNoteTests" target */,
 			);
 			path = TopNote;
 			sourceTree = "<group>";
@@ -143,18 +130,17 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		EF07D6822D77DC2C00C181E4 /* Frameworks */ = {
+		EF48D3B22EC96B05000F9E21 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		EF4D5DD82D74E4D4002FC7BB /* Frameworks */ = {
+		EF48D3C12EC96B21000F9E21 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				EF68B8E12D766B9900E9FEE0 /* Testing.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -183,7 +169,8 @@
 				EFBE07282D63E58F004B39A0 /* TopNoteWidgetExtension.entitlements */,
 				EFBE06F42D63E4C3004B39A0 /* TopNote */,
 				EFBE07122D63E4DC004B39A0 /* TopNoteWidget */,
-				EF4D5DDC2D74E4D4002FC7BB /* Tests */,
+				EF48D3B62EC96B05000F9E21 /* UITests */,
+				EF48D3C52EC96B21000F9E21 /* UnitTests */,
 				EFBE070D2D63E4DC004B39A0 /* Frameworks */,
 				EFBE06F32D63E4C3004B39A0 /* Products */,
 			);
@@ -194,8 +181,8 @@
 			children = (
 				EFBE06F22D63E4C3004B39A0 /* TopNote.app */,
 				EFBE070C2D63E4DC004B39A0 /* TopNoteWidgetExtension.appex */,
-				EF4D5DDB2D74E4D4002FC7BB /* TopNoteTests.xctest */,
-				EF07D6852D77DC2C00C181E4 /* TopNoteUITests.xctest */,
+				EF48D3B52EC96B05000F9E21 /* UITests.xctest */,
+				EF48D3C42EC96B21000F9E21 /* UnitTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -216,48 +203,50 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		EF07D6842D77DC2C00C181E4 /* TopNoteUITests */ = {
+		EF48D3B42EC96B05000F9E21 /* UITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = EF07D68D2D77DC2C00C181E4 /* Build configuration list for PBXNativeTarget "TopNoteUITests" */;
+			buildConfigurationList = EF48D3BD2EC96B05000F9E21 /* Build configuration list for PBXNativeTarget "UITests" */;
 			buildPhases = (
-				EF07D6812D77DC2C00C181E4 /* Sources */,
-				EF07D6822D77DC2C00C181E4 /* Frameworks */,
-				EF07D6832D77DC2C00C181E4 /* Resources */,
+				EF48D3B12EC96B05000F9E21 /* Sources */,
+				EF48D3B22EC96B05000F9E21 /* Frameworks */,
+				EF48D3B32EC96B05000F9E21 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				EF07D68C2D77DC2C00C181E4 /* PBXTargetDependency */,
-			);
-			name = TopNoteUITests;
-			packageProductDependencies = (
-			);
-			productName = TopNoteUITests;
-			productReference = EF07D6852D77DC2C00C181E4 /* TopNoteUITests.xctest */;
-			productType = "com.apple.product-type.bundle.ui-testing";
-		};
-		EF4D5DDA2D74E4D4002FC7BB /* TopNoteTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = EF4D5DE32D74E4D4002FC7BB /* Build configuration list for PBXNativeTarget "TopNoteTests" */;
-			buildPhases = (
-				EF4D5DD72D74E4D4002FC7BB /* Sources */,
-				EF4D5DD82D74E4D4002FC7BB /* Frameworks */,
-				EF4D5DD92D74E4D4002FC7BB /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				EF68B8E32D766EFA00E9FEE0 /* PBXTargetDependency */,
-				EF4D5DE02D74E4D4002FC7BB /* PBXTargetDependency */,
+				EF48D3BC2EC96B05000F9E21 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				EF4D5DDC2D74E4D4002FC7BB /* Tests */,
+				EF48D3B62EC96B05000F9E21 /* UITests */,
 			);
-			name = TopNoteTests;
+			name = UITests;
 			packageProductDependencies = (
 			);
-			productName = TopNoteTests;
-			productReference = EF4D5DDB2D74E4D4002FC7BB /* TopNoteTests.xctest */;
+			productName = UITests;
+			productReference = EF48D3B52EC96B05000F9E21 /* UITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		EF48D3C32EC96B21000F9E21 /* UnitTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EF48D3CA2EC96B21000F9E21 /* Build configuration list for PBXNativeTarget "UnitTests" */;
+			buildPhases = (
+				EF48D3C02EC96B21000F9E21 /* Sources */,
+				EF48D3C12EC96B21000F9E21 /* Frameworks */,
+				EF48D3C22EC96B21000F9E21 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				EF48D3C92EC96B21000F9E21 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				EF48D3C52EC96B21000F9E21 /* UnitTests */,
+			);
+			name = UnitTests;
+			packageProductDependencies = (
+			);
+			productName = UnitTests;
+			productReference = EF48D3C42EC96B21000F9E21 /* UnitTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		EFBE06F12D63E4C3004B39A0 /* TopNote */ = {
@@ -313,15 +302,15 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1630;
+				LastSwiftUpdateCheck = 2610;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
-					EF07D6842D77DC2C00C181E4 = {
-						CreatedOnToolsVersion = 16.3;
+					EF48D3B42EC96B05000F9E21 = {
+						CreatedOnToolsVersion = 26.1.1;
 						TestTargetID = EFBE06F12D63E4C3004B39A0;
 					};
-					EF4D5DDA2D74E4D4002FC7BB = {
-						CreatedOnToolsVersion = 16.3;
+					EF48D3C32EC96B21000F9E21 = {
+						CreatedOnToolsVersion = 26.1.1;
 						TestTargetID = EFBE06F12D63E4C3004B39A0;
 					};
 					EFBE06F12D63E4C3004B39A0 = {
@@ -348,21 +337,21 @@
 			targets = (
 				EFBE06F12D63E4C3004B39A0 /* TopNote */,
 				EFBE070B2D63E4DC004B39A0 /* TopNoteWidgetExtension */,
-				EF4D5DDA2D74E4D4002FC7BB /* TopNoteTests */,
-				EF07D6842D77DC2C00C181E4 /* TopNoteUITests */,
+				EF48D3B42EC96B05000F9E21 /* UITests */,
+				EF48D3C32EC96B21000F9E21 /* UnitTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		EF07D6832D77DC2C00C181E4 /* Resources */ = {
+		EF48D3B32EC96B05000F9E21 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		EF4D5DD92D74E4D4002FC7BB /* Resources */ = {
+		EF48D3C22EC96B21000F9E21 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -392,14 +381,14 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		EF07D6812D77DC2C00C181E4 /* Sources */ = {
+		EF48D3B12EC96B05000F9E21 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		EF4D5DD72D74E4D4002FC7BB /* Sources */ = {
+		EF48D3C02EC96B21000F9E21 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -423,20 +412,15 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		EF07D68C2D77DC2C00C181E4 /* PBXTargetDependency */ = {
+		EF48D3BC2EC96B05000F9E21 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = EFBE06F12D63E4C3004B39A0 /* TopNote */;
-			targetProxy = EF07D68B2D77DC2C00C181E4 /* PBXContainerItemProxy */;
+			targetProxy = EF48D3BB2EC96B05000F9E21 /* PBXContainerItemProxy */;
 		};
-		EF4D5DE02D74E4D4002FC7BB /* PBXTargetDependency */ = {
+		EF48D3C92EC96B21000F9E21 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = EFBE06F12D63E4C3004B39A0 /* TopNote */;
-			targetProxy = EF4D5DDF2D74E4D4002FC7BB /* PBXContainerItemProxy */;
-		};
-		EF68B8E32D766EFA00E9FEE0 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = EFBE070B2D63E4DC004B39A0 /* TopNoteWidgetExtension */;
-			targetProxy = EF68B8E22D766EFA00E9FEE0 /* PBXContainerItemProxy */;
+			targetProxy = EF48D3C82EC96B21000F9E21 /* PBXContainerItemProxy */;
 		};
 		EFBE071F2D63E4DF004B39A0 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -446,86 +430,86 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		EF07D68E2D77DC2C00C181E4 /* Debug */ = {
+		EF48D3BE2EC96B05000F9E21 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = MF8J7AY2X3;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = zacharysturman.TopNoteUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = "zachary-sturman.UITests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = TopNote;
 			};
 			name = Debug;
 		};
-		EF07D68F2D77DC2C00C181E4 /* Release */ = {
+		EF48D3BF2EC96B05000F9E21 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = MF8J7AY2X3;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = zacharysturman.TopNoteUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = "zachary-sturman.UITests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = TopNote;
 			};
 			name = Release;
 		};
-		EF4D5DE12D74E4D4002FC7BB /* Debug */ = {
+		EF48D3CB2EC96B21000F9E21 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = YES;
 				DEVELOPMENT_TEAM = MF8J7AY2X3;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
-				MACOSX_DEPLOYMENT_TARGET = 11.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = zacharysturman.TopNoteTests;
+				PRODUCT_BUNDLE_IDENTIFIER = "zachary-sturman.UnitTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SUPPORTED_PLATFORMS = "xrsimulator xros watchsimulator watchos macosx iphonesimulator iphoneos driverkit appletvsimulator appletvos";
-				SUPPORTS_MACCATALYST = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TopNote.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TopNote";
 			};
 			name = Debug;
 		};
-		EF4D5DE22D74E4D4002FC7BB /* Release */ = {
+		EF48D3CC2EC96B21000F9E21 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = YES;
 				DEVELOPMENT_TEAM = MF8J7AY2X3;
-				ENABLE_TESTABILITY = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
-				MACOSX_DEPLOYMENT_TARGET = 11.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = zacharysturman.TopNoteTests;
+				PRODUCT_BUNDLE_IDENTIFIER = "zachary-sturman.UnitTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TopNote.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TopNote";
@@ -537,10 +521,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = TopNote/TopNote.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 11;
 				DEVELOPMENT_ASSET_PATHS = "\"TopNote/Preview Content\"";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
@@ -548,7 +532,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TopNote/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Top Note";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -559,7 +543,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.3.3;
+				MARKETING_VERSION = 1.7;
 				PRODUCT_BUNDLE_IDENTIFIER = zacharysturman.TopNote;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = NO;
@@ -577,10 +561,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = TopNote/TopNote.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 11;
 				DEVELOPMENT_ASSET_PATHS = "\"TopNote/Preview Content\"";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
@@ -588,7 +572,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TopNote/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Top Note";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -599,7 +583,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.3.3;
+				MARKETING_VERSION = 1.7;
 				PRODUCT_BUNDLE_IDENTIFIER = zacharysturman.TopNote;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = NO;
@@ -752,7 +736,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = TopNoteWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 10;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TopNoteWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = TopNoteWidget;
@@ -762,7 +746,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.6;
 				PRODUCT_BUNDLE_IDENTIFIER = zacharysturman.TopNote.TopNoteWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -779,7 +763,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = TopNoteWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 10;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TopNoteWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = TopNoteWidget;
@@ -789,7 +773,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.6;
 				PRODUCT_BUNDLE_IDENTIFIER = zacharysturman.TopNote.TopNoteWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -802,20 +786,20 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		EF07D68D2D77DC2C00C181E4 /* Build configuration list for PBXNativeTarget "TopNoteUITests" */ = {
+		EF48D3BD2EC96B05000F9E21 /* Build configuration list for PBXNativeTarget "UITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				EF07D68E2D77DC2C00C181E4 /* Debug */,
-				EF07D68F2D77DC2C00C181E4 /* Release */,
+				EF48D3BE2EC96B05000F9E21 /* Debug */,
+				EF48D3BF2EC96B05000F9E21 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		EF4D5DE32D74E4D4002FC7BB /* Build configuration list for PBXNativeTarget "TopNoteTests" */ = {
+		EF48D3CA2EC96B21000F9E21 /* Build configuration list for PBXNativeTarget "UnitTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				EF4D5DE12D74E4D4002FC7BB /* Debug */,
-				EF4D5DE22D74E4D4002FC7BB /* Release */,
+				EF48D3CB2EC96B21000F9E21 /* Debug */,
+				EF48D3CC2EC96B21000F9E21 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

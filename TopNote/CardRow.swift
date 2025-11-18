@@ -9,6 +9,7 @@ import Foundation
 import SwiftUI
 import SwiftData
 import WidgetKit
+import TipKit
 
 // MARK: - CardRow
 /// A single row representing a Card, including swipe actions, context menu, and primary action.
@@ -50,6 +51,10 @@ struct CardRow: View {
     // New state for enqueue interval info dialog
     @State private var showingEnqueueIntervalInfo = false
     
+    @State private var draftContent: String = ""
+    @State private var draftAnswer: String = ""
+    @State private var saveTask: Task<Void, Never>? = nil
+    
     enum CardRowSheet: Identifiable {
         case details, move, tags
         var id: Int {
@@ -67,24 +72,50 @@ struct CardRow: View {
 
     @Query var tags: [CardTag]
     @Query var folders: [Folder]
+    
+    // Tips
+    let policiesTip = PoliciesTip()
+    let flashcardRatingPolicyTip = FlashcardRatingPolicyTip()
+    let firstNoteTip = FirstNoteTip_Skip()
+    let firstTodoTip = FirstTodoTip_Skip()
+    let firstFlashcardTip = FirstFlashcardTip_Skip()
+    let recurringOffTip = RecurringOffTip()
 
     @ViewBuilder fileprivate func seenAndSkipCountDisplay() -> some View {
         HStack(spacing: 12) {
             Spacer()
-            Text("Seen: \(card.seenCount)")
-                .font(.caption2)
-                .foregroundColor(.secondary)
-            if card.skipEnabled {
+//            Text("Seen: \(card.seenCount)")
+//                .font(.caption2)
+//                .foregroundColor(.secondary)
+            if card.isArchived {
+                if let archivedDate = card.removals.last {
+                    let daysAgo = Calendar.current.dateComponents([.day], from: archivedDate, to: Date()).day ?? 0
+                    if daysAgo == 0 {
+                        Text("Archived today")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    } else if daysAgo == 1 {
+                        Text("Archived yesterday")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    } else {
+                        Text("Archived \(daysAgo) days ago")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+            if card.skipEnabled && !card.isArchived {
                 Text("Skipped: \(card.skipCount)")
                     .font(.caption2)
                     .foregroundColor(.secondary)
             }
             
-            //if card.priority != .none {
+            if card.priority != .none {
                 Text("Priority: \(card.priorityRaw)")
                     .font(.caption2)
                     .foregroundColor(.secondary)
-            //}
+            }
             
    
 
@@ -95,10 +126,7 @@ struct CardRow: View {
         VStack(alignment: .leading) {
             if showingFlashcardAnswer {
                 
-                TextEditor(text: Binding(
-                    get: { card.answer ?? "" },
-                    set: { card.answer = $0 }
-                ))
+                TextEditor(text: $draftAnswer)
                 .font(.subheadline)
                 .frame(minHeight: 44, maxHeight: 160)
                 .background(
@@ -108,6 +136,17 @@ struct CardRow: View {
                 .disableAutocorrection(false)
                 .textInputAutocapitalization(.sentences)
                 .padding(.vertical, 2)
+                .onChange(of: draftAnswer) { _, _ in
+                    guard isSelected else { return }
+                    saveTask?.cancel()
+                    saveTask = Task { @MainActor in
+                        try? await Task.sleep(nanoseconds: 300_000_000)
+                        if isSelected {
+                            card.answer = draftAnswer
+                            try? modelContext.save()
+                        }
+                    }
+                }
                 
                 Button {
                     withAnimation {
@@ -123,6 +162,7 @@ struct CardRow: View {
                 
                 Button {
                     withAnimation {
+                        draftAnswer = card.answer ?? ""
                         showingFlashcardAnswer = true
                     }
                 } label: {
@@ -250,25 +290,23 @@ struct CardRow: View {
                     get: { card.resetRepeatIntervalOnComplete },
                     set: { card.resetRepeatIntervalOnComplete = $0 }
                 )) {
-                    Label("Reset Interval On Complete", systemImage: "arrow.counterclockwise")
+                    Label("Reset Interval On Complete", systemImage: "clock.arrow.trianglehead.counterclockwise.rotate.90")
                 }
                 
             }
-              
+                
+            Menu {
+
+                // Enable skip toggle
                 Toggle(isOn: Binding(
                     get: { card.skipEnabled },
                     set: { card.skipEnabled = $0 }
                 )) {
-                    Label("Enable Skipping", systemImage: "forward.frame")
-                        .font(.subheadline)
-                        .foregroundColor(.primary)
+                    Label("Enable Skip", systemImage: "arrow.trianglehead.counterclockwise.rotate.90")
                 }
-            //    .toggleStyle(.switch)
-                
-            Menu {
                 
                 if !card.skipEnabled {
-                    Text("Enable skipping for this to take effect.")
+                    Text("Enable skipping in Card Details > Policies for this to take effect.")
                         .font(.footnote)
                         .foregroundColor(.secondary)
                         .padding(.top, 2)
@@ -298,6 +336,27 @@ struct CardRow: View {
                         .fontWeight(.semibold)
                 }
             }
+            .overlay {
+                if card.cardType == .note {
+                    Color.clear.popoverTip(firstNoteTip, arrowEdge: .top)
+                } else if card.cardType == .todo {
+                    Color.clear.popoverTip(firstTodoTip, arrowEdge: .top)
+                } else {
+                    Color.clear.popoverTip(firstFlashcardTip, arrowEdge: .top)
+                }
+            }
+            .onAppear {
+                Task {
+                    switch card.cardType {
+                    case .note:
+                        await FirstNoteTip_Skip.createdFirstNoteEvent.donate()
+                    case .todo:
+                        await FirstTodoTip_Skip.createdFirstTodoEvent.donate()
+                    case .flashcard:
+                        await FirstFlashcardTip_Skip.createdFirstFlashcardEvent.donate()
+                    }
+                }
+            }
             
             
             if card.cardType == .flashcard {
@@ -307,6 +366,17 @@ struct CardRow: View {
                     
                                             Text("Ratings Repeat Policy")
                                                 .font(.subheadline.weight(.semibold))
+                    
+                    VStack(spacing: 4) {
+                        Text("Rate how confident you felt: Easy moves the card further out, Good keeps the normal schedule, and Hard brings it back sooner for review.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.bottom, 4)
+                    }
+                    .onAppear {
+                        Task { await FlashcardRatingPolicyTip.openedFlashcardPoliciesEvent.donate() }
+                    }
+                    
                     HStack(spacing: 4) {
                         Picker("On Easy:", selection: Binding(
                             get: { card.ratingEasyPolicy },
@@ -385,21 +455,25 @@ struct CardRow: View {
                     HStack {
                         Text(card.cardType.rawValue)
                             .font(.caption)
-                            .foregroundColor(card.cardType.tintColor)
+                            .foregroundColor(.secondary)
                     
                         Spacer()
-                        Text(card.displayedDateForQueue)
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
                         
-                    }
-                    if isSelected {
-                        TextEditor(text: Binding(
-                            get: { card.content },
-                            set: { newValue in
-                                card.content = newValue
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text(card.displayedDateForQueue)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            
+                            if isSelected && card.isRecurring && !card.displayedScheduleForRow.isEmpty {
+                                Text(card.displayedScheduleForRow)
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
                             }
-                        ))
+                            }
+                        }
+                    
+                    if isSelected {
+                        TextEditor(text: $draftContent)
                         .font(.headline.weight(.semibold))
                         .frame(minHeight: 44, maxHeight: 80)
                         .multilineTextAlignment(.leading)
@@ -414,14 +488,29 @@ struct CardRow: View {
                             if isSelected && selectedCardModel.isNewlyCreated {
                                 isContentEditorFocused = true
                             }
+                            draftContent = card.content
+                            if card.cardType == .flashcard { draftAnswer = card.answer ?? "" }
                         }
                         .onChange(of: selectedCardModel.isNewlyCreated) {
                             if isSelected && selectedCardModel.isNewlyCreated {
                                 isContentEditorFocused = true
+                                draftContent = card.content
+                                if card.cardType == .flashcard { draftAnswer = card.answer ?? "" }
                             }
                         }
                         .onTapGesture {
                             isContentEditorFocused = true
+                        }
+                        .onChange(of: draftContent) { _, _ in
+                            guard isSelected else { return }
+                            saveTask?.cancel()
+                            saveTask = Task { @MainActor in
+                                try? await Task.sleep(nanoseconds: 300_000_000)
+                                if isSelected {
+                                    card.content = draftContent
+                                    try? modelContext.save()
+                                }
+                            }
                         }
                         
                         if card.cardType != .flashcard {
@@ -470,19 +559,38 @@ struct CardRow: View {
                         
                             HStack{
                                 Spacer()
-                                RecurringButton(isRecurring: card.isRecurring, action: { card.isRecurring.toggle() })
+                                RecurringButton(isRecurring: card.isRecurring, action: { 
+                                    card.isRecurring.toggle()
+                                    if !card.isRecurring {
+                                        Task { await RecurringOffTip.toggledRecurringOffEvent.donate() }
+                                    }
+                                })
+                                .popoverTip(recurringOffTip, arrowEdge: .bottom)
                                 Spacer()
                                 PriorityMenu(selected: Binding(
                                     get: { card.priority },
                                     set: { card.priority = $0 }
                                 ))
                                 Spacer()
-                                IntervalMenu(selected: Binding(
-                                    get: { RepeatInterval(hours: card.repeatInterval) },
-                                    set: { card.repeatInterval = $0.hours ?? 24 }
-                                ), isRecurring: card.isRecurring)
+                                IntervalMenu(
+                                    selected: Binding(
+                                        get: { RepeatInterval(hours: card.initialRepeatInterval) },
+                                        set: { 
+                                            card.initialRepeatInterval = $0.hours ?? 24
+                                            card.repeatInterval = $0.hours ?? 24
+                                        }
+                                    ),
+                                    isRecurring: card.isRecurring,
+                                    currentHours: card.repeatInterval
+                                )
                                 Spacer()
                                 policiesMenu()
+                                .popoverTip(policiesTip, arrowEdge: .top)
+                                .onAppear {
+                                    if isSelected {
+                                        Task { await PoliciesTip.openedPoliciesEvent.donate() }
+                                    }
+                                }
                                 Spacer()
                             }
 
@@ -553,7 +661,19 @@ struct CardRow: View {
         // Auto-delete when not selected and content is empty
         .onChange(of: isSelected) { _, newValue in
             if !newValue {
+                saveTask?.cancel()
+                // Commit drafts on deselect
+                if card.content != draftContent { card.content = draftContent }
+                if card.cardType == .flashcard {
+                    let currentAnswer = card.answer ?? ""
+                    if currentAnswer != draftAnswer { card.answer = draftAnswer }
+                }
+                try? modelContext.save()
                 deleteIfEmptyAndNotSelected()
+            } else {
+                // Initialize drafts on select
+                draftContent = card.content
+                if card.cardType == .flashcard { draftAnswer = card.answer ?? "" }
             }
         }
         .onAppear {
@@ -602,6 +722,29 @@ fileprivate struct RecurringButton: View {
 fileprivate struct IntervalMenu: View {
     @Binding var selected: RepeatInterval
     var isRecurring: Bool
+    var currentHours: Int // Current actual interval in hours
+    
+    // Compute display text from actual hours
+    private var displayText: String {
+        // Check if current hours match a predefined interval
+        if let matchingInterval = RepeatInterval.allCases.first(where: { $0.hours == currentHours }) {
+            return matchingInterval.rawValue
+        }
+        
+        // Otherwise show the actual interval value
+        if currentHours < 48 {
+            return "\(currentHours)h"
+        } else if currentHours < 168 {
+            let days = currentHours / 24
+            return "\(days)d"
+        } else if currentHours < 720 {
+            let weeks = currentHours / 168
+            return "\(weeks)w"
+        } else {
+            let months = currentHours / 720
+            return "\(months)mo"
+        }
+    }
     
     var body: some View {
         Menu {
@@ -617,7 +760,7 @@ fileprivate struct IntervalMenu: View {
             HStack(spacing: 4) {
                 Image(systemName: "calendar")
                     .foregroundColor(isRecurring ? .primary : .secondary)
-                Text(selected.rawValue)
+                Text(displayText)
                     .foregroundColor(isRecurring ? .primary : .secondary)
             }
             .font(.subheadline)
@@ -635,16 +778,18 @@ fileprivate struct IntervalMenu: View {
 fileprivate struct PriorityMenu: View {
     @Binding var selected: PriorityType
     
+    private func next(after current: PriorityType) -> PriorityType {
+        switch current {
+        case .none: return .low
+        case .low: return .med
+        case .med: return .high
+        case .high: return .none
+        }
+    }
+    
     var body: some View {
-        Menu {
-            ForEach(PriorityType.allCases, id: \.self) { priority in
-                Button(action: { selected = priority }) {
-                    Text(priority.rawValue)
-                    if selected == priority {
-                        Image(systemName: "checkmark")
-                    }
-                }
-            }
+        Button {
+            selected = next(after: selected)
         } label: {
             HStack(spacing: 4) {
                 switch selected {
@@ -677,7 +822,6 @@ fileprivate struct PriorityMenu: View {
                     Image(systemName: "flag.fill" )
                         .foregroundColor(.primary)
                 }
-
             }
             .font(.subheadline)
             .padding(.horizontal, 8)
@@ -688,6 +832,7 @@ fileprivate struct PriorityMenu: View {
             )
             .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
     }
 }
 

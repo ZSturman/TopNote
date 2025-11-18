@@ -7,6 +7,7 @@
 import Foundation
 import SwiftData
 import SwiftUI
+import TipKit
 
 extension CardFilterOption {
     var asCardType: CardType? {
@@ -74,16 +75,33 @@ struct CardListView: View {
     @State private var isArchivedExpanded = false
 
     // NEW: Settings, import, selection mode
-    @State private var showSettingsSheet = false
     @State private var showImportPicker = false
     @State private var selectionMode = false
     @State private var selectedCards = Set<Card>()
 
     @State private var showImportSuccessAlert = false
     @State private var importErrorMessage: String? = nil
+    
+    // Search functionality
+    @State private var searchText = ""
 
     // Added property for programmatic scrolling, as requested
     @State private var scrollToCardID: UUID? = nil  // Used for programmatic scrolling
+    
+    // Tip tracking
+    @State private var appOpenCount = 0
+    @State private var hasViewedQueueCard = false
+    
+    let addFirstCardTip = FirstNoteTip()
+    let addWidgetTip = AddWidgetTip()
+    let firstQueueCardTip = FirstQueueCardTip()
+    let customizeWidgetTip = CustomizeWidgetTip()
+    let getStartedTip = GetStartedTip()
+    let firstNoteTip = FirstNoteTip_Skip()
+    let firstTodoTip = FirstTodoTip_Skip()
+    let firstFlashcardTip = FirstFlashcardTip_Skip()
+    
+    //let importExportTip = ImportExportTip()
 
     private struct CardListTaskID: Equatable {
         let sortCriteria: CardSortCriteria
@@ -189,7 +207,7 @@ struct CardListView: View {
         let selectedTagIDs = currentSelectedTagIDs()
         let deselectedTagIDs = currentDeselectedTagIDs()
 
-        return folderFiltered.filter { card in
+        let tagFiltered = folderFiltered.filter { card in
             let tagIDs = Set(card.unwrappedTags.map { $0.id })
             // Must contain all selected tag IDs
             if !selectedTagIDs.isEmpty
@@ -204,6 +222,28 @@ struct CardListView: View {
                 return false
             }
             return true
+        }
+        
+        // Apply search filter if search text is not empty
+        if searchText.trimmingCharacters(in: .whitespaces).isEmpty {
+            return tagFiltered
+        }
+        
+        let searchTerm = searchText.lowercased()
+        return tagFiltered.filter { card in
+            // Search in content
+            if card.content.lowercased().contains(searchTerm) {
+                return true
+            }
+            // Search in answer (for flashcards)
+            if let answer = card.answer, answer.lowercased().contains(searchTerm) {
+                return true
+            }
+            // Search in tags
+            if card.unwrappedTags.contains(where: { $0.name.lowercased().contains(searchTerm) }) {
+                return true
+            }
+            return false
         }
     }
 
@@ -250,7 +290,13 @@ struct CardListView: View {
             !$0.isEnqueue(currentDate: .now) && !$0.isArchived
         }
     }
-    private var archivedCards: [Card] { filteredCards.filter { $0.isArchived } }
+    private var archivedCards: [Card] {
+        filteredCards.filter { $0.isArchived }.sorted { card1, card2 in
+            let date1 = card1.removals.last ?? card1.createdAt
+            let date2 = card2.removals.last ?? card2.createdAt
+            return date1 > date2 // Most recent first
+        }
+    }
     private var groupedByDay: [Date: [Card]] {
         groupCardsByDay(filteredCards)
     }
@@ -287,13 +333,23 @@ struct CardListView: View {
                         .foregroundColor(.secondary)
                         .padding(.vertical, 16)
                         .frame(maxWidth: .infinity)
+                } else {
+                    CardStatusSection(
+                        title: "Queue",
+                        cards: queueCards,
+                        onDelete: delete
+                    )
+                    .environment(\.ascending, ascending)
+                    .popoverTip(firstQueueCardTip, arrowEdge: .top)
+                    .onAppear {
+                        if !hasViewedQueueCard && !queueCards.isEmpty {
+                            hasViewedQueueCard = true
+                            Task {
+                                await FirstQueueCardTip.viewedFirstQueueCardEvent.donate()
+                            }
+                        }
+                    }
                 }
-                CardStatusSection(
-                    title: "Queue",
-                    cards: queueCards,
-                    onDelete: delete
-                )
-                .environment(\.ascending, ascending)
             }
         }
         .padding(.bottom, isQueueExpanded ? 0 : 8)  // Add padding only when expanded
@@ -406,9 +462,25 @@ struct CardListView: View {
                     finishEdits()
                 }
             } else {
-                Button(action: { showSettingsSheet = true }) {
+                Menu {
+                    Button("Export Filtered Cards") {
+//                        Task {
+//                            await ImportExportTip.openedSettingsEvent.donate()
+//                        }
+//                        importExportTip.invalidate(reason: .actionPerformed)
+                        exportCardsAsJSON(filteredCards)
+                    }
+                    Button("Import Cards") { 
+//                        Task {
+//                            await ImportExportTip.openedSettingsEvent.donate()
+//                        }
+//                        importExportTip.invalidate(reason: .actionPerformed)
+                        showImportPicker = true 
+                    }
+                } label: {
                     Image(systemName: "gear")
                 }
+                //.popoverTip(importExportTip, arrowEdge: .bottom)
                 Menu {
                     ForEach(CardSortCriteria.allCases) { opt in
                         Button(opt.localizedName) { sortCriteria = opt }
@@ -420,6 +492,7 @@ struct CardListView: View {
                 } label: {
                     Label("Sort", systemImage: "arrow.up.arrow.down")
                 }
+                .accessibilityIdentifier("Sort")
                 // Show filter menu only for enqueuedAt and createdAt
                 if sortCriteria == .enqueuedAt || sortCriteria == .createdAt {
                     CardFilterMenu(selectedOptions: $filterOptions)
@@ -464,12 +537,20 @@ struct CardListView: View {
                 switch sortCriteria {
                 case .enqueuedAt:
                     List {
+                        if !selectedCardModel.isNewlyCreated {
+                            TipView(addWidgetTip)
+                        }
+                        TipView(customizeWidgetTip)
                         queueSection
                         upcomingSection
                         archivedSection
                     }
                 case .createdAt:
                     List {
+                        if !selectedCardModel.isNewlyCreated {
+                            TipView(addWidgetTip)
+                        }
+                        TipView(customizeWidgetTip)
                         ForEach(sortedKeys.indices, id: \.self) { idx in
                             let day = sortedKeys[idx]
                             Section(header: Text(displayDateHeader(for: day))) {
@@ -690,22 +771,22 @@ struct CardListView: View {
             }
             .listStyle(.plain)
             .navigationTitle(selectedFolder?.name ?? "All Cards")
+            .searchable(text: $searchText, prompt: "Search cards")
             .toolbar {
                 leadingToolbarItems
                 trailingToolbarItems
             }
-            .confirmationDialog(
-                "Settings",
-                isPresented: $showSettingsSheet,
-                titleVisibility: .visible
-            ) {
-                Button("Export All Cards") { exportCardsAsJSON(filteredCards) }
-                Button("Import Cards") { showImportPicker = true }
-                Button("Cancel", role: .cancel) {}
+            .onAppear {
+                appOpenCount += 1
+                Task {
+                    await CustomizeWidgetTip.appOpenedEvent.donate()
+                    await GetStartedTip.appOpenedWithoutActionEvent.donate()
+                }
             }
             .overlay(alignment: .bottomTrailing) {
                 Button(action: {
                     showAddCardActionSheet.toggle()
+                    addFirstCardTip.invalidate(reason: .actionPerformed)
                 }) {
                     Image(systemName: "square.and.pencil")
                         .font(.system(size: 24, weight: .bold))
@@ -719,6 +800,7 @@ struct CardListView: View {
                             y: 2
                         )
                 }
+                .popoverTip(addFirstCardTip)
                 .padding(.trailing, 16)
                 .padding(.bottom, 16)
                 .accessibilityLabel("Add Card")
@@ -831,13 +913,14 @@ struct CardListView: View {
     }
 
     private func addCard(ofType type: CardType) {
+        let wasEmptyBeforeInsert = cards.isEmpty
         // Force Upcoming filter and remove Enqueue filter to avoid conflicts
         if !filterOptions.contains(.upcoming) {
             filterOptions.append(.upcoming)
         }
-        // Expand Upcoming and collapse Queue for focus on new card
+        // Expand Upcoming section for focus on new card
+        // Keep Queue section state as-is to avoid confusing the user
         isUpcomingExpanded = true
-        isQueueExpanded = false
 
         let folderForNew: Folder? = {
             guard let sel = selectedFolder else { return nil }
@@ -868,7 +951,7 @@ struct CardListView: View {
             resetRepeatIntervalOnComplete = true
             repeatInterval = 720
         case .note:
-            skipEnabled = false
+            skipEnabled = true
             skipPolicy = .mild
             resetRepeatIntervalOnComplete = false
             repeatInterval = 2880
@@ -901,8 +984,34 @@ struct CardListView: View {
         selectedCardModel.setIsNewlyCreated(true)
         // Capture snapshot of the brand-new state so Cancel can delete instead of revert
         selectedCardModel.captureSnapshot()
+        
+        if wasEmptyBeforeInsert {
+            Task {
+                await AddWidgetTip.createdFirstCardEvent.donate()
+                await GetStartedTip.userTookActionEvent.donate()
+            }
+        } else {
+            Task {
+                await GetStartedTip.userTookActionEvent.donate()
+            }
+        }
+        
+        // Donate to card-type-specific events
+        Task {
+            switch type {
+            case .note:
+                await FirstNoteTip_Skip.createdFirstNoteEvent.donate()
+            case .todo:
+                await FirstTodoTip_Skip.createdFirstTodoEvent.donate()
+            case .flashcard:
+                await FirstFlashcardTip_Skip.createdFirstFlashcardEvent.donate()
+            }
+        }
 
-        // Optionally scroll to new card via scrollToCardID if needed
+        // Scroll to new card after a brief delay to ensure it's rendered
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            scrollToCardID = newCard.id
+        }
     }
 
     private func delete(cards sectionCards: [Card], at offsets: IndexSet) {
@@ -981,10 +1090,15 @@ struct CardStatusSection: View {
     @Environment(\.ascending) private var ascending: Bool
 
     private var sortedCards: [Card] {
-        cards.sorted(by: {
-            ascending
-                ? $0.nextTimeInQueue < $1.nextTimeInQueue
-                : $0.nextTimeInQueue > $1.nextTimeInQueue
+        cards.sorted(by: { card1, card2 in
+            // First sort by priority (lower sortValue = higher priority)
+            if card1.priority.sortValue != card2.priority.sortValue {
+                return card1.priority.sortValue < card2.priority.sortValue
+            }
+            // Then sort by nextTimeInQueue
+            return ascending
+                ? card1.nextTimeInQueue < card2.nextTimeInQueue
+                : card1.nextTimeInQueue > card2.nextTimeInQueue
         })
     }
 
@@ -1075,6 +1189,7 @@ struct CardFilterMenu: View {
         } label: {
             Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
         }
+        .accessibilityIdentifier("Filter")
     }
 }
 

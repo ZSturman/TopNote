@@ -30,6 +30,28 @@ struct QueueManager {
             }
             return card.isEnqueue(currentDate: currentDate)
         }
+        // Ensure seenCount increments when cards move from Upcoming into Queue
+        var updatedAny = false
+        for card in filteredCards {
+            // Card is considered enqueued when currentDate >= nextTimeInQueue and not archived
+            if card.isEnqueue(currentDate: currentDate) {
+                // Check if this is a new queue entry by comparing the last enqueue timestamp
+                // with the card's scheduled nextTimeInQueue. If lastEnqueue is before nextTimeInQueue,
+                // it means the card has cycled back and this is a new appearance in the queue.
+                let lastEnqueue = card.enqueues.last
+                let isNewQueueEntry = lastEnqueue == nil || lastEnqueue! < card.nextTimeInQueue
+                
+                if isNewQueueEntry {
+                    // Increment seenCount and record this enqueue event
+                    card.seenCount += 1
+                    card.enqueues.append(currentDate)
+                    updatedAny = true
+                }
+            }
+        }
+        if updatedAny {
+            try? context.save()
+        }
         return filteredCards.sorted {
             ($0.priority.sortValue, $0.nextTimeInQueue) < ($1.priority.sortValue, $1.nextTimeInQueue)
         }

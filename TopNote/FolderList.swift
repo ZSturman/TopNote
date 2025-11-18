@@ -11,6 +11,7 @@ import SwiftData
 
 public struct FolderList: View {
     @Environment(\.modelContext) private var modelContext
+    
     @Query var folders: [Folder]
     @Query var tags: [CardTag]
     @Query var allCards: [Card]

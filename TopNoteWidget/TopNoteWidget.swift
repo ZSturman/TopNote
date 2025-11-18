@@ -251,6 +251,19 @@ struct WidgetButtonSpec: Identifiable {
     let index: Int
 }
 
+// MARK: - Widget Button Style
+
+struct WidgetButtonStyle: ButtonStyle {
+    let color: Color
+    
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.85 : 1.0)
+            .opacity(configuration.isPressed ? 0.7 : 1.0)
+            .animation(.easeInOut(duration: 0.15), value: configuration.isPressed)
+    }
+}
+
 struct TopNoteWidgetEntryView: View {
     var entry: Provider.Entry
     @Environment(\.widgetFamily) var family
@@ -303,6 +316,7 @@ struct TopNoteWidgetEntryView: View {
                                         
                                         cardContentView(for: entry.card)
                                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                                            .animation(.easeInOut(duration: 0.3), value: entry.card.answerRevealed)
                                     }
                                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                                     .padding(.horizontal, 18)
@@ -328,6 +342,11 @@ struct TopNoteWidgetEntryView: View {
                 .containerBackground(.clear, for: .widget)
                 .widgetURL(URL(string: "topnote://card/\(entry.card.id.uuidString)"))
             }
+        }
+        .onAppear {
+            // Mark that at least one TopNote widget is present
+            let shared = UserDefaults(suiteName: "group.com.zacharysturman.TopNote")
+            shared?.set(true, forKey: "hasWidget")
         }
     }
     
@@ -655,12 +674,16 @@ internal struct NoteCardButtonGroup: View {
     var body: some View {
         HStack {
             Button(intent: NextCardIntent(card: card)) {
-                Image(systemName: "checkmark.rectangle.stack")
-                    .font(.callout)
-                    .foregroundColor(.blue)
+                ZStack {
+                    Circle()
+                        .fill(Color.blue.opacity(0.15))
+                    Image(systemName: "checkmark.rectangle.stack")
+                        .font(.callout)
+                        .foregroundColor(.blue)
+                }
             }
             .frame(width: buttonSize, height: buttonSize)
-            .buttonStyle(.plain)
+            .buttonStyle(WidgetButtonStyle(color: .blue))
             Spacer()
             
             RecurringMessage(card: card)
@@ -668,12 +691,16 @@ internal struct NoteCardButtonGroup: View {
             if skipEnabled {
   
                 Button(intent: SkipCardIntent(card: card)) {
-                    Image(systemName: "arrow.trianglehead.counterclockwise.rotate.90")
-                        .font(.callout)
-                        .foregroundColor(.orange)
+                    ZStack {
+                        Circle()
+                            .fill(Color.orange.opacity(0.15))
+                        Image(systemName: "arrow.trianglehead.counterclockwise.rotate.90")
+                            .font(.callout)
+                            .foregroundColor(.orange)
+                    }
                 }
                 .frame(width: buttonSize, height: buttonSize)
-                .buttonStyle(.plain)
+                .buttonStyle(WidgetButtonStyle(color: .orange))
             }
         }
         .padding(6)
@@ -691,12 +718,16 @@ internal struct TodoCardButtonGroup: View {
     var body: some View {
         HStack {
             Button(intent: CompleteTodoIntent(card: card)) {
-                Image(systemName: "checkmark.circle")
-                    .font(.callout)
-                    .foregroundColor(.green)
+                ZStack {
+                    Circle()
+                        .fill(Color.green.opacity(0.15))
+                    Image(systemName: "checkmark.circle")
+                        .font(.callout)
+                        .foregroundColor(.green)
+                }
             }
             .frame(width: buttonSize, height: buttonSize)
-            .buttonStyle(.plain)
+            .buttonStyle(WidgetButtonStyle(color: .green))
             
             Spacer()
             
@@ -704,12 +735,16 @@ internal struct TodoCardButtonGroup: View {
             Spacer()
             
             Button(intent: SkipCardIntent(card: card)) {
-                Image(systemName:  "arrow.trianglehead.counterclockwise.rotate.90")
-                    .font(.callout)
-                    .foregroundColor(.orange)
+                ZStack {
+                    Circle()
+                        .fill(Color.orange.opacity(0.15))
+                    Image(systemName:  "arrow.trianglehead.counterclockwise.rotate.90")
+                        .font(.callout)
+                        .foregroundColor(.orange)
+                }
             }
             .frame(width: buttonSize, height: buttonSize)
-            .buttonStyle(.plain)
+            .buttonStyle(WidgetButtonStyle(color: .orange))
         }
         .padding(6)
     }
@@ -783,17 +818,22 @@ internal struct FlashcardButtonGroup: View {
                     skipOrNextButton()
                 }
                 .padding(6)
+                .transition(.opacity.combined(with: .scale))
             
         } else {
             // Not flipped: Flip and Skip/Next buttons side by side with fixed size, skip/next at trailing
             HStack(spacing: 12) {
                 Button(intent: ShowFlashcardAnswer(card: card)) {
-                    Image(systemName: "rectangle.2.swap")
-                        .font(.callout)
-                        .foregroundColor(.purple)
+                    ZStack {
+                        Circle()
+                            .fill(Color.purple.opacity(0.15))
+                        Image(systemName: "rectangle.2.swap")
+                            .font(.callout)
+                            .foregroundColor(.purple)
+                    }
                 }
                 .frame(width: buttonSize, height: buttonSize)
-                .buttonStyle(.plain)
+                .buttonStyle(WidgetButtonStyle(color: .purple))
                 
                 Spacer()
                 
@@ -802,23 +842,32 @@ internal struct FlashcardButtonGroup: View {
                 
                 if skipEnabled {
                     Button(intent: SkipCardIntent(card: card)) {
-                        Image(systemName: "arrow.trianglehead.counterclockwise.rotate.90")
-                            .font(.callout)
-                            .foregroundColor(.orange)
+                        ZStack {
+                            Circle()
+                                .fill(Color.orange.opacity(0.15))
+                            Image(systemName: "arrow.trianglehead.counterclockwise.rotate.90")
+                                .font(.callout)
+                                .foregroundColor(.orange)
+                        }
                     }
                     .frame(width: buttonSize, height: buttonSize)
-                    .buttonStyle(.plain)
+                    .buttonStyle(WidgetButtonStyle(color: .orange))
                 } else {
                     Button(intent: NextCardIntent(card: card)) {
-                        Image(systemName: "checkmark.rectangle.stack")
-                            .font(.callout)
-                            .foregroundColor(.blue)
+                        ZStack {
+                            Circle()
+                                .fill(Color.blue.opacity(0.15))
+                            Image(systemName: "checkmark.rectangle.stack")
+                                .font(.callout)
+                                .foregroundColor(.blue)
+                        }
                     }
                     .frame(width: buttonSize, height: buttonSize)
-                    .buttonStyle(.plain)
+                    .buttonStyle(WidgetButtonStyle(color: .blue))
                 }
             }
             .padding(6)
+            .transition(.opacity.combined(with: .scale))
         }
     }
     
@@ -827,12 +876,16 @@ internal struct FlashcardButtonGroup: View {
         // Each button has a fixed size and uses an intent to submit the rating
         // Uses a consistent button style and background for all buttons
         Button(intent: SubmitFlashcardRatingTypeIntent(selectedRating: RatingType.allCases.firstIndex(of: ratingType) ?? 0, card: card)) {
-            Image(systemName: ratingType.systemImage)
-                .font(.callout)
-                .foregroundColor(color(for: ratingType))
+            ZStack {
+                Circle()
+                    .fill(color(for: ratingType).opacity(0.15))
+                Image(systemName: ratingType.systemImage)
+                    .font(.callout)
+                    .foregroundColor(color(for: ratingType))
+            }
         }
         .frame(width: buttonSize, height: buttonSize)
-        .buttonStyle(.plain)
+        .buttonStyle(WidgetButtonStyle(color: color(for: ratingType)))
     }
     
     private func color(for ratingType: RatingType) -> Color {
@@ -849,20 +902,28 @@ internal struct FlashcardButtonGroup: View {
     private func skipOrNextButton() -> some View {
         if skipEnabled {
             Button(intent: SkipCardIntent(card: card)) {
-                Image(systemName: "forward.frame")
-                    .font(.callout)
-                    .foregroundColor(.orange)
+                ZStack {
+                    Circle()
+                        .fill(Color.orange.opacity(0.15))
+                    Image(systemName: "forward.frame")
+                        .font(.callout)
+                        .foregroundColor(.orange)
+                }
             }
             .frame(width: buttonSize, height: buttonSize)
-            .buttonStyle(.plain)
+            .buttonStyle(WidgetButtonStyle(color: .orange))
         } else {
             Button(intent: NextCardIntent(card: card)) {
-                Image(systemName: "checkmark.rectangle.stack")
-                    .font(.callout)
-                    .foregroundColor(.blue)
+                ZStack {
+                    Circle()
+                        .fill(Color.blue.opacity(0.15))
+                    Image(systemName: "checkmark.rectangle.stack")
+                        .font(.callout)
+                        .foregroundColor(.blue)
+                }
             }
             .frame(width: buttonSize, height: buttonSize)
-            .buttonStyle(.plain)
+            .buttonStyle(WidgetButtonStyle(color: .blue))
         }
     }
 }

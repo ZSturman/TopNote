@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import SwiftData
+import TipKit
 
 struct CardDetailView: View {
     var card: Card
@@ -29,14 +30,8 @@ struct CardDetailView: View {
     @State private var showOrganize = true
     @State private var showTiming = false
     @State private var showPolicies = false
-    @State private var showMetadata = false
-    @State private var showLogs = false
+    @State private var showHistory = false
     @State private var showCardTypePicker = false
-
-    // Added States for DisclosureGroups inside logs for sublogs
-    @State private var showRatings = false
-    @State private var showCompletes = false
-    @State private var showMergedLogs = false
 
     // Added states for full screen covers for move and tag sheets
     @State private var showMoveFullScreen = false
@@ -113,7 +108,6 @@ struct CardDetailView: View {
 
                         TextEditor(text: Binding(get: { card.content }, set: {
                             card.content = $0
-                            try? context.save()
                         }))
                         .frame(minHeight: 120)
                         .padding(8)
@@ -131,7 +125,6 @@ struct CardDetailView: View {
 
                             TextEditor(text: Binding(get: { card.answer ?? "" }, set: {
                                 card.answer = $0
-                                try? context.save()
                             }))
                             .frame(minHeight: 100)
                             .padding(8)
@@ -225,7 +218,6 @@ struct CardDetailView: View {
                                 Spacer()
                                 Picker("Card Type", selection: Binding(get: { card.cardType }, set: {
                                     card.cardType = $0
-                                    try? context.save()
                                 })) {
                                     ForEach(CardType.allCases, id: \.self) { type in
                                         Label(type.rawValue.capitalized, systemImage: type.iconName)
@@ -244,7 +236,6 @@ struct CardDetailView: View {
                                 Spacer()
                                 Picker("Priority", selection: Binding(get: { card.priority }, set: {
                                     card.priority = $0
-                                    try? context.save()
                                 })) {
                                     ForEach(PriorityType.allCases, id: \.self) { priority in
                                         Text(priority.rawValue)
@@ -270,18 +261,23 @@ struct CardDetailView: View {
                     DisclosureGroup(isExpanded: $showTiming) {
                         VStack(alignment: .leading, spacing: 12) {
                             Toggle("Recurring", isOn: Binding(get: { card.isRecurring }, set: {
+                                let wasRecurring = card.isRecurring
                                 card.isRecurring = $0
-                                try? context.save()
+                                if wasRecurring && !$0 {
+                                    Task {
+                                        await RecurringOffTip.toggledRecurringOffEvent.donate()
+                                    }
+                                }
                             }))
                             .accessibilityHint("Toggle whether card repeats")
 
                             HStack {
-                                Text("Repeat Interval:")
+                                Text("Base Schedule:")
                                     .font(.body)
                                 Spacer()
-                                Picker("Repeat Interval", selection: Binding(get: { RepeatInterval(hours: card.repeatInterval) }, set: {
+                                Picker("Base Schedule", selection: Binding(get: { RepeatInterval(hours: card.initialRepeatInterval) }, set: {
+                                    card.initialRepeatInterval = $0.hours ?? 24
                                     card.repeatInterval = $0.hours ?? 24
-                                    try? context.save()
                                 })) {
                                     ForEach(RepeatInterval.allCases.filter { $0.hours != nil }, id: \.self) { interval in
                                         Text(interval.rawValue).tag(interval)
@@ -289,20 +285,44 @@ struct CardDetailView: View {
                                 }
                                 .pickerStyle(.menu)
                                 .frame(maxWidth: 150)
-                                .accessibilityLabel("Repeat Interval Picker")
+                                .accessibilityLabel("Base Schedule Picker")
+                            }
+                            
+                            // Show current interval if it differs from base
+                            if card.isRecurring {
+                                let scheduleDetails = card.displayedScheduleDetails
+                                if scheduleDetails.isAdjusted {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        HStack {
+                                            Text("Current Interval:")
+                                                .font(.body)
+                                            Spacer()
+                                            Text(scheduleDetails.current)
+                                                .font(.body)
+                                                .foregroundColor(.orange)
+                                        }
+                                        Text("Adjusted by spaced repetition")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    .padding(.vertical, 4)
+                                    .padding(.horizontal, 8)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 6)
+                                            .fill(Color.orange.opacity(0.1))
+                                    )
+                                }
                             }
 
                             if card.cardType == .todo {
                                 Toggle("Reset Interval on Complete", isOn: Binding(get: { card.resetRepeatIntervalOnComplete }, set: {
                                     card.resetRepeatIntervalOnComplete = $0
-                                    try? context.save()
                                 }))
                                 .accessibilityLabel("Reset Repeat Interval on Complete")
                             }
 
                             Toggle("Enable Skip", isOn: Binding(get: { card.skipEnabled }, set: {
                                 card.skipEnabled = $0
-                                try? context.save()
                             }))
                             .accessibilityHint("Toggle whether card is skipped")
                         }
@@ -324,7 +344,6 @@ struct CardDetailView: View {
                                 .bold()
                             Picker("Skip Policy", selection: Binding(get: { card.skipPolicy }, set: {
                                 card.skipPolicy = $0
-                                try? context.save()
                             })) {
                                 ForEach(RepeatPolicy.allCases, id: \.self) { policy in
                                     Text(policy.rawValue).tag(policy)
@@ -334,47 +353,46 @@ struct CardDetailView: View {
                             .accessibilityLabel("Skip Policy Picker")
 
                             if card.cardType == .flashcard {
-                                Text("On Easy Rating")
-                                    .font(.subheadline)
-                                    .bold()
-                                Picker("On Easy Rating", selection: Binding(get: { card.ratingEasyPolicy }, set: {
-                                    card.ratingEasyPolicy = $0
-                                    try? context.save()
-                                })) {
-                                    ForEach(RepeatPolicy.allCases, id: \.self) { policy in
-                                        Text(policy.rawValue).tag(policy)
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Text("On Easy Rating")
+                                        .font(.subheadline)
+                                        .bold()
+                                    Picker("On Easy Rating", selection: Binding(get: { card.ratingEasyPolicy }, set: {
+                                        card.ratingEasyPolicy = $0
+                                    })) {
+                                        ForEach(RepeatPolicy.allCases, id: \.self) { policy in
+                                            Text(policy.rawValue).tag(policy)
+                                        }
                                     }
-                                }
-                                .pickerStyle(.segmented)
-                                .accessibilityLabel("On Easy Rating Picker")
+                                    .pickerStyle(.segmented)
+                                    .accessibilityLabel("On Easy Rating Picker")
 
-                                Text("On Good Rating")
-                                    .font(.subheadline)
-                                    .bold()
-                                Picker("On Good Rating", selection: Binding(get: { card.ratingMedPolicy }, set: {
-                                    card.ratingMedPolicy = $0
-                                    try? context.save()
-                                })) {
-                                    ForEach(RepeatPolicy.allCases, id: \.self) { policy in
-                                        Text(policy.rawValue).tag(policy)
+                                    Text("On Good Rating")
+                                        .font(.subheadline)
+                                        .bold()
+                                    Picker("On Good Rating", selection: Binding(get: { card.ratingMedPolicy }, set: {
+                                        card.ratingMedPolicy = $0
+                                    })) {
+                                        ForEach(RepeatPolicy.allCases, id: \.self) { policy in
+                                            Text(policy.rawValue).tag(policy)
+                                        }
                                     }
-                                }
-                                .pickerStyle(.segmented)
-                                .accessibilityLabel("On Good Rating Picker")
+                                    .pickerStyle(.segmented)
+                                    .accessibilityLabel("On Good Rating Picker")
 
-                                Text("On Hard Rating")
-                                    .font(.subheadline)
-                                    .bold()
-                                Picker("On Hard Rating", selection: Binding(get: { card.ratingHardPolicy }, set: {
-                                    card.ratingHardPolicy = $0
-                                    try? context.save()
-                                })) {
-                                    ForEach(RepeatPolicy.allCases, id: \.self) { policy in
-                                        Text(policy.rawValue).tag(policy)
+                                    Text("On Hard Rating")
+                                        .font(.subheadline)
+                                        .bold()
+                                    Picker("On Hard Rating", selection: Binding(get: { card.ratingHardPolicy }, set: {
+                                        card.ratingHardPolicy = $0
+                                    })) {
+                                        ForEach(RepeatPolicy.allCases, id: \.self) { policy in
+                                            Text(policy.rawValue).tag(policy)
+                                        }
                                     }
+                                    .pickerStyle(.segmented)
+                                    .accessibilityLabel("On Hard Rating Picker")
                                 }
-                                .pickerStyle(.segmented)
-                                .accessibilityLabel("On Hard Rating Picker")
                             }
                         }
                         .padding(.vertical, 6)
@@ -386,9 +404,10 @@ struct CardDetailView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                    // Metadata Section
-                    DisclosureGroup(isExpanded: $showMetadata) {
-                        VStack(alignment: .leading, spacing: 8) {
+                    // History Section (consolidated)
+                    DisclosureGroup(isExpanded: $showHistory) {
+                        VStack(alignment: .leading, spacing: 12) {
+                            // Created At
                             HStack {
                                 Text("Created At:")
                                     .bold()
@@ -396,122 +415,111 @@ struct CardDetailView: View {
                                 Text(formattedDate(card.createdAt))
                                     .foregroundColor(.secondary)
                             }
-                        }
-                        .padding(.vertical, 6)
-                    } label: {
-                        Label("Metadata", systemImage: "info.circle")
-                            .font(.subheadline).bold()
-                            .textCase(.uppercase)
-                            .foregroundColor(.primary)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                    // Logs & History Section
-                    DisclosureGroup(isExpanded: $showLogs) {
-                        VStack(alignment: .leading, spacing: 12) {
+                            
+                            Divider()
+                            
+                            // Seen Count
                             HStack {
                                 Text("Seen:")
                                     .bold()
                                 Spacer()
                                 Text("\(card.seenCount)")
+                                    .foregroundColor(.secondary)
                                     .accessibilityLabel("\(card.seenCount) times seen")
                             }
+                            
+                            // Skipped Count
                             HStack {
                                 Text("Skipped:")
                                     .bold()
                                 Spacer()
                                 Text("\(card.skipCount)")
+                                    .foregroundColor(.secondary)
                                     .accessibilityLabel("\(card.skipCount) times skipped")
                             }
-
-                            // Rating Log - only for flashcard
-                            if card.cardType == .flashcard {
-                                DisclosureGroup(isExpanded: $showRatings) {
-                                    if card.ratingEvents.isEmpty {
-                                        Text("No rating history available")
+                            
+                            // Enqueues/Skips/Removals
+                            let mergedEvents = mergedEnqueueSkipRemoveEvents()
+                            if !mergedEvents.isEmpty {
+                                Divider()
+                                
+                                Text("Activity Log")
+                                    .font(.subheadline)
+                                    .bold()
+                                    .padding(.top, 4)
+                                
+                                ForEach(mergedEvents) { event in
+                                    HStack(spacing: 8) {
+                                        Image(systemName: event.iconName)
+                                            .foregroundColor(event.tintColor)
+                                            .accessibilityHidden(true)
+                                        Text(event.label)
+                                            .font(.caption)
+                                        Spacer()
+                                        Text(formattedDate(event.date))
+                                            .font(.caption)
                                             .foregroundColor(.secondary)
-                                            .accessibilityLabel("No rating history available")
-                                    } else {
-                                        ForEach(Array(card.ratingEvents.sorted(by: { $0.date > $1.date })), id: \.date) { event in
-                                            HStack(spacing: 8) {
-                                                Image(systemName: event.rating.systemImage)
-                                                    .foregroundColor(event.rating.tintColor)
-                                                    .accessibilityHidden(true)
-                                                Text(event.rating.rawValue.capitalized)
-                                                    .font(.subheadline)
-                                                    .foregroundColor(.primary)
-                                                Spacer()
-                                                Text(formattedDate(event.date))
-                                                    .font(.footnote)
-                                                    .foregroundColor(.secondary)
-                                            }
-                                            .accessibilityElement(children: .combine)
-                                            .accessibilityLabel("\(event.rating.rawValue.capitalized) rating on \(formattedDate(event.date))")
-                                        }
                                     }
-                                } label: {
-                                    Label("Rating Log", systemImage: "star.bubble.fill")
-                                        .font(.subheadline).bold()
-                                        .textCase(.uppercase)
-                                        .foregroundColor(.primary)
+                                    .padding(.vertical, 2)
+                                    .accessibilityElement(children: .combine)
+                                    .accessibilityLabel("\(event.label) on \(formattedDate(event.date))")
                                 }
                             }
-
+                            
                             // Completes Log - only for todo
-                            if card.cardType == .todo {
-                                DisclosureGroup(isExpanded: $showCompletes) {
-                                    if card.completes.isEmpty {
-                                        Text("No completes recorded")
+                            if card.cardType == .todo && !card.completes.isEmpty {
+                                Divider()
+                                
+                                Text("Completes Log")
+                                    .font(.subheadline)
+                                    .bold()
+                                    .padding(.top, 4)
+                                
+                                ForEach(Array(card.completes.sorted(by: { $0 > $1 })), id: \.self) { date in
+                                    HStack {
+                                        Image(systemName: "checkmark.circle")
+                                            .foregroundColor(.green)
+                                        Text("Completed")
+                                            .font(.caption)
+                                        Spacer()
+                                        Text(formattedDate(date))
+                                            .font(.caption)
                                             .foregroundColor(.secondary)
-                                    } else {
-                                        ForEach(Array(card.completes.sorted(by: { $0 > $1 })).prefix(showCompletes ? card.completes.count : 5), id: \.self) { date in
-                                            Text(formattedDate(date))
-                                                .font(.footnote)
-                                                .foregroundColor(.primary)
-                                        }
                                     }
-                                } label: {
-                                    Label("Completes Log", systemImage: "checkmark.circle")
-                                        .font(.subheadline).bold()
-                                        .textCase(.uppercase)
-                                        .foregroundColor(.primary)
+                                    .padding(.vertical, 2)
                                 }
                             }
-
-                            // Merged Enqueues, Skips, Removals Log
-                            DisclosureGroup(isExpanded: $showMergedLogs) {
-                                let mergedEvents = mergedEnqueueSkipRemoveEvents()
-                                if mergedEvents.isEmpty {
-                                    Text("No enqueue, skip or removal events recorded")
-                                        .foregroundColor(.secondary)
-                                } else {
-                                    ForEach(mergedEvents) { event in
-                                        HStack(spacing: 8) {
-                                            Image(systemName: event.iconName)
-                                                .foregroundColor(event.tintColor)
-                                                .accessibilityHidden(true)
-                                            Text(event.label)
-                                                .font(.subheadline)
-                                                .foregroundColor(.primary)
-                                            Spacer()
-                                            Text(formattedDate(event.date))
-                                                .font(.footnote)
-                                                .foregroundColor(.secondary)
-                                        }
-                                        .accessibilityElement(children: .combine)
-                                        .accessibilityLabel("\(event.label) on \(formattedDate(event.date))")
+                            
+                            // Rating Log - only for flashcard
+                            if card.cardType == .flashcard && !card.ratingEvents.isEmpty {
+                                Divider()
+                                
+                                Text("Rating Log")
+                                    .font(.subheadline)
+                                    .bold()
+                                    .padding(.top, 4)
+                                
+                                ForEach(Array(card.ratingEvents.sorted(by: { $0.date > $1.date })), id: \.date) { event in
+                                    HStack(spacing: 8) {
+                                        Image(systemName: event.rating.systemImage)
+                                            .foregroundColor(event.rating.tintColor)
+                                            .accessibilityHidden(true)
+                                        Text(event.rating.rawValue.capitalized)
+                                            .font(.caption)
+                                        Spacer()
+                                        Text(formattedDate(event.date))
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
                                     }
+                                    .padding(.vertical, 2)
+                                    .accessibilityElement(children: .combine)
+                                    .accessibilityLabel("\(event.rating.rawValue.capitalized) rating on \(formattedDate(event.date))")
                                 }
-                            } label: {
-                                Label("Enqueue/Skip/Removal Log", systemImage: "list.bullet.rectangle")
-                                    .font(.subheadline).bold()
-                                    .textCase(.uppercase)
-                                    .foregroundColor(.primary)
                             }
                         }
                         .padding(.vertical, 6)
                     } label: {
-                        Label("Logs & History", systemImage: "book.closed")
+                        Label("History", systemImage: "clock.arrow.circlepath")
                             .font(.subheadline).bold()
                             .textCase(.uppercase)
                             .foregroundColor(.primary)
@@ -524,7 +532,6 @@ struct CardDetailView: View {
                     VStack(spacing: 12) {
                         Button(action: {
                             card.isArchived.toggle()
-                            try? context.save()
                         }) {
                             Text(card.isArchived ? "Unarchive Card" : "Archive Card")
                                 .frame(maxWidth: .infinity)
@@ -549,6 +556,10 @@ struct CardDetailView: View {
             }
             .navigationTitle("Details")
             .navigationBarTitleDisplayMode(.inline)
+            .onDisappear {
+                // Save all changes when the view is dismissed
+                try? context.save()
+            }
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {

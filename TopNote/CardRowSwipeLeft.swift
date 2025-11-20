@@ -10,18 +10,28 @@ import SwiftUI
 // MARK: - Swipe Left Actions
 struct CardRowSwipeLeft: View {
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject var selectedCardModel: SelectedCardModel
     var card: Card
     var showDetails: () -> Void
     var moveAction: () -> Void
 
     var body: some View {
-        Button(role: .destructive) { modelContext.delete(card)} label: {
+        Button(role: .destructive) { 
+            selectedCardModel.clearSelection()
+            modelContext.delete(card)
+        } label: {
             Label("Delete", systemImage: "trash")
         }
-        Button { showDetails() } label: {
+        Button { 
+            selectedCardModel.clearSelection()
+            showDetails() 
+        } label: {
             Label("Details", systemImage: "info.circle")
         }
-        Button { moveAction() } label: {
+        Button { 
+            selectedCardModel.clearSelection()
+            moveAction() 
+        } label: {
             Label("Move", systemImage: "folder")
         }
     }

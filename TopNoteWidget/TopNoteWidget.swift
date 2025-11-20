@@ -303,12 +303,21 @@ struct TopNoteWidgetEntryView: View {
                             } else {
                                 if entry.queueCardCount == 0 {
                                     VStack {
+                                        HStack {
+                                            ForEach(entry.selectedCardTypes, id: \.self) { type in
+                                                Image(systemName: type.systemImage)
+                                                    .imageScale(.medium)
+                                                    .foregroundColor(.secondary)
+                                                    .accessibilityLabel(Text(type.rawValue))
+                                            }
+                                        }
                                         AllCaughtUpWidgetView(
                                             selectedCardTypes: entry.selectedCardTypes,
                                             selectedFolders: entry.selectedFolders,
                                             nextCardDate: entry.nextCardForQueue?.nextTimeInQueue
                                         )
                                     }
+                                    .padding()
                                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                                 } else {
                                     VStack(spacing: 4) {
@@ -415,7 +424,7 @@ struct TopNoteWidgetEntryView: View {
         HStack(spacing: 4) {
             // Show all selected card type icons horizontally
             ForEach(entry.selectedCardTypes, id: \.self) { type in
-                Image(systemName: type.iconName)
+                Image(systemName: type.systemImage)
                     .font(.caption2)
                     .minimumScaleFactor(0.7)
                     .imageScale(.medium)
@@ -528,7 +537,7 @@ private func allCaughtUpMessage(for types: [CardType], folders: [Folder]) -> Str
     if types.isEmpty {
         return "No card types selected."
     }
-    let typeNames = types.map { $0.rawValue }.joined(separator: ", ")
+    let typeNames = types.map { "\($0.rawValue)s" }.joined(separator: ", ")
     if folders.isEmpty {
         return "All caught up for \(typeNames)!"
     } else {
@@ -544,11 +553,6 @@ struct AllCaughtUpWidgetView: View {
     
     var body: some View {
         VStack(spacing: 10) {
-            Spacer()
-            Image(systemName: "tray.empty")
-                .font(.largeTitle)
-                .foregroundColor(.gray)
-                .accessibilityHidden(true)
             Text(allCaughtUpMessage(for: selectedCardTypes, folders: selectedFolders))
                 .font(.caption)
                 .foregroundColor(.secondary)
@@ -587,12 +591,21 @@ struct SmallWidgetSummaryView: View {
     var body: some View {
         VStack(spacing: 10) {
             if queueCount == 0 {
+                HStack {
+                    ForEach(selectedCardTypes, id: \.self) { type in
+                        Image(systemName: type.systemImage)
+                            .imageScale(.medium)
+                            .foregroundColor(.secondary)
+                            .accessibilityLabel(Text(type.rawValue))
+                    }
+                }
+                
                 AllCaughtUpWidgetView(selectedCardTypes: selectedCardTypes, selectedFolders: selectedFolders, nextCardDate: nil)
             } else {
 
                 HStack(spacing: 6) {
                     ForEach(selectedCardTypes, id: \.self) { type in
-                        Image(systemName: type.iconName)
+                        Image(systemName: type.systemImage)
                             .imageScale(.medium)
                             .foregroundColor(.accentColor)
                             .accessibilityLabel(Text(type.rawValue))

@@ -30,14 +30,14 @@ enum CardType: String, CaseIterable, Identifiable, AppEnum  {
         }
     }
     
-    var iconName: String {
-        switch self {
-        case .todo:      return "checkmark.circle"
-        case .flashcard: return "questionmark.circle"
-        case .note:      return "note.text"
-        // add your other types here
-        }
-    }
+//    var iconName: String {
+//        switch self {
+//        case .todo:      return "checkmark.circle"
+//        case .flashcard: return "questionmark.circle"
+//        case .note:      return "note.text"
+//        // add your other types here
+//        }
+//    }
 
     /// Accent color for each card type
     var tintColor: Color {
@@ -197,6 +197,18 @@ enum RepeatPolicy: String, CaseIterable, Codable {
             case .easy, .good:
                 return "A little later"
             }
+        case .none:
+            return "No change"
+        }
+    }
+    
+    /// Skip description specifically for notes (with reversed aggression semantics)
+    var skipDescriptionForNote: String {
+        switch self {
+        case .aggressive:
+            return "A lot later"
+        case .mild:
+            return "A little later"
         case .none:
             return "No change"
         }

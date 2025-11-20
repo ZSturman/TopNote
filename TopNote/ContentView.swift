@@ -10,6 +10,7 @@ struct ContentView: View {
     
     @State private var showNewFolderInput: Bool = false
     @State var urlId: String = ""
+    @State private var deepLinkedCardID: UUID? = nil
     
     var body: some View {
         NavigationSplitView {
@@ -18,7 +19,11 @@ struct ContentView: View {
         } detail: {
             
             // Pass selectedCardID for deep-link URL selection
-            CardListView(selectedFolder: $selectedFolder, tagSelectionStates: tagSelectionStates)
+            CardListView(
+                selectedFolder: $selectedFolder, 
+                tagSelectionStates: tagSelectionStates,
+                deepLinkedCardID: $deepLinkedCardID
+            )
                 .environmentObject(selectedCardModel)
         }
         .sheet(isPresented: $showNewFolderInput) {
@@ -35,6 +40,7 @@ struct ContentView: View {
             
             self.urlId = cardId
             if let uuid = UUID(uuidString: cardId) {
+                deepLinkedCardID = uuid
                 selectedCardModel.selectCard(with: uuid, modelContext: modelContext, isNew: false)
             }
         }

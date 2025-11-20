@@ -56,6 +56,7 @@ struct CardListView: View {
 
     @Binding var selectedFolder: FolderSelection?
     var tagSelectionStates: [UUID: TagSelectionState]
+    @Binding var deepLinkedCardID: UUID?
 
     // Editing state
     @State private var sortCriteria: CardSortCriteria = .enqueuedAt
@@ -76,6 +77,7 @@ struct CardListView: View {
 
     // NEW: Settings, import, selection mode
     @State private var showImportPicker = false
+    @State private var showImportCSVPicker = false
     @State private var selectionMode = false
     @State private var selectedCards = Set<Card>()
 
@@ -113,10 +115,12 @@ struct CardListView: View {
 
     init(
         selectedFolder: Binding<FolderSelection?>,
-        tagSelectionStates: [UUID: TagSelectionState]
+        tagSelectionStates: [UUID: TagSelectionState],
+        deepLinkedCardID: Binding<UUID?> = .constant(nil)
     ) {
         _selectedFolder = selectedFolder
         self.tagSelectionStates = tagSelectionStates
+        _deepLinkedCardID = deepLinkedCardID
 
     }
 
@@ -316,6 +320,9 @@ struct CardListView: View {
             header:
                 HStack {
                     Text("Queue")
+                    Text("(\(queueCards.count))")
+                        .foregroundColor(.secondary)
+                        .font(.subheadline)
                     Spacer()
                     Image(
                         systemName: isQueueExpanded
@@ -360,6 +367,9 @@ struct CardListView: View {
             header:
                 HStack {
                     Text("Upcoming")
+                    Text("(\(upcomingCards.count))")
+                        .foregroundColor(.secondary)
+                        .font(.subheadline)
                     Spacer()
                     Image(
                         systemName: isUpcomingExpanded
@@ -394,6 +404,9 @@ struct CardListView: View {
             header:
                 HStack {
                     Text("Archived")
+                    Text("(\(archivedCards.count))")
+                        .foregroundColor(.secondary)
+                        .font(.subheadline)
                     Spacer()
                     Image(
                         systemName: isArchivedExpanded
@@ -450,10 +463,17 @@ struct CardListView: View {
     private var trailingToolbarItems: some ToolbarContent {
         ToolbarItemGroup(placement: .navigationBarTrailing) {
             if selectionMode {
-                Button("Export") {
-                    exportCardsAsJSON(Array(selectedCards))
-                    selectionMode = false
-                    selectedCards.removeAll()
+                Menu("Export") {
+                    Button("as JSON") {
+                        exportCardsAsJSON(Array(selectedCards))
+                        selectionMode = false
+                        selectedCards.removeAll()
+                    }
+                    Button("as CSV") {
+                        exportCardsAsCSV(Array(selectedCards))
+                        selectionMode = false
+                        selectedCards.removeAll()
+                    }
                 }
                 .disabled(selectedCards.isEmpty)
             } else if selectedCardModel.selectedCard != nil {
@@ -463,19 +483,21 @@ struct CardListView: View {
                 }
             } else {
                 Menu {
-                    Button("Export Filtered Cards") {
-//                        Task {
-//                            await ImportExportTip.openedSettingsEvent.donate()
-//                        }
-//                        importExportTip.invalidate(reason: .actionPerformed)
-                        exportCardsAsJSON(filteredCards)
+                    Menu("Export Filtered Cards") {
+                        Button("as JSON") {
+                            exportCardsAsJSON(filteredCards)
+                        }
+                        Button("as CSV") {
+                            exportCardsAsCSV(filteredCards)
+                        }
                     }
-                    Button("Import Cards") { 
-//                        Task {
-//                            await ImportExportTip.openedSettingsEvent.donate()
-//                        }
-//                        importExportTip.invalidate(reason: .actionPerformed)
-                        showImportPicker = true 
+                    Menu("Import Cards") {
+                        Button("from JSON") {
+                            showImportPicker = true
+                        }
+                        Button("from CSV") {
+                            showImportCSVPicker = true
+                        }
                     }
                 } label: {
                     Image(systemName: "gear")
@@ -492,6 +514,7 @@ struct CardListView: View {
                 } label: {
                     Label("Sort", systemImage: "arrow.up.arrow.down")
                 }
+                .menuActionDismissBehavior(.disabled)
                 .accessibilityIdentifier("Sort")
                 // Show filter menu only for enqueuedAt and createdAt
                 if sortCriteria == .enqueuedAt || sortCriteria == .createdAt {
@@ -772,6 +795,62 @@ struct CardListView: View {
             .listStyle(.plain)
             .navigationTitle(selectedFolder?.name ?? "All Cards")
             .searchable(text: $searchText, prompt: "Search cards")
+            .onChange(of: searchText) { oldValue, newValue in
+                // Clear selection when user starts searching
+                if !newValue.isEmpty && selectedCardModel.selectedCard != nil {
+                    selectedCardModel.clearSelection()
+                }
+            }
+            .onChange(of: selectedFolder) { oldValue, newValue in
+                // Clear selection when folder changes
+                if oldValue != newValue && selectedCardModel.selectedCard != nil {
+                    selectedCardModel.clearSelection()
+                }
+            }
+            .onChange(of: deepLinkedCardID) { oldValue, newValue in
+                // When a card is deep linked from widget, update filters to ensure it's visible
+                guard let cardID = newValue else { return }
+                
+                // Find the card in the context
+                let descriptor = FetchDescriptor<Card>(predicate: #Predicate { $0.id == cardID })
+                if let card = try? context.fetch(descriptor).first {
+                    // Update card type filter to include the deep linked card's type
+                    let cardTypeFilter: CardFilterOption
+                    switch card.cardType {
+                    case .todo: cardTypeFilter = .todo
+                    case .flashcard: cardTypeFilter = .flashcard
+                    case .note: cardTypeFilter = .note
+                    }
+                    
+                    if !filterOptions.contains(cardTypeFilter) {
+                        filterOptions.append(cardTypeFilter)
+                    }
+                    
+                    // Update status filter based on card's current state
+                    let isEnqueued = card.isEnqueue(currentDate: .now) && !card.isArchived
+                    let isArchived = card.isArchived
+                    
+                    if isEnqueued && !filterOptions.contains(.enqueue) {
+                        filterOptions.append(.enqueue)
+                    } else if isArchived && !filterOptions.contains(.archived) {
+                        filterOptions.append(.archived)
+                    } else if !isEnqueued && !isArchived && !filterOptions.contains(.upcoming) {
+                        filterOptions.append(.upcoming)
+                    }
+                    
+                    // Expand the appropriate section
+                    if isEnqueued {
+                        isQueueExpanded = true
+                    } else if isArchived {
+                        isArchivedExpanded = true
+                    } else {
+                        isUpcomingExpanded = true
+                    }
+                }
+                
+                // Reset deepLinkedCardID after processing
+                deepLinkedCardID = nil
+            }
             .toolbar {
                 leadingToolbarItems
                 trailingToolbarItems
@@ -908,6 +987,23 @@ struct CardListView: View {
                 Button("OK", role: .cancel) { importErrorMessage = nil }
             } message: {
                 Text(importErrorMessage ?? "Unknown error")
+            }
+            .fileImporter(
+                isPresented: $showImportCSVPicker,
+                allowedContentTypes: [.commaSeparatedText]
+            ) { result in
+                if case .success(let url) = result {
+                    do {
+                        let csvString = try String(contentsOf: url, encoding: .utf8)
+                        let cards = try Self.parseCSV(csvString, context: context)
+                        for card in cards {
+                            context.insert(card)
+                        }
+                        showImportSuccessAlert = true
+                    } catch {
+                        importErrorMessage = "Failed to import CSV: \(error.localizedDescription)"
+                    }
+                }
             }
         }
     }
@@ -1073,6 +1169,25 @@ struct CardListView: View {
             print("Export failed: \(error)")
         }
     }
+    
+    private func exportCardsAsCSV(_ cards: [Card]) {
+        do {
+            let csvString = try Card.exportCardsToCSV(cards)
+            let fileManager = FileManager.default
+            if let dir = fileManager.urls(
+                for: .documentDirectory,
+                in: .userDomainMask
+            ).first {
+                let fileURL = dir.appendingPathComponent("exported_cards.csv")
+                try csvString.write(to: fileURL, atomically: true, encoding: .utf8)
+                print("Exported to \(fileURL)")
+                exportedFileURL = fileURL
+                showShareSheet = true
+            }
+        } catch {
+            print("Export failed: \(error)")
+        }
+    }
 }
 
 // MARK: - CardStatusSection: Shows a section for a given status, lists all cards in that status
@@ -1189,6 +1304,7 @@ struct CardFilterMenu: View {
         } label: {
             Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
         }
+        .menuActionDismissBehavior(.disabled)
         .accessibilityIdentifier("Filter")
     }
 }
@@ -1482,6 +1598,115 @@ extension CardListView {
             resetRepeatIntervalOnComplete: resetRepeatIntervalOnCompleteValue,
             skipEnabled: skipEnabledValue
         )
+    }
+    
+    static func parseCSV(_ csvString: String, context: ModelContext) throws -> [Card] {
+        var cards: [Card] = []
+        let lines = csvString.components(separatedBy: "\n").filter { !$0.isEmpty }
+        
+        guard lines.count > 1 else {
+            throw NSError(domain: "CSV", code: 1, userInfo: [NSLocalizedDescriptionKey: "CSV file is empty or has no data rows"])
+        }
+        
+        // Parse header to get column indices
+        let header = lines[0].components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        
+        // Helper: Folder lookup or creation by name
+        func folderForName(_ name: String) -> Folder? {
+            guard !name.isEmpty else { return nil }
+            let request = FetchDescriptor<Folder>(
+                predicate: #Predicate { $0.name == name }
+            )
+            if let found = try? context.fetch(request).first { return found }
+            let f = Folder(name: name)
+            context.insert(f)
+            return f
+        }
+        
+        // Helper: Tag lookup or creation by name
+        func tagsForNames(_ names: [String]) -> [CardTag] {
+            names.compactMap { tagName in
+                guard !tagName.isEmpty else { return nil }
+                let req = FetchDescriptor<CardTag>(
+                    predicate: #Predicate { $0.name == tagName }
+                )
+                if let found = try? context.fetch(req).first { return found }
+                let t = CardTag(name: tagName)
+                context.insert(t)
+                return t
+            }
+        }
+        
+        for line in lines.dropFirst() {
+            let values = line.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            
+            guard values.count == header.count else { continue }
+            
+            var dict: [String: String] = [:]
+            for (index, key) in header.enumerated() {
+                dict[key] = values[index]
+            }
+            
+            // Parse required fields
+            let cardType = CardType(caseInsensitiveRawValue: dict["cardType"] ?? "todo")
+            let content = dict["content"]?.isEmpty == false ? dict["content"]! : "Untitled"
+            let answer = cardType == .flashcard ? (dict["answer"]?.isEmpty == false ? dict["answer"] : "(No answer)") : nil
+            
+            let createdAt = ISO8601DateFormatter().date(from: dict["createdAt"] ?? "") ?? Date()
+            let nextTimeInQueue = ISO8601DateFormatter().date(from: dict["nextTimeInQueue"] ?? "") ?? Date()
+            
+            let isRecurring = Bool(dict["isRecurring"] ?? "true") ?? true
+            let repeatInterval = Int(dict["repeatInterval"] ?? "") ?? 720
+            let initialRepeatInterval = Int(dict["initialRepeatInterval"] ?? "") ?? repeatInterval
+            
+            let folderName = dict["folder"] ?? ""
+            let folder = folderForName(folderName)
+            
+            let tagNames = (dict["tags"] ?? "").components(separatedBy: ";").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+            let tags = tagsForNames(tagNames)
+            
+            let isArchived = Bool(dict["isArchived"] ?? "false") ?? false
+            
+            let skipPolicy = RepeatPolicy(rawValue: dict["skipPolicy"] ?? "") ?? (cardType == .flashcard ? .none : cardType == .todo ? .aggressive : .mild)
+            let ratingEasyPolicy = RepeatPolicy(rawValue: dict["ratingEasyPolicy"] ?? "") ?? .mild
+            let ratingMedPolicy = RepeatPolicy(rawValue: dict["ratingMedPolicy"] ?? "") ?? .none
+            let ratingHardPolicy = RepeatPolicy(rawValue: dict["ratingHardPolicy"] ?? "") ?? .aggressive
+            
+            let isComplete = Bool(dict["isComplete"] ?? "false") ?? false
+            let answerRevealed = cardType == .flashcard ? false : (Bool(dict["answerRevealed"] ?? "false") ?? false)
+            let resetRepeatIntervalOnComplete = Bool(dict["resetRepeatIntervalOnComplete"] ?? "") ?? (cardType == .todo)
+            let skipEnabled = Bool(dict["skipEnabled"] ?? "") ?? (cardType != .flashcard)
+            
+            let card = Card(
+                createdAt: createdAt,
+                cardType: cardType,
+                priorityTypeRaw: .none,
+                content: content,
+                isRecurring: isRecurring,
+                skipCount: Int(dict["skipCount"] ?? "0") ?? 0,
+                seenCount: Int(dict["seenCount"] ?? "0") ?? 0,
+                repeatInterval: repeatInterval,
+                initialRepeatInterval: initialRepeatInterval,
+                nextTimeInQueue: nextTimeInQueue,
+                folder: folder,
+                tags: tags,
+                answer: answer,
+                rating: [],
+                isArchived: isArchived,
+                answerRevealed: answerRevealed,
+                skipPolicy: skipPolicy,
+                ratingEasyPolicy: ratingEasyPolicy,
+                ratingMedPolicy: ratingMedPolicy,
+                ratingHardPolicy: ratingHardPolicy,
+                isComplete: isComplete,
+                resetRepeatIntervalOnComplete: resetRepeatIntervalOnComplete,
+                skipEnabled: skipEnabled
+            )
+            
+            cards.append(card)
+        }
+        
+        return cards
     }
 }
 

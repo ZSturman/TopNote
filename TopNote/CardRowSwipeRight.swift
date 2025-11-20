@@ -12,6 +12,7 @@ import SwiftUI
 struct CardRowSwipeRight: View {
     var card: Card
     @Environment(\.modelContext) private var context
+    @EnvironmentObject var selectedCardModel: SelectedCardModel
     
     var body: some View {
         let isEnqueued = card.isEnqueue(currentDate: Date())
@@ -24,6 +25,7 @@ struct CardRowSwipeRight: View {
             case (true, _):
                 // Archived
                 Button {
+                    selectedCardModel.clearSelection()
                     card.enqueue(at: Date())
                 } label: {
                     Label("Enqueue", systemImage: "clock.arrow.circlepath")
@@ -31,6 +33,7 @@ struct CardRowSwipeRight: View {
                 .tint(.blue)
 
                 Button {
+                    selectedCardModel.clearSelection()
                     card.unarchive(at: Date())
                 } label: {
                     Label("Unarchive", systemImage: "tray.and.arrow.up")
@@ -40,6 +43,7 @@ struct CardRowSwipeRight: View {
                 // Enqueued
                 if skipEnabled {
                     Button {
+                        selectedCardModel.clearSelection()
                         card.skip(at: Date())
                     } label: {
                         Label("Skip", systemImage: "forward.fill")
@@ -51,6 +55,7 @@ struct CardRowSwipeRight: View {
                     
                     
                     Button {
+                        selectedCardModel.clearSelection()
                         card.next(at: Date())
                     } label: {
                         Label("Next", systemImage: "arrow.right.circle")
@@ -59,6 +64,7 @@ struct CardRowSwipeRight: View {
                 }
                 
                 Button {
+                    selectedCardModel.clearSelection()
                     card.archive(at: Date())
                 } label: {
                     Label("Archive", systemImage: "archivebox")
@@ -70,29 +76,33 @@ struct CardRowSwipeRight: View {
                 case .flashcard:
                     Menu {
                         Button {
+                            selectedCardModel.clearSelection()
                             card.submitFlashcardRating(.easy, at: Date())
                         } label: {
                             Label("Easy", systemImage: RatingType.easy.systemImage)
                         }
                         .tint(RatingType.easy.tintColor)
                         Button {
+                            selectedCardModel.clearSelection()
                             card.submitFlashcardRating(.good, at: Date())
                         } label: {
                             Label("Good", systemImage: RatingType.good.systemImage)
                         }
                         .tint(RatingType.good.tintColor)
                         Button {
+                            selectedCardModel.clearSelection()
                             card.submitFlashcardRating(.hard, at: Date())
                         } label: {
                             Label("Hard", systemImage: RatingType.hard.systemImage)
                         }
                         .tint(RatingType.hard.tintColor)
                     } label: {
-                        Label("Rate", systemImage: card.cardType.iconName)
+                        Label("Rate", systemImage: card.cardType.systemImage)
                     }
                     .tint(card.cardType.tintColor)
                 case .todo:
                     Button(action: {
+                        selectedCardModel.clearSelection()
                         if card.isComplete {
                             card.markAsNotComplete(at: .now)
                         } else {
@@ -110,12 +120,14 @@ struct CardRowSwipeRight: View {
             default:
                 // Neither enqueued nor archived
                 Button {
+                    selectedCardModel.clearSelection()
                     card.enqueue(at: Date())
                 } label: {
                     Label("Enqueue", systemImage: "clock")
                 }
                 .tint(.blue)
                 Button {
+                    selectedCardModel.clearSelection()
                     card.archive(at: Date())
                 } label: {
                     Label("Archive", systemImage: "archivebox")

@@ -39,16 +39,10 @@ struct CardRow: View {
     @State private var showingFlashcardAnswer = false
     @State private var isEditingAnswer = false
     @State private var showingLongInfo = false
-//    @State private var showingRecurringInfo = false
-//    @State private var showingResetInfo = false
-    
-    // New state for ratings policy info dialog
     @State private var showingRatingsPolicyInfo = false
     
-    // New state for skip policy info dialog
     @State private var showingSkipInfo = false
     
-    // New state for enqueue interval info dialog
     @State private var showingEnqueueIntervalInfo = false
     
     @State private var draftContent: String = ""
@@ -84,9 +78,6 @@ struct CardRow: View {
     @ViewBuilder fileprivate func seenAndSkipCountDisplay() -> some View {
         HStack(spacing: 12) {
             Spacer()
-//            Text("Seen: \(card.seenCount)")
-//                .font(.caption2)
-//                .foregroundColor(.secondary)
             if card.isArchived {
                 if let archivedDate = card.removals.last {
                     let daysAgo = Calendar.current.dateComponents([.day], from: archivedDate, to: Date()).day ?? 0
@@ -104,11 +95,6 @@ struct CardRow: View {
                             .foregroundColor(.secondary)
                     }
                 }
-            }
-            if card.skipEnabled && !card.isArchived {
-                Text("Skipped: \(card.skipCount)")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
             }
             
             if card.priority != .none {
@@ -306,7 +292,7 @@ struct CardRow: View {
                 }
                 
                 if !card.skipEnabled {
-                    Text("Enable skipping in Card Details > Policies for this to take effect.")
+                    Text("Skipping disabled")
                         .font(.footnote)
                         .foregroundColor(.secondary)
                         .padding(.top, 2)
@@ -325,7 +311,12 @@ struct CardRow: View {
                 
                                         VStack(alignment: .leading, spacing: 8) {
                                             ForEach(RepeatPolicy.allCases, id: \.self) { policy in
-                                                Text("• \(policy.rawValue): \(policy.shortDescription(for: .hard))")
+                                                if card.cardType == .note {
+                                                    // For notes, reverse the wording
+                                                    Text("• \(policy.rawValue): \(policy.skipDescriptionForNote)")
+                                                } else {
+                                                    Text("• \(policy.rawValue): \(policy.shortDescription(for: .hard))")
+                                                }
                                             }
                                         }
 
@@ -364,57 +355,130 @@ struct CardRow: View {
                 VStack(alignment: .leading, spacing: 8) {
 
                     
-                                            Text("Ratings Repeat Policy")
-                                                .font(.subheadline.weight(.semibold))
+                    Text("Ratings Repeat Policy")
+                        .font(.subheadline.weight(.semibold))
                     
-                    VStack(spacing: 4) {
-                        Text("Rate how confident you felt: Easy moves the card further out, Good keeps the normal schedule, and Hard brings it back sooner for review.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.bottom, 4)
-                    }
+                    
                     .onAppear {
                         Task { await FlashcardRatingPolicyTip.openedFlashcardPoliciesEvent.donate() }
                     }
                     
-                    HStack(spacing: 4) {
-                        Picker("On Easy:", selection: Binding(
-                            get: { card.ratingEasyPolicy },
-                            set: { card.ratingEasyPolicy = $0 }
-                        )) {
-                            ForEach(RepeatPolicy.allCases, id: \.self) { policy in
-                                Text(policy.rawValue).tag(policy)
+                    Menu {
+                        Text("Easy moves the card further out.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Divider()
+                        
+                        ForEach(RepeatPolicy.allCases, id: \.self) { policy in
+                            Button(action: {
+                                card.ratingEasyPolicy = policy
+                            }) {
+                                HStack {
+                                    Text(policy.rawValue)
+                                    if card.ratingEasyPolicy == policy {
+                                        Spacer()
+                                        Image(systemName: "checkmark")
+                                    }
+                                }
                             }
                         }
-                        .pickerStyle(.menu)
+                        
+                        Divider()
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            ForEach(RepeatPolicy.allCases, id: \.self) { policy in
+                                Text("• \(policy.rawValue): \(policy.shortDescription(for: .easy))")
+                                    .font(.caption)
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text("On Easy:")
+                            Text(card.ratingEasyPolicy.rawValue)
+                                .fontWeight(.semibold)
+                        }
                         .font(.subheadline)
                     }
+                    .menuActionDismissBehavior(.disabled)
 
-                    HStack(spacing: 4) {
-                        Picker("On Good:", selection: Binding(
-                            get: { card.ratingMedPolicy },
-                            set: { card.ratingMedPolicy = $0 }
-                        )) {
-                            ForEach(RepeatPolicy.allCases, id: \.self) { policy in
-                                Text(policy.rawValue).tag(policy)
+                    Menu {
+                        Text("Good keeps the normal schedule.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Divider()
+                        
+                        ForEach(RepeatPolicy.allCases, id: \.self) { policy in
+                            Button(action: {
+                                card.ratingMedPolicy = policy
+                            }) {
+                                HStack {
+                                    Text(policy.rawValue)
+                                    if card.ratingMedPolicy == policy {
+                                        Spacer()
+                                        Image(systemName: "checkmark")
+                                    }
+                                }
                             }
                         }
-                        .pickerStyle(.menu)
+                        
+                        Divider()
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            ForEach(RepeatPolicy.allCases, id: \.self) { policy in
+                                Text("• \(policy.rawValue): \(policy.shortDescription(for: .good))")
+                                    .font(.caption)
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text("On Good:")
+                            Text(card.ratingMedPolicy.rawValue)
+                                .fontWeight(.semibold)
+                        }
                         .font(.subheadline)
                     }
+                    .menuActionDismissBehavior(.disabled)
 
-                    HStack(spacing: 4) {
-                        Picker("On Hard:", selection: Binding(
-                            get: { card.ratingHardPolicy },
-                            set: { card.ratingHardPolicy = $0 }
-                        )) {
-                            ForEach(RepeatPolicy.allCases, id: \.self) { policy in
-                                Text(policy.rawValue).tag(policy)
+                    Menu {
+                        Text("Hard brings it back sooner for review.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Divider()
+                        
+                        ForEach(RepeatPolicy.allCases, id: \.self) { policy in
+                            Button(action: {
+                                card.ratingHardPolicy = policy
+                            }) {
+                                HStack {
+                                    Text(policy.rawValue)
+                                    if card.ratingHardPolicy == policy {
+                                        Spacer()
+                                        Image(systemName: "checkmark")
+                                    }
+                                }
                             }
                         }
-                        .pickerStyle(.menu)
+                        
+                        Divider()
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            ForEach(RepeatPolicy.allCases, id: \.self) { policy in
+                                Text("• \(policy.rawValue): \(policy.shortDescription(for: .hard))")
+                                    .font(.caption)
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text("On Hard:")
+                            Text(card.ratingHardPolicy.rawValue)
+                                .fontWeight(.semibold)
+                        }
                         .font(.subheadline)
                     }
+                    .menuActionDismissBehavior(.disabled)
                 }
             }
         } label: {
@@ -453,6 +517,9 @@ struct CardRow: View {
 
                 VStack(alignment: .leading, spacing: 6) {
                     HStack {
+                        Image(systemName: card.cardType.systemImage)
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
                         Text(card.cardType.rawValue)
                             .font(.caption)
                             .foregroundColor(.secondary)

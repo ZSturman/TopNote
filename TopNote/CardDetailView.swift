@@ -220,7 +220,7 @@ struct CardDetailView: View {
                                     card.cardType = $0
                                 })) {
                                     ForEach(CardType.allCases, id: \.self) { type in
-                                        Label(type.rawValue.capitalized, systemImage: type.iconName)
+                                        Label(type.rawValue.capitalized, systemImage: type.systemImage)
                                             .tag(type)
                                     }
                                 }

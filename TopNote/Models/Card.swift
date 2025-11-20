@@ -796,5 +796,47 @@ extension Card {
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         return try encoder.encode(exports)
     }
+    
+    static func exportCardsToCSV(_ cards: [Card]) throws -> String {
+        let isoFormatter = ISO8601DateFormatter()
+        
+        // CSV Header
+        var csv = "cardType,content,answer,createdAt,nextTimeInQueue,isRecurring,skipCount,seenCount,repeatInterval,initialRepeatInterval,folder,tags,isArchived,skipPolicy,ratingEasyPolicy,ratingMedPolicy,ratingHardPolicy,isComplete,answerRevealed,resetRepeatIntervalOnComplete,skipEnabled\n"
+        
+        for card in cards {
+            let cardType = card.cardType.rawValue
+            let content = escapeCSV(card.content)
+            let answer = escapeCSV(card.answer ?? "")
+            let createdAt = isoFormatter.string(from: card.createdAt)
+            let nextTimeInQueue = isoFormatter.string(from: card.nextTimeInQueue)
+            let isRecurring = card.isRecurring ? "true" : "false"
+            let skipCount = "\(card.skipCount)"
+            let seenCount = "\(card.seenCount)"
+            let repeatInterval = "\(card.repeatInterval)"
+            let initialRepeatInterval = "\(card.initialRepeatInterval)"
+            let folder = escapeCSV(card.folder?.name ?? "")
+            let tags = escapeCSV(card.unwrappedTags.map { $0.name }.joined(separator: ";"))
+            let isArchived = card.isArchived ? "true" : "false"
+            let skipPolicy = card.skipPolicy.rawValue
+            let ratingEasyPolicy = card.ratingEasyPolicy.rawValue
+            let ratingMedPolicy = card.ratingMedPolicy.rawValue
+            let ratingHardPolicy = card.ratingHardPolicy.rawValue
+            let isComplete = card.isComplete ? "true" : "false"
+            let answerRevealed = card.answerRevealed ? "true" : "false"
+            let resetRepeatIntervalOnComplete = card.resetRepeatIntervalOnComplete ? "true" : "false"
+            let skipEnabled = card.skipEnabled ? "true" : "false"
+            
+            csv += "\(cardType),\(content),\(answer),\(createdAt),\(nextTimeInQueue),\(isRecurring),\(skipCount),\(seenCount),\(repeatInterval),\(initialRepeatInterval),\(folder),\(tags),\(isArchived),\(skipPolicy),\(ratingEasyPolicy),\(ratingMedPolicy),\(ratingHardPolicy),\(isComplete),\(answerRevealed),\(resetRepeatIntervalOnComplete),\(skipEnabled)\n"
+        }
+        
+        return csv
+    }
+    
+    private static func escapeCSV(_ string: String) -> String {
+        if string.contains(",") || string.contains("\"") || string.contains("\n") {
+            return "\"\(string.replacingOccurrences(of: "\"", with: "\"\""))\""
+        }
+        return string
+    }
 }
 

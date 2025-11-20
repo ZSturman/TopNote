@@ -104,7 +104,7 @@ struct CardRowContextMenu: View {
                             }
                             .tint(RatingType.hard.tintColor)
                         } label: {
-                            Label("Rate", systemImage: card.cardType.iconName)
+                            Label("Rate", systemImage: card.cardType.systemImage)
                         }
                         .tint(card.cardType.tintColor)
                     case .todo:
@@ -163,7 +163,7 @@ struct CardRowContextMenu: View {
                             }
                             .tint(RatingType.hard.tintColor)
                         } label: {
-                            Label("Rate", systemImage: card.cardType.iconName)
+                            Label("Rate", systemImage: card.cardType.systemImage)
                         }
                         .tint(card.cardType.tintColor)
                     case .todo:

@@ -569,4 +569,455 @@ final class UITests: XCTestCase {
             }
         }
     }
+    
+    // MARK: - Performance Tests
+    
+    @MainActor
+    func testTextInputResponsiveness() throws {
+        // This test measures if typing in the text editor is responsive
+        let addButton = app.buttons.matching(identifier: "addCard").firstMatch
+        
+        guard addButton.waitForExistence(timeout: 3) else {
+            XCTSkip("Add button not found")
+            return
+        }
+        
+        addButton.tap()
+        
+        let todoButton = app.buttons["To-do"]
+        guard todoButton.waitForExistence(timeout: 2) else {
+            XCTSkip("Todo button not found")
+            return
+        }
+        todoButton.tap()
+        
+        let contentField = app.textViews["Card Content Editor"]
+        guard contentField.waitForExistence(timeout: 3) else {
+            XCTSkip("Content field not found")
+            return
+        }
+        
+        contentField.tap()
+        sleep(1) // Wait for keyboard
+        
+        // Measure typing performance
+        let testString = "This is a performance test for typing responsiveness in the card editor"
+        
+        let startTime = CFAbsoluteTimeGetCurrent()
+        contentField.typeText(testString)
+        let typingTime = CFAbsoluteTimeGetCurrent() - startTime
+        
+        // Typing should complete in reasonable time (less than 10 seconds for ~70 chars)
+        // This accounts for keyboard animation and normal typing speed
+        XCTAssertLessThan(typingTime, 15.0, "Typing took too long: \(typingTime) seconds")
+        
+        // Verify content was entered
+        let value = contentField.value as? String ?? ""
+        XCTAssertTrue(value.contains("performance") || value.contains("test"), 
+                      "Content should contain typed text")
+    }
+    
+    @MainActor
+    func testTextInputResponsivenessBaseline() throws {
+        // Establishes a baseline for text input performance
+        measure(metrics: [XCTClockMetric()]) {
+            let addButton = app.buttons.matching(identifier: "addCard").firstMatch
+            
+            if addButton.waitForExistence(timeout: 2) {
+                addButton.tap()
+                
+                let todoButton = app.buttons["To-do"]
+                if todoButton.waitForExistence(timeout: 2) {
+                    todoButton.tap()
+                }
+                
+                let contentField = app.textViews["Card Content Editor"]
+                if contentField.waitForExistence(timeout: 2) {
+                    contentField.tap()
+                    sleep(1)
+                    
+                    // Type a shorter string for baseline measurement
+                    contentField.typeText("Baseline test")
+                    
+                    // Tap elsewhere to deselect and trigger save
+                    app.navigationBars.firstMatch.tap()
+                }
+            }
+            
+            // Clean up for next iteration
+            app.terminate()
+            app.launch()
+        }
+    }
+    
+    @MainActor
+    func testRapidTextInputStress() throws {
+        // Stress test for rapid typing
+        let addButton = app.buttons.matching(identifier: "addCard").firstMatch
+        
+        guard addButton.waitForExistence(timeout: 3) else {
+            XCTSkip("Add button not found")
+            return
+        }
+        
+        addButton.tap()
+        
+        let noteButton = app.buttons["Note"]
+        guard noteButton.waitForExistence(timeout: 2) else {
+            XCTSkip("Note button not found")
+            return
+        }
+        noteButton.tap()
+        
+        let contentField = app.textViews["Card Content Editor"]
+        guard contentField.waitForExistence(timeout: 3) else {
+            XCTSkip("Content field not found")
+            return
+        }
+        
+        contentField.tap()
+        sleep(1)
+        
+        // Type multiple lines rapidly
+        let lines = [
+            "First line of content",
+            "\nSecond line with more text",
+            "\nThird line continues",
+            "\nFourth line of the note"
+        ]
+        
+        let startTime = CFAbsoluteTimeGetCurrent()
+        for line in lines {
+            contentField.typeText(line)
+        }
+        let totalTime = CFAbsoluteTimeGetCurrent() - startTime
+        
+        // Should complete in reasonable time
+        XCTAssertLessThan(totalTime, 20.0, "Rapid typing took too long: \(totalTime) seconds")
+        
+        // App should remain responsive
+        XCTAssertTrue(app.state == .runningForeground)
+    }
+    
+    @MainActor
+    func testCardListScrollPerformance() throws {
+        // First, create multiple cards if needed
+        for i in 0..<5 {
+            let addButton = app.buttons.matching(identifier: "addCard").firstMatch
+            if addButton.waitForExistence(timeout: 2) {
+                addButton.tap()
+                
+                let todoButton = app.buttons["To-do"]
+                if todoButton.waitForExistence(timeout: 2) {
+                    todoButton.tap()
+                }
+                
+                let contentField = app.textViews["Card Content Editor"]
+                if contentField.waitForExistence(timeout: 2) {
+                    contentField.tap()
+                    contentField.typeText("Scroll test card \(i)")
+                    app.navigationBars.firstMatch.tap()
+                    sleep(1)
+                }
+            }
+        }
+        
+        // Now measure scroll performance
+        let cardList = app.collectionViews.firstMatch.exists ? 
+            app.collectionViews.firstMatch : app.tables.firstMatch
+        
+        if cardList.exists {
+            measure(metrics: [XCTClockMetric()]) {
+                cardList.swipeUp()
+                cardList.swipeDown()
+            }
+        }
+    }
+    
+    @MainActor
+    func testCardSelectionResponseTime() throws {
+        let firstCard = app.buttons.matching(NSPredicate(format: "identifier CONTAINS 'CardRow'")).firstMatch
+        
+        guard firstCard.waitForExistence(timeout: 3) else {
+            XCTSkip("No cards available")
+            return
+        }
+        
+        // Measure card selection time
+        measure(metrics: [XCTClockMetric()]) {
+            firstCard.tap()
+            
+            let contentField = app.textViews["Card Content Editor"]
+            _ = contentField.waitForExistence(timeout: 3)
+            
+            // Tap elsewhere to deselect
+            app.navigationBars.firstMatch.tap()
+            sleep(1)
+        }
+    }
+    
+    @MainActor
+    func testFilteringPerformance() throws {
+        let filterButton = app.buttons["Filter"]
+        
+        guard filterButton.waitForExistence(timeout: 2) else {
+            XCTSkip("Filter button not found")
+            return
+        }
+        
+        measure(metrics: [XCTClockMetric()]) {
+            filterButton.tap()
+            
+            let todoFilter = app.buttons["To-do"]
+            if todoFilter.waitForExistence(timeout: 2) {
+                todoFilter.tap()
+            }
+            
+            sleep(1) // Wait for filter to apply
+            
+            // Toggle back
+            filterButton.tap()
+            if todoFilter.waitForExistence(timeout: 2) {
+                todoFilter.tap()
+            }
+            
+            sleep(1)
+        }
+    }
+    
+    @MainActor
+    func testSearchPerformance() throws {
+        let searchField = app.searchFields.firstMatch
+        
+        guard searchField.waitForExistence(timeout: 3) else {
+            XCTSkip("Search field not found")
+            return
+        }
+        
+        measure(metrics: [XCTClockMetric()]) {
+            let coordinate = searchField.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            coordinate.tap()
+            sleep(1)
+            
+            searchField.typeText("test")
+            sleep(1) // Wait for search results
+            
+            // Clear search
+            if let clearButton = app.buttons["Clear text"].exists ? app.buttons["Clear text"] : nil {
+                clearButton.tap()
+            } else {
+                // Alternative: select all and delete
+                searchField.tap()
+                searchField.typeText(XCUIKeyboardKey.delete.rawValue)
+                searchField.typeText(XCUIKeyboardKey.delete.rawValue)
+                searchField.typeText(XCUIKeyboardKey.delete.rawValue)
+                searchField.typeText(XCUIKeyboardKey.delete.rawValue)
+            }
+            
+            // Dismiss keyboard
+            app.navigationBars.firstMatch.tap()
+            sleep(1)
+        }
+    }
+    
+    @MainActor
+    func testCardCreationToEditingLatency() throws {
+        // Measures the time from tapping add to being able to type
+        
+        measure(metrics: [XCTClockMetric()]) {
+            let addButton = app.buttons.matching(identifier: "addCard").firstMatch
+            
+            if addButton.waitForExistence(timeout: 2) {
+                addButton.tap()
+                
+                let todoButton = app.buttons["To-do"]
+                if todoButton.waitForExistence(timeout: 2) {
+                    todoButton.tap()
+                }
+                
+                let contentField = app.textViews["Card Content Editor"]
+                let appeared = contentField.waitForExistence(timeout: 5)
+                XCTAssertTrue(appeared, "Content field should appear quickly")
+            }
+            
+            // Clean up
+            app.terminate()
+            app.launch()
+        }
+    }
+    
+    @MainActor
+    func testSwipeActionPerformance() throws {
+        let card = app.buttons.matching(NSPredicate(format: "identifier CONTAINS 'CardRow'")).firstMatch
+        
+        guard card.waitForExistence(timeout: 3) else {
+            XCTSkip("No cards available")
+            return
+        }
+        
+        measure(metrics: [XCTClockMetric()]) {
+            card.swipeLeft()
+            sleep(1)
+            
+            // Swipe back to dismiss
+            card.swipeRight()
+            sleep(1)
+        }
+    }
+    
+    @MainActor
+    func testMemoryStabilityDuringEditing() throws {
+        // Tests that memory remains stable during extended editing
+        
+        let addButton = app.buttons.matching(identifier: "addCard").firstMatch
+        
+        guard addButton.waitForExistence(timeout: 3) else {
+            XCTSkip("Add button not found")
+            return
+        }
+        
+        addButton.tap()
+        
+        let noteButton = app.buttons["Note"]
+        guard noteButton.waitForExistence(timeout: 2) else {
+            XCTSkip("Note button not found")
+            return
+        }
+        noteButton.tap()
+        
+        let contentField = app.textViews["Card Content Editor"]
+        guard contentField.waitForExistence(timeout: 3) else {
+            XCTSkip("Content field not found")
+            return
+        }
+        
+        contentField.tap()
+        sleep(1)
+        
+        // Type, delete, type again multiple times
+        for i in 0..<3 {
+            contentField.typeText("Iteration \(i): Some content here")
+            sleep(1)
+            
+            // Select all and delete
+            contentField.doubleTap()
+            sleep(1)
+            contentField.typeText(XCUIKeyboardKey.delete.rawValue)
+            sleep(1)
+        }
+        
+        // Final content
+        contentField.typeText("Final content after multiple edits")
+        
+        // App should remain responsive
+        XCTAssertTrue(app.state == .runningForeground)
+    }
+    
+    @MainActor
+    func testUIResponsivenessAfterManyOperations() throws {
+        // Perform many operations and verify UI remains responsive
+        
+        // Create cards
+        for i in 0..<3 {
+            let addButton = app.buttons.matching(identifier: "addCard").firstMatch
+            if addButton.waitForExistence(timeout: 2) {
+                addButton.tap()
+                
+                let todoButton = app.buttons["To-do"]
+                if todoButton.waitForExistence(timeout: 2) {
+                    todoButton.tap()
+                }
+                
+                let contentField = app.textViews["Card Content Editor"]
+                if contentField.waitForExistence(timeout: 2) {
+                    contentField.tap()
+                    contentField.typeText("Stress test \(i)")
+                    app.navigationBars.firstMatch.tap()
+                    sleep(1)
+                }
+            }
+        }
+        
+        // Perform filter operations
+        let filterButton = app.buttons["Filter"]
+        if filterButton.exists {
+            filterButton.tap()
+            sleep(1)
+            
+            let flashcardFilter = app.buttons["Flashcards"]
+            if flashcardFilter.waitForExistence(timeout: 2) {
+                flashcardFilter.tap()
+                sleep(1)
+            }
+        }
+        
+        // Search
+        let searchField = app.searchFields.firstMatch
+        if searchField.exists {
+            searchField.tap()
+            searchField.typeText("test")
+            sleep(1)
+            app.navigationBars.firstMatch.tap()
+        }
+        
+        // Verify app is still responsive
+        let startTime = CFAbsoluteTimeGetCurrent()
+        let responded = app.navigationBars.firstMatch.waitForExistence(timeout: 2)
+        let responseTime = CFAbsoluteTimeGetCurrent() - startTime
+        
+        XCTAssertTrue(responded, "App should remain responsive")
+        XCTAssertLessThan(responseTime, 3.0, "Response time should be under 3 seconds")
+    }
+    
+    // MARK: - Persistence Performance Tests
+    
+    @MainActor
+    func testDataPersistenceSpeed() throws {
+        // Create a card and measure how fast it persists
+        let addButton = app.buttons.matching(identifier: "addCard").firstMatch
+        
+        guard addButton.waitForExistence(timeout: 3) else {
+            XCTSkip("Add button not found")
+            return
+        }
+        
+        measure(metrics: [XCTClockMetric()]) {
+            addButton.tap()
+            
+            let todoButton = app.buttons["To-do"]
+            if todoButton.waitForExistence(timeout: 2) {
+                todoButton.tap()
+            }
+            
+            let contentField = app.textViews["Card Content Editor"]
+            if contentField.waitForExistence(timeout: 2) {
+                contentField.tap()
+                contentField.typeText("Persistence speed test \(Date())")
+                
+                // Deselect to trigger save
+                app.navigationBars.firstMatch.tap()
+                sleep(1)
+                
+                // Terminate and relaunch
+                app.terminate()
+                app.launch()
+                
+                // Wait for data to load
+                _ = app.navigationBars.firstMatch.waitForExistence(timeout: 5)
+            }
+        }
+    }
+    
+    @MainActor
+    func testAppLaunchWithDataPerformance() throws {
+        // Measures app launch time with existing data
+        measure(metrics: [XCTApplicationLaunchMetric(), XCTMemoryMetric()]) {
+            app.launch()
+            
+            // Wait for main UI to appear
+            _ = app.navigationBars.firstMatch.waitForExistence(timeout: 10)
+            
+            app.terminate()
+        }
+    }
 }

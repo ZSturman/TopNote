@@ -1,4 +1,3 @@
-// Create a new ObservableObject to track selected card globally.
 import Foundation
 import SwiftUI
 import SwiftData

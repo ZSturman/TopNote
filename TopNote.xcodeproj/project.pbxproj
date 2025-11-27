@@ -89,11 +89,15 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Models/Card.swift,
-				Models/Enums.swift,
+				Models/CardType.swift,
 				Models/Folder.swift,
+				Models/PriorityType.swift,
 				Models/RatingModels.swift,
-				SharedModel.swift,
-				Tips.swift,
+				Models/RatingType.swift,
+				Models/RepeatInterval.swift,
+				Models/RepeatPolicy.swift,
+				Persistence/SharedModel.swift,
+				Tips/Tips.swift,
 			);
 			target = EFBE070B2D63E4DC004B39A0 /* TopNoteWidgetExtension */;
 		};
@@ -524,7 +528,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = TopNote/TopNote.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_ASSET_PATHS = "\"TopNote/Preview Content\"";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
@@ -564,7 +568,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = TopNote/TopNote.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_ASSET_PATHS = "\"TopNote/Preview Content\"";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;

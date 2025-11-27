@@ -31,6 +31,17 @@ final class CardTag {
 @Model
 final class Card {
     
+    // MARK: - Widget Reload Throttling
+    private static var lastWidgetReload: Date = .distantPast
+    private static let widgetReloadThrottle: TimeInterval = 2.0
+    
+    static func throttledWidgetReload() {
+        let now = Date()
+        guard now.timeIntervalSince(lastWidgetReload) > widgetReloadThrottle else { return }
+        lastWidgetReload = now
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+    
     // MARK: - Properties
     
     /// Unique identifier for the card.
@@ -113,55 +124,73 @@ final class Card {
         }
     }
     
+    // MARK: - Cached Properties for Performance
+    @Transient private var _cachedCompletes: [Date]?
+    @Transient private var _cachedEnqueues: [Date]?
+    @Transient private var _cachedRemovals: [Date]?
+    @Transient private var _cachedSkips: [Date]?
+    
     /// Stores an array of Dates representing when the card was marked complete.
     var completes: [Date] {
         get {
+            if let cached = _cachedCompletes { return cached }
             guard let data = completeData,
                   let decoded = try? JSONDecoder().decode([Date].self, from: data)
             else { return [] }
+            _cachedCompletes = decoded
             return decoded
         }
         set {
             completeData = try? JSONEncoder().encode(newValue)
+            _cachedCompletes = newValue
         }
     }
     
     /// Stores an array of Dates representing when the card was enqueued.
     var enqueues: [Date] {
         get {
+            if let cached = _cachedEnqueues { return cached }
             guard let data = enqueueData,
                   let decoded = try? JSONDecoder().decode([Date].self, from: data)
             else { return [] }
+            _cachedEnqueues = decoded
             return decoded
         }
         set {
             enqueueData = try? JSONEncoder().encode(newValue)
+            _cachedEnqueues = newValue
         }
     }
     
     /// Stores an array of Dates representing when the card was removed from the queue.
     var removals: [Date] {
         get {
+            if let cached = _cachedRemovals { return cached }
             guard let data = removalData,
                   let decoded = try? JSONDecoder().decode([Date].self, from: data)
             else { return [] }
+            _cachedRemovals = decoded
             return decoded
         }
         set {
             removalData = try? JSONEncoder().encode(newValue)
+            _cachedRemovals = newValue
         }
     }
     
     /// Stores an array of Dates representing when the card was skipped.
     var skips: [Date] {
         get {
+            if let cached = _cachedSkips { return cached }
             guard let data = skipData,
                   let decoded = try? JSONDecoder().decode([Date].self, from: data)
             else { return [] }
+            _cachedSkips = decoded
             return decoded
         }
         set {
             skipData = try? JSONEncoder().encode(newValue)
+            _cachedSkips = newValue
         }
     }
     
@@ -298,7 +327,7 @@ final class Card {
             }
             
         }
-        WidgetCenter.shared.reloadAllTimelines()
+        Card.throttledWidgetReload()
     }
     
     func markAsComplete(at currentDate: Date) {
@@ -324,7 +353,7 @@ final class Card {
                 archive(at: currentDate)
                 self.isComplete = true
             }
-        WidgetCenter.shared.reloadAllTimelines()
+        Card.throttledWidgetReload()
     }
     
     func markAsNotComplete(at currentDate: Date) {
@@ -342,12 +371,12 @@ final class Card {
                 as: .notComplete
             )
         }
-        WidgetCenter.shared.reloadAllTimelines()
+        Card.throttledWidgetReload()
     }
     
     func showAnswer(at currentDate: Date) {
         self.answerRevealed = true
-        WidgetCenter.shared.reloadAllTimelines()
+        Card.throttledWidgetReload()
     }
     
     func skip(at currentDate: Date) {
@@ -359,7 +388,7 @@ final class Card {
                     from: currentDate,
                     as: .skip
                 )
-        WidgetCenter.shared.reloadAllTimelines()
+        Card.throttledWidgetReload()
     }
     
     func next(at currentDate: Date) {
@@ -385,7 +414,7 @@ final class Card {
                 )
                 archive(at: currentDate)
             }
-        WidgetCenter.shared.reloadAllTimelines()
+        Card.throttledWidgetReload()
     }
     
     func archive(at currentDate: Date) {
@@ -400,7 +429,7 @@ final class Card {
         }
         self.isArchived = true
         self.nextTimeInQueue = .distantFuture
-        WidgetCenter.shared.reloadAllTimelines()
+        Card.throttledWidgetReload()
     }
     
     func unarchive(at currentDate: Date) {
@@ -416,7 +445,7 @@ final class Card {
             from: currentDate,
             as: .unarchive
         )
-        WidgetCenter.shared.reloadAllTimelines()
+        Card.throttledWidgetReload()
     }
     
 
@@ -434,7 +463,7 @@ final class Card {
         self.seenCount += 1
         self.nextTimeInQueue = currentDate
         self.enqueues.append(currentDate)
-        WidgetCenter.shared.reloadAllTimelines()
+        Card.throttledWidgetReload()
     }
     
     // add tag to the card

@@ -18,7 +18,6 @@ struct ContentView: View {
     
         } detail: {
             
-            // Pass selectedCardID for deep-link URL selection
             CardListView(
                 selectedFolder: $selectedFolder, 
                 tagSelectionStates: tagSelectionStates,

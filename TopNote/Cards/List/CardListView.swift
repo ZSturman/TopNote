@@ -1,0 +1,153 @@
+//  CardList.swift
+//  TopNote
+//
+//  Created by Zachary Sturman on 7/28/25.
+//
+
+import Foundation
+import SwiftData
+import SwiftUI
+import TipKit
+
+struct CardListView: View {
+    @Environment(\.modelContext) var context
+    @EnvironmentObject var selectedCardModel: SelectedCardModel
+    
+    @Query var cards: [Card]
+    @Query var tags: [CardTag]
+    
+    @Binding var selectedFolder: FolderSelection?
+    var tagSelectionStates: [UUID: TagSelectionState]
+    @Binding var deepLinkedCardID: UUID?
+    
+    // Sorting & filtering
+    @State var sortCriteria: CardSortCriteria = .enqueuedAt
+    @State var ascending: Bool = true
+    @State var filterOptions: [CardFilterOption] = CardFilterOption.allCases
+    
+    // UI state
+    @State var showAddCardActionSheet = false
+    @State var showShareSheet = false
+    @State var exportedFileURL: URL?
+    
+    @State var isQueueExpanded = true
+    @State var isUpcomingExpanded = true
+    @State var isArchivedExpanded = false
+    
+    @State var showImportPicker = false
+    @State var showImportCSVPicker = false
+    @State var selectionMode = false
+    @State var selectedCards = Set<Card>()
+    
+    @State var showImportSuccessAlert = false
+    @State var importErrorMessage: String? = nil
+    
+    @State var searchText = ""
+    @State var scrollToCardID: UUID? = nil
+    @State var priorityChangedForCardID: UUID? = nil
+    
+    // Tip tracking
+    @State var appOpenCount = 0
+    @State var hasViewedQueueCard = false
+    
+    let addFirstCardTip = FirstNoteTip()
+    let addWidgetTip = AddWidgetTip()
+    let firstQueueCardTip = FirstQueueCardTip()
+    let customizeWidgetTip = CustomizeWidgetTip()
+    let getStartedTip = GetStartedTip()
+    let firstNoteTip = FirstNoteTip_Skip()
+    let firstTodoTip = FirstTodoTip_Skip()
+    let firstFlashcardTip = FirstFlashcardTip_Skip()
+    
+    
+    private struct CardListTaskID: Equatable {
+        let sortCriteria: CardSortCriteria
+        let ascending: Bool
+        let folderSelection: FolderSelection?
+        let filterOptions: [CardFilterOption]
+        let tagStates: [UUID: TagSelectionState]
+    }
+    
+    init(
+        selectedFolder: Binding<FolderSelection?>,
+        tagSelectionStates: [UUID: TagSelectionState],
+        deepLinkedCardID: Binding<UUID?> = .constant(nil)
+    ) {
+        _selectedFolder = selectedFolder
+        self.tagSelectionStates = tagSelectionStates
+        _deepLinkedCardID = deepLinkedCardID
+        
+    }
+    
+    private var taskID: CardListTaskID {
+        CardListTaskID(
+            sortCriteria: sortCriteria,
+            ascending: ascending,
+            folderSelection: selectedFolder,
+            filterOptions: filterOptions,
+            tagStates: tagSelectionStates
+        )
+    }
+    
+    var body: some View {
+        ScrollViewReader { proxy in
+            Group {
+                contentListView
+            }
+            .listStyle(.plain)
+            .navigationTitle(selectedFolder?.name ?? "All Cards")
+            .searchable(text: $searchText, prompt: "Search cards")
+            .onAppear(perform: handleOnAppear)
+            .onChange(of: searchText) { oldValue, newValue in
+                handleSearchChange(oldValue: oldValue, newValue: newValue)
+            }
+            .onChange(of: selectedFolder) { oldValue, newValue in
+                handleFolderChange(oldValue: oldValue, newValue: newValue)
+            }
+            .onChange(of: deepLinkedCardID) { oldValue, newValue in
+                handleDeepLink(oldValue: oldValue, newValue: newValue)
+            }
+            .onChange(of: scrollToCardID) { _, newID in
+                scrollToCardIDChanged(to: newID, proxy: proxy)
+            }
+            .onChange(of: selectedCardModel.selectedCard?.id) { oldID, newID in
+                handleSelectionChange(oldID: oldID, newID: newID)
+            }
+            .toolbar {
+                leadingToolbarItems
+                trailingToolbarItems
+            }
+        
+            .overlay(alignment: .bottomTrailing) {
+                addCardButton
+            }
+            .sheet(isPresented: $showShareSheet) {
+                if let exportedFileURL {
+                    ShareSheet(activityItems: [exportedFileURL])
+                }
+            }
+
+            .fileImporter( // JSON importer
+                isPresented: $showImportPicker,
+                allowedContentTypes: [.json],
+                onCompletion: handleJSONImport
+            )
+            .fileImporter( // CSV importer
+                isPresented: $showImportCSVPicker,
+                allowedContentTypes: [.commaSeparatedText],
+                onCompletion: handleCSVImport
+            )
+            .alert("Import Successful!", isPresented: $showImportSuccessAlert) {
+                Button("OK", role: .cancel) {}
+            }
+            .alert(
+                "Import Failed",
+                isPresented: .constant(importErrorMessage != nil)
+            ) {
+                Button("OK", role: .cancel) { importErrorMessage = nil }
+            } message: {
+                Text(importErrorMessage ?? "Unknown error")
+            }
+        }
+    }
+}

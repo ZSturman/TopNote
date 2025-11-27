@@ -43,7 +43,7 @@ struct AddNewTagSheet: View {
                     if card.tags == nil { card.tags = [] }
                     card.tags?.append(newTag)
                     try? context.save()
-                    WidgetCenter.shared.reloadAllTimelines()
+                    Card.throttledWidgetReload()
                     newTagName = ""
                 }
                 .disabled(newTagName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
@@ -65,7 +65,7 @@ struct AddNewTagSheet: View {
                             card.tags?.append(tag)
                         }
                         try? context.save()
-                        WidgetCenter.shared.reloadAllTimelines()
+                        Card.throttledWidgetReload()
                     }
                 }
                 .padding([.horizontal, .vertical])

@@ -196,10 +196,6 @@ struct CardRowContextMenu: View {
         }
 
         Divider()
-//        Button { manager.primaryAction(card) } label: {
-//            Label(manager.primaryAction(card).textValue, systemImage: card.cardType.iconName)
-//        }
-        // Folder Dropdown
         Menu {
             Button("New Folder...") { moveAction() }
             Divider()

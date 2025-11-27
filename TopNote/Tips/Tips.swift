@@ -37,30 +37,6 @@ struct AddWidgetTip: Tip {
     }
 }
 
-//struct ImportExportTip: Tip {
-//    static let openedSettingsEvent = Event(id: "openedSettings")
-//    
-//    var title: Text {
-//        Text("Import & Export your cards")
-//    }
-//    
-//    var message: Text? {
-//        Text(
-//"""
-//Export creates a JSON file with all your cards' content, settings, and metadata. Import accepts JSON files—each card needs at least a type and content. Great for backups or moving between devices!
-//"""
-//        )
-//    }
-//
-//    var image: Image? {
-//        Image(systemName: "arrow.up.arrow.down.circle")
-//    }
-//    
-//    var rules: [Rule] {
-//        #Rule(Self.openedSettingsEvent) { $0.donations.count >= 1 }
-//    }
-//}
-
 // MARK: - Policy Tips
 
 struct PoliciesTip: Tip {

@@ -77,6 +77,6 @@ struct NewFolderForm: View {
         let newFolder = Folder(name: newFolderName.trimmingCharacters(in: .whitespacesAndNewlines))
         modelContext.insert(newFolder)
         selectedFolder = .folder(newFolder)
-        WidgetCenter.shared.reloadAllTimelines()
+        Card.throttledWidgetReload()
     }
 }

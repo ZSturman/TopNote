@@ -22,6 +22,8 @@ extension CardRow {
 
         let folders: [Folder]
         let onPriorityChanged: ((UUID) -> Void)?
+        
+        var moveAction: () -> Void
 
         var body: some View {
             HStack {
@@ -39,6 +41,7 @@ extension CardRow {
                             card: card,
                             folders: folders,
                             onPriorityChanged: onPriorityChanged,
+                            moveAction: moveAction
                         )
                     } else {
                         CardRowContentDisplay(card: card)
@@ -124,12 +127,13 @@ extension CardRow {
         @FocusState.Binding var isContentEditorFocused: Bool
 
         @EnvironmentObject var selectedCardModel: SelectedCardModel
+        @Environment(\.modelContext) var modelContext
 
         var body: some View {
             VStack(alignment: .leading, spacing: 4) {
                 TextEditor(text: $draftContent)
                     .font(.headline.weight(.semibold))
-                    .frame(minHeight: 44, maxHeight: 80)
+                    .frame(minHeight: 80, maxHeight: 220)
                     .multilineTextAlignment(.leading)
                     .disableAutocorrection(false)
                     .textInputAutocapitalization(.sentences)
@@ -138,6 +142,7 @@ extension CardRow {
                             .fill(Color.accentColor.opacity(0.12))
                     )
                     .focused($isContentEditorFocused)
+                    .accessibilityIdentifier("Card Content Editor")
                     .onAppear {
                         if selectedCardModel.isNewlyCreated {
                             isContentEditorFocused = true
@@ -146,6 +151,12 @@ extension CardRow {
                         if card.cardType == .flashcard {
                             draftAnswer = card.answer ?? ""
                         }
+                    }
+                    .onChange(of: draftContent) { _, newValue in
+                        // Sync draft to card IMMEDIATELY (no debounce) so finishEdits sees latest content
+                        print("📝 [CardRowEditor] draftContent changed to: '\(newValue)'")
+                        card.content = newValue
+                        print("📝 [CardRowEditor] Synced card.content to: '\(card.content)'")
                     }
 
                 if card.cardType != .flashcard {
@@ -159,6 +170,12 @@ extension CardRow {
                         draftAnswer: $draftAnswer,
                         showingFlashcardAnswer: $showingFlashcardAnswer
                     )
+                    .onChange(of: draftAnswer) { _, newValue in
+                        // Sync draft answer to card IMMEDIATELY
+                        print("📝 [CardRowEditor] draftAnswer changed to: '\(newValue)'")
+                        card.answer = newValue
+                        print("📝 [CardRowEditor] Synced card.answer to: '\(card.answer ?? "")'")
+                    }
                     if selectedCardModel.selectedCard?.id == card.id {
                         TagInputView(card: card)
                             .padding(.vertical, 4)
@@ -174,12 +191,14 @@ extension CardRow {
         let onPriorityChanged: ((UUID) -> Void)?
         let recurringOffTip = RecurringOffTip()
         let policiesTip = PoliciesTip()
+        
+        var moveAction: () -> Void
 
         @EnvironmentObject var selectedCardModel: SelectedCardModel
 
         var body: some View {
             VStack(alignment: .leading, spacing: 10) {
-                FolderMenu(card: card, folders: folders)
+                FolderMenu(card: card, folders: folders, moveAction: moveAction)
 
                 HStack {
                     Spacer()
@@ -251,7 +270,7 @@ extension CardRow {
                 if showingFlashcardAnswer {
                     TextEditor(text: $draftAnswer)
                         .font(.subheadline)
-                        .frame(minHeight: 44, maxHeight: 160)
+                        .frame(minHeight: 80, maxHeight: 200)
                         .background(
                             RoundedRectangle(cornerRadius: 8)
                                 .fill(Color.accentColor.opacity(0.10))
@@ -259,6 +278,7 @@ extension CardRow {
                         .disableAutocorrection(false)
                         .textInputAutocapitalization(.sentences)
                         .padding(.vertical, 2)
+                        .accessibilityIdentifier("Card Answer Editor")
 
                     Button {
                         withAnimation {
@@ -270,6 +290,7 @@ extension CardRow {
                             .foregroundColor(.blue)
                     }
                     .buttonStyle(BorderlessButtonStyle())
+                    .accessibilityIdentifier("Hide Answer")
                 } else {
                     Button {
                         withAnimation {
@@ -282,6 +303,7 @@ extension CardRow {
                             .foregroundColor(.blue)
                     }
                     .buttonStyle(BorderlessButtonStyle())
+                    .accessibilityIdentifier("Show Answer")
                 }
             }
         }
@@ -294,31 +316,60 @@ extension CardRow {
         @Binding var showingSkipInfo: Bool
         
         var body: some View {
-            HStack(spacing: 4) {
-                Text(card.displayedRecurringMessageShort)
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                Button {
-                    showingLongInfo = true
-                    // Close others
-                    showingRatingsPolicyInfo = false
-                    showingSkipInfo = false
-                } label: {
-                    Image(systemName: "info.circle")
-                        .foregroundColor(.blue)
-                        .font(.caption2)
+            if card.isRecurring || card.displayedRecurringMessageShort.isEmpty {
+                EmptyView()
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 4) {
+                        Text(card.displayedRecurringMessageShort)
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                        Button {
+                            showingLongInfo = true
+                            // Close others
+                            showingRatingsPolicyInfo = false
+                            showingSkipInfo = false
+                        } label: {
+                            Image(systemName: "info.circle")
+                                .foregroundColor(.blue)
+                                .font(.caption2)
+                        }
+                        .buttonStyle(BorderlessButtonStyle())
+                        .confirmationDialog(
+                            "Card Recurring Info",
+                            isPresented: $showingLongInfo,
+                            titleVisibility: .hidden
+                        ) {
+                            Button("OK", role: .cancel) {}
+                        } message: {
+                            Text(card.displayedRecurringMessageLong)
+                        }
+                    }
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.clockwise")
+                            .foregroundColor(.secondary)
+                            .accessibilityLabel(Text(card.displayedRecurringMessageShort))
+                        Button {
+                            showingLongInfo = true
+                            // Close others
+                            showingRatingsPolicyInfo = false
+                            showingSkipInfo = false
+                        } label: {
+                            Image(systemName: "info.circle")
+                                .foregroundColor(.blue)
+                        }
+                        .buttonStyle(BorderlessButtonStyle())
+                        .confirmationDialog(
+                            "Card Recurring Info",
+                            isPresented: $showingLongInfo,
+                            titleVisibility: .hidden
+                        ) {
+                            Button("OK", role: .cancel) {}
+                        } message: {
+                            Text(card.displayedRecurringMessageLong)
+                        }
+                    }
                 }
-                .buttonStyle(BorderlessButtonStyle())
-                .confirmationDialog(
-                    "Card Recurring Info",
-                    isPresented: $showingLongInfo,
-                    titleVisibility: .hidden
-                ) {
-                    Button("OK", role: .cancel) {}
-                } message: {
-                    Text(card.displayedRecurringMessageLong)
-                }
-          
             }
         }
     }
@@ -363,7 +414,7 @@ extension CardRow {
             if showingFlashcardAnswer {
                 TextEditor(text: $draftAnswer)
                     .font(.subheadline)
-                    .frame(minHeight: 44, maxHeight: 160)
+                    .frame(minHeight: 80, maxHeight: 200)
                     .background(
                         RoundedRectangle(cornerRadius: 8)
                             .fill(Color.accentColor.opacity(0.10))

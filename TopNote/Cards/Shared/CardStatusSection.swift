@@ -23,11 +23,10 @@ struct CardStatusSection: View {
 
     private var sortedCards: [Card] {
         cards.sorted(by: { card1, card2 in
-            // Defer priority sorting if ANY card is selected and has had priority changed
-            if selectedCardModel.selectedCard != nil,
-               let changedCardID = priorityChangedForCardID,
-               (card1.id == changedCardID || card2.id == changedCardID) {
-                // Only sort by nextTimeInQueue to keep card position stable
+            // When ANY card is selected, freeze the sort order to prevent jarring jumps
+            // This prevents the list from reordering while the user is editing
+            if selectedCardModel.selectedCard != nil {
+                // Only sort by nextTimeInQueue to keep card positions stable during editing
                 return ascending
                     ? card1.nextTimeInQueue < card2.nextTimeInQueue
                     : card1.nextTimeInQueue > card2.nextTimeInQueue

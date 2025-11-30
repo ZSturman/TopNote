@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import SwiftData
 
 extension CardListView {
     @ToolbarContentBuilder
@@ -67,10 +68,13 @@ extension CardListView {
                     }
                     Menu("Import Cards") {
                         Button("from JSON") {
+                           
+                            importMode = .json
                             showImportPicker = true
                         }
                         Button("from CSV") {
-                            showImportCSVPicker = true
+                            importMode = .csv
+                            showImportPicker = true
                         }
                     }
                 } label: {
@@ -101,23 +105,46 @@ extension CardListView {
     func finishEdits() {
         // Commit changes; if card is empty, delete it
         if let card = selectedCardModel.selectedCard {
+            print("📝 [FINISH EDITS] Card ID: \(card.id)")
+            print("📝 [FINISH EDITS] Card content: '\(card.content)'")
+            
             let isEmpty = card.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            print("📝 [FINISH EDITS] Content isEmpty: \(isEmpty)")
+            
             if isEmpty {
+                print("📝 [FINISH EDITS] DELETING card because content is empty")
                 context.delete(card)
+            } else {
+                print("📝 [FINISH EDITS] KEEPING card with content")
             }
-            try? context.save()
+            
+            do {
+                try context.save()
+                print("📝 [FINISH EDITS] Context saved successfully")
+                
+                // DEBUG: Print card count after save
+                let fetchDescriptor = FetchDescriptor<Card>()
+                let count = (try? context.fetch(fetchDescriptor).count) ?? 0
+                print("📝 [FINISH EDITS] Card count after save: \(count)")
+            } catch {
+                print("📝 [FINISH EDITS] ERROR saving context: \(error)")
+            }
         }
         selectedCardModel.clearSelection()
     }
 
     func cancelEdits() {
         if let card = selectedCardModel.selectedCard {
+            print("📝 [CANCEL EDITS] Card ID: \(card.id), isNewlyCreated: \(selectedCardModel.isNewlyCreated)")
+            
             if selectedCardModel.isNewlyCreated {
                 // New card -> delete entirely
+                print("📝 [CANCEL EDITS] DELETING newly created card")
                 context.delete(card)
                 try? context.save()
             } else {
                 // Existing card -> restore snapshot
+                print("📝 [CANCEL EDITS] Restoring snapshot for existing card")
                 selectedCardModel.restoreSnapshotIfAvailable()
                 try? context.save()
             }

@@ -79,6 +79,17 @@
                ReferencedContainer = "container:TopNote.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "EFA68A432EDAE8CA00214210"
+               BuildableName = "DemoVideoUITests.xctest"
+               BlueprintName = "DemoVideoUITests"
+               ReferencedContainer = "container:TopNote.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

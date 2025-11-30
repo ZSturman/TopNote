@@ -31,7 +31,6 @@ struct TopNoteApp: App {
             // 3) Inject both the SwiftData container and your manager
                 .modelContainer(sharedModelContainer)
                 .task {
-
                         do {
                             try Tips.configure([
                                 .displayFrequency(.immediate),
@@ -41,8 +40,12 @@ struct TopNoteApp: App {
                             // Configuration failures shouldn't crash the app
                             print("Tips.configure failed: \(error)")
                         }
-                    
                 }
+                #if DEBUG
+                .task {
+                    seedDemoDataIfNeeded(into: sharedModelContainer)
+                }
+                #endif
                 .task {
                     // Request permission for badges once on first launch
                     await requestBadgeAuthorizationIfNeeded()
@@ -103,9 +106,17 @@ struct TopNoteApp: App {
         }
         let fetch = FetchDescriptor<Card>(predicate: predicate)
         do {
-            return try context.fetch(fetch).count
+            let count = try context.fetch(fetch).count
+            print("📝 [APP BADGE] Queued cards count: \(count)")
+            
+            // Also print total cards count for debugging
+            let allCardsDescriptor = FetchDescriptor<Card>()
+            let totalCount = try context.fetch(allCardsDescriptor).count
+            print("📝 [APP BADGE] Total cards count: \(totalCount)")
+            
+            return count
         } catch {
-            print("Failed to fetch queued count: \(error)")
+            print("📝 [APP BADGE] Failed to fetch queued count: \(error)")
             return 0
         }
     }

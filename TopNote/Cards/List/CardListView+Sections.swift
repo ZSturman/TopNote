@@ -10,6 +10,21 @@ import TipKit
 import SwiftUI
 
 extension CardListView {
+    
+    var emptyStatusFilterView: some View {
+        VStack(spacing: 8) {
+            Text("No statuses selected")
+                .font(.headline)
+            Text("Enable Queue, Upcoming, or Archived in Filters to see your cards here.")
+                .multilineTextAlignment(.center)
+                .foregroundColor(.secondary)
+                .font(.subheadline)
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.vertical, 16)
+    }
+    
+    
     var queueSection: some View {
         Section(
             header:
@@ -28,6 +43,7 @@ extension CardListView {
                 .onTapGesture { isQueueExpanded.toggle() }
                 // Added id for queue section header for scrolling
                 .id("queue-section")
+                .accessibilityIdentifier("QueueSectionHeader")
         ) {
             if isQueueExpanded {
                 if queueCards.isEmpty {
@@ -78,6 +94,7 @@ extension CardListView {
                 .onTapGesture { isUpcomingExpanded.toggle() }
                 // Added id for upcoming section header for scrolling
                 .id("upcoming-section")
+                .accessibilityIdentifier("UpcomingSectionHeader")
         ) {
             if isUpcomingExpanded {
                 if upcomingCards.isEmpty {
@@ -116,6 +133,7 @@ extension CardListView {
                 }
                 .contentShape(Rectangle())
                 .onTapGesture { isArchivedExpanded.toggle() }
+                .accessibilityIdentifier("ArchivedSectionHeader")
         ) {
             if isArchivedExpanded {
                 if archivedCards.isEmpty {
@@ -373,9 +391,19 @@ extension CardListView {
             List {
                 if !selectedCardModel.isNewlyCreated { TipView(addWidgetTip) }
                 TipView(customizeWidgetTip)
-                queueSection
-                upcomingSection
-                archivedSection
+                if activeStatusFilters.isEmpty {
+                    emptyStatusFilterView
+                } else {
+                    if shouldShowQueueSection {
+                        queueSection
+                    }
+                    if shouldShowUpcomingSection {
+                        upcomingSection
+                    }
+                    if shouldShowArchivedSection {
+                        archivedSection
+                    }
+                }
             }
         case .createdAt:
             createdAtSection
@@ -385,4 +413,6 @@ extension CardListView {
             seenCountSection
         }
     }
+    
+    
 }

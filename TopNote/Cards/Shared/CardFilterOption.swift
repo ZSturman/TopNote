@@ -32,7 +32,7 @@ enum CardFilterOption: String, CaseIterable, Identifiable {
         case .todo:      return "To-Do"
         case .flashcard: return "Flashcards"
         case .note:      return "Notes"
-        case .enqueue:   return "Enqueued"
+        case .enqueue:   return "Queue"
         case .upcoming:  return "Upcoming"
         case .archived:  return "Archived"
         }

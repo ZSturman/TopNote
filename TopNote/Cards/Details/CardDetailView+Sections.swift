@@ -26,6 +26,7 @@ extension CardDetailView {
                     RoundedRectangle(cornerRadius: 8)
                         .stroke(Color.secondary.opacity(0.3))
                 )
+                .accessibilityIdentifier("DetailContentEditor")
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -50,6 +51,7 @@ extension CardDetailView {
                         RoundedRectangle(cornerRadius: 8)
                             .stroke(Color.secondary.opacity(0.3))
                     )
+                    .accessibilityIdentifier("DetailAnswerEditor")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -255,6 +257,7 @@ extension CardDetailView {
                             }
                         }
                     }))
+                    .accessibilityIdentifier("RecurringToggle")
                     .accessibilityHint("Toggle whether card repeats")
                     
                     HStack {
@@ -559,6 +562,7 @@ extension CardDetailView {
                         .foregroundColor(.primary)
                         .cornerRadius(8)
                 }
+                .accessibilityIdentifier(card.isArchived ? "UnarchiveButton" : "ArchiveButton")
                 .accessibilityLabel(card.isArchived ? "Unarchive card" : "Archive card")
                 
                 Button(role: .destructive) {
@@ -568,6 +572,7 @@ extension CardDetailView {
                         .frame(maxWidth: .infinity)
                         .padding()
                 }
+                .accessibilityIdentifier("DeleteCardButton")
                 .accessibilityLabel("Delete card")
             }
         }

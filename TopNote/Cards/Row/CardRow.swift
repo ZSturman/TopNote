@@ -50,7 +50,12 @@ struct CardRow: View {
     private func deleteIfEmptyAndNotSelected() {
         // Trim whitespace/newlines
         let isEmpty = card.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        // Only log when content is empty (the interesting case) to reduce log spam
+        if isEmpty {
+            print("📝 [CardRow deleteIfEmpty] Card ID: \(card.id), isSelected: \(isSelected), isEmpty: \(isEmpty), content: '\(card.content)'")
+        }
         if !isSelected && isEmpty {
+            print("📝 [CardRow deleteIfEmpty] DELETING card because not selected and empty")
             modelContext.delete(card)
             try? modelContext.save()
         }
@@ -66,7 +71,8 @@ struct CardRow: View {
                 showingFlashcardAnswer: $showingFlashcardAnswer,
                 isContentEditorFocused: $isContentEditorFocused,
                 folders: folders,
-                onPriorityChanged: onPriorityChanged
+                onPriorityChanged: onPriorityChanged,
+                moveAction: { activeSheet = .move }
             )
             CardRowFooter(
                 card: card,
@@ -81,6 +87,7 @@ struct CardRow: View {
             RoundedRectangle(cornerRadius: 8)
                 .fill(isSelected ? card.cardType.tintColor.opacity(0.12) : Color.clear)
         )
+        .accessibilityIdentifier("CardRow-\(card.id.uuidString)")
         .sheet(item: $activeSheet) { sheet in
             switch sheet {
             case .details:
@@ -126,18 +133,29 @@ struct CardRow: View {
     }
     
     private func handleSelectionChange(newValue: Bool) {
+        print("📝 [CardRow handleSelectionChange] newValue: \(newValue), card ID: \(card.id)")
         if !newValue {
             saveTask?.cancel()
             // Commit drafts on deselect
-            if card.content != draftContent { card.content = draftContent }
+            print("📝 [CardRow handleSelectionChange] Committing drafts - draftContent: '\(draftContent)', card.content: '\(card.content)'")
+            if card.content != draftContent { 
+                card.content = draftContent 
+                print("📝 [CardRow handleSelectionChange] Updated card.content to: '\(card.content)'")
+            }
             if card.cardType == .flashcard {
                 let currentAnswer = card.answer ?? ""
                 if currentAnswer != draftAnswer { card.answer = draftAnswer }
             }
-            try? modelContext.save()
+            do {
+                try modelContext.save()
+                print("📝 [CardRow handleSelectionChange] Context saved successfully")
+            } catch {
+                print("📝 [CardRow handleSelectionChange] ERROR saving: \(error)")
+            }
             deleteIfEmptyAndNotSelected()
         } else {
             // Initialize drafts on select
+            print("📝 [CardRow handleSelectionChange] Initializing drafts from card")
             draftContent = card.content
             if card.cardType == .flashcard { draftAnswer = card.answer ?? "" }
         }

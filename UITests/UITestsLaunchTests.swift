@@ -17,13 +17,21 @@ final class UITestsLaunchTests: XCTestCase {
         continueAfterFailure = false
     }
 
+    /// Helper to create an XCUIApplication configured for UI testing with optional extra arguments.
+    private func makeApp(extraArguments: [String] = []) -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments = ["UI-TESTING"] + extraArguments
+        return app
+    }
+
     @MainActor
     func testLaunch() throws {
-        let app = XCUIApplication()
+        let app = makeApp()
         app.launch()
 
-        // Insert steps here to perform after app launch but before taking a screenshot,
-        // such as logging into a test account or navigating somewhere in the app
+        // Wait for main UI instead of relying solely on timing
+        XCTAssertTrue(app.navigationBars.firstMatch.waitForExistence(timeout: 5),
+                      "Main navigation bar should appear after launch")
 
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "Launch Screen"
@@ -35,11 +43,10 @@ final class UITestsLaunchTests: XCTestCase {
     
     @MainActor
     func testLaunchWithEmptyData() throws {
-        let app = XCUIApplication()
-        app.launchArguments = ["UI-TESTING", "EMPTY-DATA"]
+        let app = makeApp(extraArguments: ["EMPTY-DATA"])
         app.launch()
         
-        XCTAssertTrue(app.state == .runningForeground)
+        XCTAssertEqual(app.state, .runningForeground)
         
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "Launch Screen - Empty Data"
@@ -49,11 +56,10 @@ final class UITestsLaunchTests: XCTestCase {
     
     @MainActor
     func testLaunchWithSampleData() throws {
-        let app = XCUIApplication()
-        app.launchArguments = ["UI-TESTING", "SAMPLE-DATA"]
+        let app = makeApp(extraArguments: ["SAMPLE-DATA"])
         app.launch()
         
-        XCTAssertTrue(app.state == .runningForeground)
+        XCTAssertEqual(app.state, .runningForeground)
         
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "Launch Screen - Sample Data"
@@ -63,9 +69,8 @@ final class UITestsLaunchTests: XCTestCase {
     
     @MainActor
     func testLaunchPerformanceMetrics() throws {
-        let app = XCUIApplication()
-        
         measure(metrics: [XCTApplicationLaunchMetric(), XCTMemoryMetric(), XCTCPUMetric()]) {
+            let app = self.makeApp()
             app.launch()
             app.terminate()
         }
@@ -73,11 +78,10 @@ final class UITestsLaunchTests: XCTestCase {
     
     @MainActor
     func testLaunchInLightMode() throws {
-        let app = XCUIApplication()
-        app.launchArguments = ["UI-TESTING", "LIGHT-MODE"]
+        let app = makeApp(extraArguments: ["LIGHT-MODE"])
         app.launch()
         
-        XCTAssertTrue(app.state == .runningForeground)
+        XCTAssertEqual(app.state, .runningForeground)
         
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "Launch Screen - Light Mode"
@@ -87,11 +91,10 @@ final class UITestsLaunchTests: XCTestCase {
     
     @MainActor
     func testLaunchInDarkMode() throws {
-        let app = XCUIApplication()
-        app.launchArguments = ["UI-TESTING", "DARK-MODE"]
+        let app = makeApp(extraArguments: ["DARK-MODE"])
         app.launch()
         
-        XCTAssertTrue(app.state == .runningForeground)
+        XCTAssertEqual(app.state, .runningForeground)
         
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "Launch Screen - Dark Mode"
@@ -101,10 +104,12 @@ final class UITestsLaunchTests: XCTestCase {
     
     @MainActor
     func testLaunchAndNavigateToCardList() throws {
-        let app = XCUIApplication()
+        let app = makeApp()
         app.launch()
         
-        sleep(1)
+        // Wait for main UI to appear instead of sleeping
+        XCTAssertTrue(app.navigationBars.firstMatch.waitForExistence(timeout: 5),
+                      "Main navigation bar should appear after launch")
         
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "Card List After Launch"
@@ -114,10 +119,11 @@ final class UITestsLaunchTests: XCTestCase {
     
     @MainActor
     func testLaunchAndNavigateToFolders() throws {
-        let app = XCUIApplication()
+        let app = makeApp()
         app.launch()
         
-        sleep(1)
+        XCTAssertTrue(app.navigationBars.firstMatch.waitForExistence(timeout: 5),
+                      "Main navigation bar should appear after launch")
         
         let foldersButton = app.buttons["Folders"]
         if foldersButton.exists {
@@ -132,41 +138,46 @@ final class UITestsLaunchTests: XCTestCase {
     
     @MainActor
     func testLaunchOrientation() throws {
-        let app = XCUIApplication()
-        
+        // Portrait launch
         XCUIDevice.shared.orientation = .portrait
-        app.launch()
+        let portraitApp = makeApp()
+        portraitApp.launch()
         
-        let portraitAttachment = XCTAttachment(screenshot: app.screenshot())
+        let portraitAttachment = XCTAttachment(screenshot: portraitApp.screenshot())
         portraitAttachment.name = "Launch - Portrait"
         portraitAttachment.lifetime = .keepAlways
         add(portraitAttachment)
         
-        app.terminate()
+        portraitApp.terminate()
         
+        // Landscape launch
         XCUIDevice.shared.orientation = .landscapeLeft
-        app.launch()
+        let landscapeApp = makeApp()
+        landscapeApp.launch()
         
-        let landscapeAttachment = XCTAttachment(screenshot: app.screenshot())
+        let landscapeAttachment = XCTAttachment(screenshot: landscapeApp.screenshot())
         landscapeAttachment.name = "Launch - Landscape"
         landscapeAttachment.lifetime = .keepAlways
         add(landscapeAttachment)
         
+        landscapeApp.terminate()
+        
+        // Restore orientation
         XCUIDevice.shared.orientation = .portrait
     }
     
     @MainActor
     func testLaunchAfterTermination() throws {
-        let app = XCUIApplication()
+        let app = makeApp()
         
         app.launch()
-        XCTAssertTrue(app.state == .runningForeground)
+        XCTAssertEqual(app.state, .runningForeground)
         
         app.terminate()
-        XCTAssertTrue(app.state == .notRunning)
+        XCTAssertEqual(app.state, .notRunning)
         
         app.launch()
-        XCTAssertTrue(app.state == .runningForeground)
+        XCTAssertEqual(app.state, .runningForeground)
         
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "Launch After Termination"
@@ -176,24 +187,23 @@ final class UITestsLaunchTests: XCTestCase {
     
     @MainActor
     func testLaunchMemoryPressure() throws {
-        let app = XCUIApplication()
+        let app = makeApp()
         
         app.launch()
+        XCTAssertEqual(app.state, .runningForeground)
         
-        XCTAssertTrue(app.state == .runningForeground)
-        
+        // Simulate time passing (placeholder for real memory pressure tooling)
         sleep(2)
         
-        XCTAssertTrue(app.state == .runningForeground, "App should remain stable under memory pressure")
+        XCTAssertEqual(app.state, .runningForeground, "App should remain stable under memory pressure")
     }
     
     @MainActor
     func testLaunchWithAccessibilityEnabled() throws {
-        let app = XCUIApplication()
-        app.launchArguments = ["UI-TESTING", "ACCESSIBILITY"]
+        let app = makeApp(extraArguments: ["ACCESSIBILITY"])
         app.launch()
         
-        XCTAssertTrue(app.state == .runningForeground)
+        XCTAssertEqual(app.state, .runningForeground)
         
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "Launch - Accessibility Enabled"
@@ -203,9 +213,8 @@ final class UITestsLaunchTests: XCTestCase {
     
     @MainActor
     func testLaunchSpeed() throws {
-        let app = XCUIApplication()
-        
-        measure {
+        measure(metrics: [XCTClockMetric()]) {
+            let app = self.makeApp()
             app.launch()
             
             _ = app.navigationBars.firstMatch.waitForExistence(timeout: 5)
@@ -216,12 +225,12 @@ final class UITestsLaunchTests: XCTestCase {
     
     @MainActor
     func testLaunchConsistency() throws {
-        let app = XCUIApplication()
+        let app = makeApp()
         
         for iteration in 1...3 {
             app.launch()
             
-            XCTAssertTrue(app.state == .runningForeground, "Launch iteration \(iteration) failed")
+            XCTAssertEqual(app.state, .runningForeground, "Launch iteration \(iteration) failed")
             
             let attachment = XCTAttachment(screenshot: app.screenshot())
             attachment.name = "Launch Consistency - Iteration \(iteration)"
@@ -235,15 +244,13 @@ final class UITestsLaunchTests: XCTestCase {
     
     @MainActor
     func testLaunchWithDifferentLocales() throws {
-        let app = XCUIApplication()
-        
         let locales = ["en_US", "es_ES", "fr_FR"]
         
         for locale in locales {
-            app.launchArguments = ["UI-TESTING", "-AppleLocale", locale]
+            let app = makeApp(extraArguments: ["-AppleLocale", locale])
             app.launch()
             
-            XCTAssertTrue(app.state == .runningForeground)
+            XCTAssertEqual(app.state, .runningForeground)
             
             let attachment = XCTAttachment(screenshot: app.screenshot())
             attachment.name = "Launch - \(locale)"

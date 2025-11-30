@@ -34,8 +34,10 @@ struct CardListView: View {
     @State var isUpcomingExpanded = true
     @State var isArchivedExpanded = false
     
+
+
+    @State var importMode: ImportMode = .json
     @State var showImportPicker = false
-    @State var showImportCSVPicker = false
     @State var selectionMode = false
     @State var selectedCards = Set<Card>()
     
@@ -58,6 +60,11 @@ struct CardListView: View {
     let firstNoteTip = FirstNoteTip_Skip()
     let firstTodoTip = FirstTodoTip_Skip()
     let firstFlashcardTip = FirstFlashcardTip_Skip()
+    
+    enum ImportMode {
+        case json
+        case csv
+    }
     
     
     private struct CardListTaskID: Equatable {
@@ -97,6 +104,7 @@ struct CardListView: View {
             .listStyle(.plain)
             .navigationTitle(selectedFolder?.name ?? "All Cards")
             .searchable(text: $searchText, prompt: "Search cards")
+            .accessibilityIdentifier("CardListView")
             .onAppear(perform: handleOnAppear)
             .onChange(of: searchText) { oldValue, newValue in
                 handleSearchChange(oldValue: oldValue, newValue: newValue)
@@ -127,16 +135,17 @@ struct CardListView: View {
                 }
             }
 
-            .fileImporter( // JSON importer
+            .fileImporter(
                 isPresented: $showImportPicker,
-                allowedContentTypes: [.json],
-                onCompletion: handleJSONImport
-            )
-            .fileImporter( // CSV importer
-                isPresented: $showImportCSVPicker,
-                allowedContentTypes: [.commaSeparatedText],
-                onCompletion: handleCSVImport
-            )
+                allowedContentTypes: importMode == .csv ? [.commaSeparatedText] : [.json]
+            ) { result in
+                switch importMode {
+                case .json:
+                    handleJSONImport(result)
+                case .csv:
+                    handleCSVImport(result)
+                }
+            }
             .alert("Import Successful!", isPresented: $showImportSuccessAlert) {
                 Button("OK", role: .cancel) {}
             }

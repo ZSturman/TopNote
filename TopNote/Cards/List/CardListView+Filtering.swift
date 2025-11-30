@@ -10,6 +10,9 @@ import SwiftUI
 import SwiftData
 
 extension CardListView {
+    var activeStatusFilters: Set<CardFilterOption> {
+        Set(filterOptions.filter { CardFilterOption.statusFilters.contains($0) })
+    }
     var allSelectableCards: [Card] { filteredCards }
 
     var allCardsSelected: Bool {
@@ -38,9 +41,7 @@ extension CardListView {
             filterOptions.filter { CardFilterOption.typeFilters.contains($0) }
         )
         let selectedCardTypes = Set(typeFilters.compactMap { $0.asCardType })
-        let statusFilters = Set(
-            filterOptions.filter { CardFilterOption.statusFilters.contains($0) }
-        )
+        let statusFilters = activeStatusFilters
 
         // Apply type filter if any type options selected
         let typeFiltered: [Card] =
@@ -126,6 +127,18 @@ extension CardListView {
         }
     }
 
+    var shouldShowQueueSection: Bool {
+        activeStatusFilters.contains(.enqueue)
+    }
+
+    var shouldShowUpcomingSection: Bool {
+        activeStatusFilters.contains(.upcoming)
+    }
+
+    var shouldShowArchivedSection: Bool {
+        activeStatusFilters.contains(.archived)
+    }
+
     func groupCardsByDay(_ cards: [Card]) -> [Date: [Card]] {
         let calendar = Calendar.current
         return Dictionary(grouping: cards) { card in
@@ -151,32 +164,16 @@ extension CardListView {
         let cards = filteredCards.filter {
             $0.isEnqueue(currentDate: .now) && !$0.isArchived
         }
-        // Defer sorting by priority if a selected card's priority changed
-        if let selectedID = selectedCardModel.selectedCard?.id,
-           priorityChangedForCardID == selectedID {
-            // Return without re-sorting by priority to keep card position stable
-            return cards.sorted { card1, card2 in
-                return ascending
-                    ? card1.nextTimeInQueue < card2.nextTimeInQueue
-                    : card1.nextTimeInQueue > card2.nextTimeInQueue
-            }
-        }
+        // When any card is selected, don't apply priority sorting to prevent jarring reorder
+        // The actual sorting by priority happens in CardStatusSection, this just returns the base list
         return cards
     }
     var upcomingCards: [Card] {
         let cards = filteredCards.filter {
             !$0.isEnqueue(currentDate: .now) && !$0.isArchived
         }
-        // Defer sorting by priority if a selected card's priority changed
-        if let selectedID = selectedCardModel.selectedCard?.id,
-           priorityChangedForCardID == selectedID {
-            // Return without re-sorting by priority to keep card position stable
-            return cards.sorted { card1, card2 in
-                return ascending
-                    ? card1.nextTimeInQueue < card2.nextTimeInQueue
-                    : card1.nextTimeInQueue > card2.nextTimeInQueue
-            }
-        }
+        // When any card is selected, don't apply priority sorting to prevent jarring reorder
+        // The actual sorting by priority happens in CardStatusSection, this just returns the base list
         return cards
     }
     var archivedCards: [Card] {

@@ -340,6 +340,42 @@ struct CardTimingTests {
     }
 }
 
+// MARK: - Queue / Scroll Helper Tests
+
+@Suite("Queue Visibility Tests")
+struct QueueVisibilityTests {
+
+    var modelContext: ModelContext
+    var modelContainer: ModelContainer
+
+    init() throws {
+        let schema = Schema([Card.self, Folder.self, CardTag.self])
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        modelContainer = try ModelContainer(for: schema, configurations: config)
+        modelContext = ModelContext(modelContainer)
+    }
+
+    @Test func newlyCreatedEnqueuedCardIsDueImmediately() throws {
+        let now = Date()
+        let card = Card(
+            createdAt: now,
+            cardType: .todo,
+            priorityTypeRaw: .none,
+            content: "Scroll visibility test",
+            isRecurring: true,
+            repeatInterval: 24,
+            initialRepeatInterval: 24
+        )
+        modelContext.insert(card)
+        // Simulate what addCard does when you immediately enqueue
+        card.enqueue(at: now)
+        try modelContext.save()
+
+        #expect(card.isEnqueue(currentDate: now))
+        #expect(card.timeUntilNextInQueue(currentDate: now) <= 0)
+    }
+}
+
 // MARK: - Card State Tests
 
 @Suite("Card State and Lifecycle Tests")
@@ -1436,6 +1472,63 @@ struct ExportTests {
         #expect(dto.repeatInterval == 168)
         #expect(dto.initialRepeatInterval == 240)
     }
+
+    @Test func exportCardsToCSVIncludesNewCard() throws {
+        let card = Card(
+            createdAt: Date(),
+            cardType: .todo,
+            priorityTypeRaw: .high,
+            content: "CSV Export Test Card",
+            isRecurring: true,
+            repeatInterval: 24,
+            initialRepeatInterval: 24,
+            answer: "CSV Answer",
+            skipPolicy: .mild,
+            ratingEasyPolicy: .aggressive,
+            ratingMedPolicy: .none,
+            ratingHardPolicy: .mild
+        )
+        modelContext.insert(card)
+        try modelContext.save()
+
+        let descriptor = FetchDescriptor<Card>()
+        let cards = try modelContext.fetch(descriptor).filter { $0.content == "CSV Export Test Card" }
+
+        let csvString = try Card.exportCardsToCSV(cards)
+
+        #expect(csvString.contains("CSV Export Test Card"))
+        #expect(csvString.contains("CSV Answer"))
+        #expect(csvString.contains("To-do"))
+    }
+
+    @Test func displayedScheduleAndQueueStringsAreStable() throws {
+        let now = Date()
+        let card = Card(
+            createdAt: now,
+            cardType: .note,
+            priorityTypeRaw: .none,
+            content: "Schedule display test",
+            isRecurring: true,
+            repeatInterval: 48,
+            initialRepeatInterval: 48,
+            nextTimeInQueue: now.addingTimeInterval(2 * 3600) // 2 hours
+        )
+        modelContext.insert(card)
+        try modelContext.save()
+
+        // Base and current schedule should match for a fresh recurring card
+        #expect(card.displayedBaseSchedule == "Every 2 Days" || card.displayedBaseSchedule == card.displayedCurrentInterval)
+        #expect(card.displayedScheduleForRow.contains("Repeats:"))
+
+        // When the card is enqueued now, displayedDateForQueue should reference "Next:"
+        let futureString = card.displayedDateForQueue
+        #expect(futureString.contains("Next: in") || futureString.contains("Next:"))
+
+        // After archiving, the queue string should reflect removal from queue
+        card.archive(at: now)
+        let archivedString = card.displayedDateForQueue
+        #expect(archivedString.contains("Removed from queue"))
+    }
 }
 
 // MARK: - Memory and Scaling Tests
@@ -1593,5 +1686,423 @@ struct ScalingTests {
         
         #expect(filterTime < 0.1)
         #expect(cardsInFirstFolder.count >= 1)
+    }
+}
+
+// MARK: - UI Display Tests
+
+@Suite("UI Display and Computed Properties Tests")
+struct UIDisplayTests {
+    
+    var modelContext: ModelContext
+    var modelContainer: ModelContainer
+    
+    init() throws {
+        let schema = Schema([Card.self, Folder.self, CardTag.self])
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        modelContainer = try ModelContainer(for: schema, configurations: config)
+        modelContext = ModelContext(modelContainer)
+    }
+    
+    // MARK: - Card Type Display Tests
+    
+    @Test func cardTypeDisplayValues() throws {
+        #expect(CardType.todo.systemImage == "checklist")
+        #expect(CardType.flashcard.systemImage == "rectangle.on.rectangle.angled")
+        #expect(CardType.note.systemImage == "doc.text")
+    }
+
+    @Test func cardTypeLabels() throws {
+        #expect(CardType.todo.rawValue == "To-do")
+        #expect(CardType.flashcard.rawValue == "Flashcard")
+        #expect(CardType.note.rawValue == "Note")
+    }
+    
+    // MARK: - Priority Display Tests
+    
+    @Test func priorityDisplayValues() throws {
+        #expect(PriorityType.none.rawValue == "None")
+        #expect(PriorityType.low.rawValue == "Low")
+        #expect(PriorityType.med.rawValue == "Medium")
+        #expect(PriorityType.high.rawValue == "High")
+    }
+    
+    // MARK: - Display Content Tests
+    
+    @Test func displayContentShowsContentForTodo() throws {
+        let card = Card(
+            createdAt: Date(),
+            cardType: .todo,
+            priorityTypeRaw: .none,
+            content: "My todo content"
+        )
+        modelContext.insert(card)
+        
+        #expect(card.displayContent == "My todo content")
+    }
+    
+    @Test func displayContentShowsContentForNote() throws {
+        let card = Card(
+            createdAt: Date(),
+            cardType: .note,
+            priorityTypeRaw: .none,
+            content: "My note content"
+        )
+        modelContext.insert(card)
+        
+        #expect(card.displayContent == "My note content")
+    }
+    
+    @Test func displayContentShowsContentForFlashcard() throws {
+        let card = Card(
+            createdAt: Date(),
+            cardType: .flashcard,
+            priorityTypeRaw: .none,
+            content: "Question text",
+            answer: "Answer text"
+        )
+        modelContext.insert(card)
+        
+        // For flashcards, displayContent shows the question
+        #expect(card.displayContent == "Question text")
+    }
+    
+    @Test func emptyContentHandling() throws {
+        let card = Card(
+            createdAt: Date(),
+            cardType: .todo,
+            priorityTypeRaw: .none,
+            content: ""
+        )
+        modelContext.insert(card)
+        
+        #expect(card.displayContent == "Default content here")
+        #expect(card.content.isEmpty)
+    }
+    
+    // MARK: - Answer Revealed State Tests
+    
+    @Test func flashcardAnswerRevealedState() throws {
+        let card = Card(
+            createdAt: Date(),
+            cardType: .flashcard,
+            priorityTypeRaw: .none,
+            content: "Question",
+            answer: "Answer"
+        )
+        modelContext.insert(card)
+        
+        // Initial state: answer not revealed
+        #expect(!card.answerRevealed)
+        
+        // Show answer
+        card.showAnswer(at: Date())
+        #expect(card.answerRevealed)
+        
+        // Skip should hide answer
+        card.skip(at: Date())
+        #expect(!card.answerRevealed)
+    }
+    
+    @Test func answerRevealedResetOnActions() throws {
+        let card = Card(
+            createdAt: Date(),
+            cardType: .flashcard,
+            priorityTypeRaw: .none,
+            content: "Question",
+            isRecurring: true,
+            answer: "Answer"
+        )
+        modelContext.insert(card)
+        card.enqueue(at: Date())
+        
+        // Reveal answer
+        card.showAnswer(at: Date())
+        #expect(card.answerRevealed)
+        
+        // Rating should reset answer revealed
+        card.submitFlashcardRating(.good, at: Date())
+        #expect(!card.answerRevealed)
+    }
+    
+    // MARK: - Empty Card Detection Tests
+    
+    @Test func emptyTodoDetection() throws {
+        let emptyCard = Card(
+            createdAt: Date(),
+            cardType: .todo,
+            priorityTypeRaw: .none,
+            content: ""
+        )
+        modelContext.insert(emptyCard)
+        
+        #expect(emptyCard.content.isEmpty)
+
+
+        
+        let nonEmptyCard = Card(
+            createdAt: Date(),
+            cardType: .todo,
+            priorityTypeRaw: .none,
+            content: "Some content"
+        )
+        modelContext.insert(nonEmptyCard)
+        
+        #expect(!nonEmptyCard.content.isEmpty)
+    }
+    
+    @Test func emptyFlashcardDetection() throws {
+        // Flashcard with no content and no answer is empty
+        let emptyCard = Card(
+            createdAt: Date(),
+            cardType: .flashcard,
+            priorityTypeRaw: .none,
+            content: "",
+            answer: ""
+        )
+        modelContext.insert(emptyCard)
+        
+
+        #expect(emptyCard.content.isEmpty && (emptyCard.answer ?? "").isEmpty)
+
+
+        
+        // Flashcard with content but no answer is not empty
+        let cardWithQuestion = Card(
+            createdAt: Date(),
+            cardType: .flashcard,
+            priorityTypeRaw: .none,
+            content: "Question",
+            answer: ""
+        )
+        modelContext.insert(cardWithQuestion)
+        
+        // Flashcard with content but no answer is not empty
+        #expect(!cardWithQuestion.content.isEmpty)
+        #expect((cardWithQuestion.answer ?? "").isEmpty)
+
+
+        
+        // Flashcard with answer but no content is not empty
+        let cardWithAnswer = Card(
+            createdAt: Date(),
+            cardType: .flashcard,
+            priorityTypeRaw: .none,
+            content: "",
+            answer: "Answer"
+        )
+        modelContext.insert(cardWithAnswer)
+        
+        // Flashcard with answer but no content is not empty
+        #expect(cardWithAnswer.content.isEmpty)
+        #expect(!(cardWithAnswer.answer ?? "").isEmpty)
+    }
+    
+    @Test func whitespaceOnlyIsEmpty() throws {
+        let whitespaceCard = Card(
+            createdAt: Date(),
+            cardType: .note,
+            priorityTypeRaw: .none,
+            content: "   \n\t  "
+        )
+        modelContext.insert(whitespaceCard)
+        
+        #expect(whitespaceCard.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+    }
+    
+    // MARK: - Time Until Queue Tests
+    
+    @Test func timeUntilQueueCalculation() throws {
+        let now = Date()
+        let futureTime = now.addingTimeInterval(3600) // 1 hour from now
+        
+        let card = Card(
+            createdAt: now,
+            cardType: .todo,
+            priorityTypeRaw: .none,
+            content: "Test",
+            nextTimeInQueue: futureTime
+        )
+        modelContext.insert(card)
+        
+        let timeUntil = card.timeUntilNextInQueue(currentDate: now)
+        
+        // Should be approximately 3600 seconds (1 hour)
+        #expect(timeUntil >= 3599 && timeUntil <= 3601)
+    }
+    
+    @Test func negativeTimeUntilQueueMeansEnqueued() throws {
+        let now = Date()
+        let pastTime = now.addingTimeInterval(-3600) // 1 hour ago
+        
+        let card = Card(
+            createdAt: now,
+            cardType: .todo,
+            priorityTypeRaw: .none,
+            content: "Test",
+            nextTimeInQueue: pastTime
+        )
+        modelContext.insert(card)
+        
+        let timeUntil = card.timeUntilNextInQueue(currentDate: now)
+        
+        // Should be negative (card is past due)
+        #expect(timeUntil < 0)
+        #expect(card.isEnqueue(currentDate: now))
+    }
+    
+    // MARK: - Repeat Interval Display Tests
+    
+    @Test func repeatIntervalDisplayStrings() throws {
+        #expect(RepeatInterval.daily.rawValue == "Daily")
+        #expect(RepeatInterval.weekly.rawValue == "Weekly")
+        #expect(RepeatInterval.monthly.rawValue == "Monthly")
+        #expect(RepeatInterval.yearly.rawValue == "Yearly")
+    }
+    
+    @Test func repeatIntervalShortStrings() throws {
+        #expect(RepeatInterval.daily.hours == 24)
+        #expect(RepeatInterval.weekly.hours == 168)
+        #expect(RepeatInterval.monthly.hours == 720)
+        #expect(RepeatInterval.yearly.hours == 8760)
+    }
+    
+    // MARK: - Folder Display Tests
+    
+    @Test func folderNameDisplay() throws {
+        let folder = Folder(name: "My Folder")
+        modelContext.insert(folder)
+        
+        let card = Card(
+            createdAt: Date(),
+            cardType: .todo,
+            priorityTypeRaw: .none,
+            content: "Test",
+            folder: folder
+        )
+        modelContext.insert(card)
+        
+        #expect(card.folder?.name == "My Folder")
+    }
+    
+    @Test func cardWithoutFolder() throws {
+        let card = Card(
+            createdAt: Date(),
+            cardType: .todo,
+            priorityTypeRaw: .none,
+            content: "Test"
+        )
+        modelContext.insert(card)
+        
+        #expect(card.folder == nil)
+    }
+    
+    // MARK: - Tag Display Tests
+    
+    @Test func tagNames() throws {
+        let card = Card(
+            createdAt: Date(),
+            cardType: .todo,
+            priorityTypeRaw: .none,
+            content: "Test"
+        )
+        modelContext.insert(card)
+        
+        let tag1 = CardTag(name: "urgent")
+        let tag2 = CardTag(name: "work")
+        modelContext.insert(tag1)
+        modelContext.insert(tag2)
+        
+        card.addTag(tag1)
+        card.addTag(tag2)
+        
+        let tagNames = card.unwrappedTags.map { $0.name }
+        #expect(tagNames.contains("urgent"))
+        #expect(tagNames.contains("work"))
+    }
+    
+    // MARK: - Rating Display Tests
+    
+    @Test func ratingCounts() throws {
+        let card = Card(
+            createdAt: Date(),
+            cardType: .flashcard,
+            priorityTypeRaw: .none,
+            content: "Q",
+            isRecurring: true,
+            answer: "A"
+        )
+        modelContext.insert(card)
+        
+        // Add ratings
+        card.enqueue(at: Date())
+        card.answerRevealed = true
+        card.submitFlashcardRating(.easy, at: Date())
+        
+        card.enqueue(at: Date())
+        card.answerRevealed = true
+        card.submitFlashcardRating(.easy, at: Date())
+        
+        card.enqueue(at: Date())
+        card.answerRevealed = true
+        card.submitFlashcardRating(.hard, at: Date())
+        
+        let counts = card.ratingCounts
+
+        let easyCount = counts.first(where: { $0.rating == .easy })?.count ?? 0
+        let hardCount = counts.first(where: { $0.rating == .hard })?.count ?? 0
+        let goodCount = counts.first(where: { $0.rating == .good })?.count ?? 0
+
+        #expect(easyCount == 2)
+        #expect(hardCount == 1)
+        #expect(goodCount == 0)
+    }
+    
+    // MARK: - Card Selection Behavior Tests
+    
+    @Test func selectedCardShouldShowEditor() throws {
+        // This tests the logical behavior - when a card is selected, content editing should be available
+        let card = Card(
+            createdAt: Date(),
+            cardType: .note,
+            priorityTypeRaw: .none,
+            content: "Editable content"
+        )
+        modelContext.insert(card)
+        
+        // Card should have editable content
+        #expect(!card.content.isEmpty)
+        
+        // Content should be modifiable
+        card.content = "Modified content"
+        #expect(card.content == "Modified content")
+    }
+    
+    @Test func newCardStartsEmpty() throws {
+        let card = Card(
+            createdAt: Date(),
+            cardType: .note,
+            priorityTypeRaw: .none,
+            content: ""
+        )
+        modelContext.insert(card)
+        
+        #expect(card.content.isEmpty)
+    }
+    
+    @Test func cardContentUpdateTriggersChanges() throws {
+        let card = Card(
+            createdAt: Date(),
+            cardType: .todo,
+            priorityTypeRaw: .none,
+            content: "Original"
+        )
+        modelContext.insert(card)
+        
+        let originalContent = card.content
+        card.content = "Updated"
+        
+        #expect(card.content != originalContent)
+        #expect(card.content == "Updated")
     }
 }

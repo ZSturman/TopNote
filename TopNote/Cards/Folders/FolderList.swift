@@ -40,6 +40,7 @@ public struct FolderList: View {
                         .fixedSize(horizontal: false, vertical: true)
                     }
                 }
+                .accessibilityIdentifier("AllCardsFolder")
                 ForEach(folders.sorted { $0.name < $1.name }) { folder in
                     NavigationLink(value: FolderSelection.folder(folder)) {
                         HStack {
@@ -57,6 +58,7 @@ public struct FolderList: View {
                             .fixedSize(horizontal: false, vertical: true)
                         }
                     }
+                    .accessibilityIdentifier("Folder-\(folder.id.uuidString)")
                     .swipeActions(edge: .trailing) {
                         Button(role: .destructive) {
                             DispatchQueue.main.async {
@@ -85,6 +87,7 @@ public struct FolderList: View {
                             Text("New Folder")
                         }
                     }
+                    .accessibilityIdentifier("NewFolderButton")
                     Spacer()
                 }
             

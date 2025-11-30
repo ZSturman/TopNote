@@ -12,7 +12,7 @@ import SwiftData
 extension CardListView {
     func addCard(ofType type: CardType) {
         let wasEmptyBeforeInsert = cards.isEmpty
-        // Force Upcoming filter and remove Enqueue filter to avoid conflicts
+
         if !filterOptions.contains(.upcoming) {
             filterOptions.append(.upcoming)
         }
@@ -55,8 +55,13 @@ extension CardListView {
             repeatInterval = 2880
         }
         
+        // Set nextTimeInQueue to slightly in the future so it appears in Upcoming section
+        // but near the top (earliest nextTimeInQueue when sorted ascending)
+        let now = Date()
+        let nextTimeInQueueForNewCard = now.addingTimeInterval(60) // 1 minute from now - puts it in Upcoming but near the top
+        
         let newCard = Card(
-            createdAt: Date(),
+            createdAt: now,
             cardType: type,
             priorityTypeRaw: .none,
             content: "",
@@ -65,6 +70,7 @@ extension CardListView {
             seenCount: 0,
             repeatInterval: repeatInterval,
             initialRepeatInterval: repeatInterval,
+            nextTimeInQueue: nextTimeInQueueForNewCard,
             folder: folderForNew,
             tags: tagsForNew,
             skipPolicy: skipPolicy,
@@ -77,7 +83,18 @@ extension CardListView {
             
         )
         
+        // DEBUG: Print card count before insertion
+        let fetchDescriptor = FetchDescriptor<Card>()
+        let countBefore = (try? context.fetch(fetchDescriptor).count) ?? 0
+        print("📝 [ADD CARD] Card count BEFORE insert: \(countBefore)")
+        
         context.insert(newCard)
+        print("📝 [ADD CARD] Inserted new card with ID: \(newCard.id), content: '\(newCard.content)'")
+        
+        // DEBUG: Print card count after insertion
+        let countAfter = (try? context.fetch(fetchDescriptor).count) ?? 0
+        print("📝 [ADD CARD] Card count AFTER insert: \(countAfter)")
+        
         selectedCardModel.selectedCard = newCard
         selectedCardModel.setIsNewlyCreated(true)
         // Capture snapshot of the brand-new state so Cancel can delete instead of revert
@@ -107,17 +124,29 @@ extension CardListView {
         }
         
         // Scroll to new card after a brief delay to ensure it's rendered
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+        // Use a longer delay to ensure SwiftUI has time to insert and render the new card
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            print("📝 [ADD CARD] Scrolling to new card ID: \(newCard.id)")
             scrollToCardID = newCard.id
         }
     }
     func delete(cards sectionCards: [Card], at offsets: IndexSet) {
         let toDelete = offsets.map { sectionCards[$0] }
-        toDelete.forEach { context.delete($0) }
+        print("📝 [DELETE] Deleting \(toDelete.count) cards")
+        toDelete.forEach { card in
+            print("📝 [DELETE] Deleting card ID: \(card.id), content: '\(card.content)'")
+            context.delete(card)
+        }
         do {
             try context.save()
+            print("📝 [DELETE] Context saved successfully")
+            
+            // DEBUG: Print card count after delete
+            let fetchDescriptor = FetchDescriptor<Card>()
+            let count = (try? context.fetch(fetchDescriptor).count) ?? 0
+            print("📝 [DELETE] Card count after delete: \(count)")
         } catch {
-            // Handle error here if desired
+            print("📝 [DELETE] ERROR saving context: \(error)")
         }
         // After deleting cards, clean up orphan tags
         do {
@@ -130,7 +159,7 @@ extension CardListView {
             }
         } catch {
             // Optionally handle error if desired
-            print("Failed to delete orphaned tags: \(error)")
+            print("📝 [DELETE] Failed to delete orphaned tags: \(error)")
         }
         // If the deleted card was selected, clear selection and snapshot
         if let selectedCard = selectedCardModel.selectedCard,
@@ -207,13 +236,16 @@ extension CardListView {
     
     func scrollToCardIDChanged(to newID: UUID?, proxy: ScrollViewProxy) {
         guard let id = newID else { return }
+        print("📝 [SCROLL] Attempting to scroll to card ID: \(id)")
         // Scroll to new card if visible, or to the upcoming section if not
         // Try scrolling to the card row. If not found, scroll to Upcoming section.
         withAnimation {
             proxy.scrollTo(id, anchor: .center)
         }
+        print("📝 [SCROLL] Scroll command sent")
         // Reset scrollToCardID after scrolling
-        scrollToCardID = nil}
+        scrollToCardID = nil
+    }
     
     func handleSelectionChange(oldID: UUID?, newID: UUID?) {
         // When a card is deselected and its priority changed, scroll to it after reordering
@@ -243,11 +275,15 @@ extension CardListView {
         .popoverTip(addFirstCardTip)
         .padding(.trailing, 16)
         .padding(.bottom, 16)
+        .accessibilityIdentifier("addCard")
         .accessibilityLabel("Add Card")
         .confirmationDialog("Add Card", isPresented: $showAddCardActionSheet) {
             Button("Note") { addCard(ofType: .note) }
-            Button("Todo") { addCard(ofType: .todo) }
+                .accessibilityIdentifier("AddNoteButton")
+            Button("To-do") { addCard(ofType: .todo) }
+                .accessibilityIdentifier("AddTodoButton")
             Button("Flashcard") { addCard(ofType: .flashcard) }
+                .accessibilityIdentifier("AddFlashcardButton")
             Button("Cancel", role: .cancel) {}
         }
     }

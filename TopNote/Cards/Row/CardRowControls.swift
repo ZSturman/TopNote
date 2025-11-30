@@ -13,11 +13,23 @@ struct FolderMenu: View {
     var card: Card
     var folders: [Folder]
 
-    @State private var showMenu = false
+    var moveAction: () -> Void
+    
     var body: some View {
         Menu {
-            Button("New Folder...") { showMenu = true }
+            Button("New Folder...") { moveAction() }
             Divider()
+            Button(action: {
+                card.folder = nil
+            }) {
+                HStack {
+                    Text("No folder")
+                    if card.folder == nil {
+                        Spacer()
+                        Image(systemName: "checkmark").foregroundColor(.blue)
+                    }
+                }
+            }
             ForEach(folders.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }) { folder in
                 Button(action: {
                     card.folder = folder
@@ -36,8 +48,9 @@ struct FolderMenu: View {
                 Image(systemName: "folder")
                 Text(card.folder?.name ?? "Choose folder...")
             }
-            .font(.subheadline)
+            .font(.caption)
         }
+        .accessibilityIdentifier("FolderMenu")
     }
 }
 
@@ -88,7 +101,7 @@ struct CardPoliciesMenu: View {
                     }
                 }
                 .pickerStyle(.inline)
-                .font(.subheadline)
+                .font(.caption)
                 
                 
                                         VStack(alignment: .leading, spacing: 8) {
@@ -180,7 +193,7 @@ struct CardPoliciesMenu: View {
                             Text(card.ratingEasyPolicy.rawValue)
                                 .fontWeight(.semibold)
                         }
-                        .font(.subheadline)
+                        .font(.caption)
                     }
                     .menuActionDismissBehavior(.disabled)
 
@@ -219,7 +232,7 @@ struct CardPoliciesMenu: View {
                             Text(card.ratingMedPolicy.rawValue)
                                 .fontWeight(.semibold)
                         }
-                        .font(.subheadline)
+                        .font(.caption)
                     }
                     .menuActionDismissBehavior(.disabled)
 
@@ -258,7 +271,7 @@ struct CardPoliciesMenu: View {
                             Text(card.ratingHardPolicy.rawValue)
                                 .fontWeight(.semibold)
                         }
-                        .font(.subheadline)
+                        .font(.caption)
                     }
                     .menuActionDismissBehavior(.disabled)
                 }
@@ -272,7 +285,7 @@ struct CardPoliciesMenu: View {
   
             }
             
-            .font(.subheadline)
+            .font(.caption)
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
             .background(
@@ -291,13 +304,20 @@ struct RecurringButton: View {
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 4) {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 4) {
+                    Image(systemName: "repeat")
+                        .foregroundColor(isRecurring ? .white : .secondary)
+                    Text("Recurring")
+                        .foregroundColor(isRecurring ? .white : .primary)
+                        .lineLimit(1) // Do not allow wrapping
+                }
+                .fixedSize(horizontal: true, vertical: false) 
+                
                 Image(systemName: "repeat")
                     .foregroundColor(isRecurring ? .white : .secondary)
-                Text("Recurring")
-                    .foregroundColor(isRecurring ? .white : .primary)
             }
-            .font(.subheadline)
+            .font(.caption)
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
             .background(
@@ -314,6 +334,8 @@ struct RecurringButton: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("RecurringButton")
+        .accessibilityLabel(isRecurring ? "Recurring enabled" : "Recurring disabled")
     }
 }
 
@@ -361,7 +383,7 @@ struct IntervalMenu: View {
                 Text(displayText)
                     .foregroundColor(isRecurring ? .primary : .secondary)
             }
-            .font(.subheadline)
+            .font(.caption)
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
             .background(
@@ -370,6 +392,8 @@ struct IntervalMenu: View {
             )
             .contentShape(Rectangle())
         }
+        .accessibilityIdentifier("IntervalMenu")
+        .accessibilityLabel("Repeat interval: \(displayText)")
     }
 }
 
@@ -421,7 +445,7 @@ struct PriorityMenu: View {
                         .foregroundColor(.primary)
                 }
             }
-            .font(.subheadline)
+            .font(.caption)
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
             .background(
@@ -431,5 +455,8 @@ struct PriorityMenu: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("PriorityButton")
+        .accessibilityLabel("Priority: \(selected.rawValue)")
     }
 }
+

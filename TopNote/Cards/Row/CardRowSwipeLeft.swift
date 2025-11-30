@@ -22,18 +22,21 @@ struct CardRowSwipeLeft: View {
         } label: {
             Label("Delete", systemImage: "trash")
         }
+        .accessibilityIdentifier("SwipeDeleteButton")
         Button { 
             selectedCardModel.clearSelection()
             showDetails() 
         } label: {
             Label("Details", systemImage: "info.circle")
         }
+        .accessibilityIdentifier("SwipeDetailsButton")
         Button { 
             selectedCardModel.clearSelection()
             moveAction() 
         } label: {
             Label("Move", systemImage: "folder")
         }
+        .accessibilityIdentifier("SwipeMoveButton")
     }
 }
 

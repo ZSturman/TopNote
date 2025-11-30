@@ -43,6 +43,7 @@ struct TagInputView: View {
             .font(.footnote)
             .frame(height: 28)
             .focused($isTagFieldFocused)
+            .accessibilityIdentifier("TagInputField")
             .onChange(of: isTagFieldFocused) { _, newFocused in
                 if !newFocused && !newTag.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     addTag()
@@ -76,6 +77,7 @@ struct TagInputView: View {
                                         .font(.footnote)
                                         .foregroundColor(.red)
                                 }
+                                .accessibilityIdentifier("RemoveTag-\(tag.name)")
                                 .accessibilityLabel("Remove \(tag.name)")
                             }
                         }

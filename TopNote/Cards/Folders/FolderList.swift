@@ -59,6 +59,7 @@ public struct FolderList: View {
                         }
                     }
                     .accessibilityIdentifier("Folder-\(folder.id.uuidString)")
+                    
                     .swipeActions(edge: .trailing) {
                         Button(role: .destructive) {
                             DispatchQueue.main.async {

@@ -148,15 +148,15 @@ extension CardRow {
                             isContentEditorFocused = true
                         }
                         draftContent = card.content
+                        selectedCardModel.updateDraft(content: card.content)
                         if card.cardType == .flashcard {
                             draftAnswer = card.answer ?? ""
+                            selectedCardModel.updateDraft(answer: draftAnswer)
                         }
                     }
                     .onChange(of: draftContent) { _, newValue in
-                        // Sync draft to card IMMEDIATELY (no debounce) so finishEdits sees latest content
-                        print("📝 [CardRowEditor] draftContent changed to: '\(newValue)'")
-                        card.content = newValue
-                        print("📝 [CardRowEditor] Synced card.content to: '\(card.content)'")
+                        // Cache draft locally without touching the model to avoid heavy per-keystroke work
+                        selectedCardModel.updateDraft(content: newValue)
                     }
 
                 if card.cardType != .flashcard {
@@ -171,10 +171,7 @@ extension CardRow {
                         showingFlashcardAnswer: $showingFlashcardAnswer
                     )
                     .onChange(of: draftAnswer) { _, newValue in
-                        // Sync draft answer to card IMMEDIATELY
-                        print("📝 [CardRowEditor] draftAnswer changed to: '\(newValue)'")
-                        card.answer = newValue
-                        print("📝 [CardRowEditor] Synced card.answer to: '\(card.answer ?? "")'")
+                        selectedCardModel.updateDraft(answer: newValue)
                     }
                     if selectedCardModel.selectedCard?.id == card.id {
                         TagInputView(card: card)

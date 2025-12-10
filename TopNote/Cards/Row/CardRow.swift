@@ -137,14 +137,16 @@ struct CardRow: View {
         if !newValue {
             saveTask?.cancel()
             // Commit drafts on deselect
-            print("📝 [CardRow handleSelectionChange] Committing drafts - draftContent: '\(draftContent)', card.content: '\(card.content)'")
-            if card.content != draftContent { 
-                card.content = draftContent 
+            let latestContent = selectedCardModel.draftContent ?? draftContent
+            print("📝 [CardRow handleSelectionChange] Committing drafts - draftContent: '\(latestContent)', card.content: '\(card.content)'")
+            if card.content != latestContent {
+                card.content = latestContent
                 print("📝 [CardRow handleSelectionChange] Updated card.content to: '\(card.content)'")
             }
             if card.cardType == .flashcard {
                 let currentAnswer = card.answer ?? ""
-                if currentAnswer != draftAnswer { card.answer = draftAnswer }
+                let latestAnswer = selectedCardModel.draftAnswer ?? draftAnswer
+                if currentAnswer != latestAnswer { card.answer = latestAnswer }
             }
             do {
                 try modelContext.save()
@@ -152,12 +154,18 @@ struct CardRow: View {
             } catch {
                 print("📝 [CardRow handleSelectionChange] ERROR saving: \(error)")
             }
+            selectedCardModel.clearDrafts()
             deleteIfEmptyAndNotSelected()
         } else {
             // Initialize drafts on select
             print("📝 [CardRow handleSelectionChange] Initializing drafts from card")
+            selectedCardModel.clearDrafts()
             draftContent = card.content
-            if card.cardType == .flashcard { draftAnswer = card.answer ?? "" }
+            selectedCardModel.updateDraft(content: draftContent)
+            if card.cardType == .flashcard {
+                draftAnswer = card.answer ?? ""
+                selectedCardModel.updateDraft(answer: draftAnswer)
+            }
         }
     }
 }

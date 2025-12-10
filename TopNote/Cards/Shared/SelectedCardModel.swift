@@ -81,6 +81,10 @@ final class SelectedCardModel: ObservableObject {
     /// A flag indicating whether the selected card was newly created.
     @Published var isNewlyCreated: Bool = false
 
+    /// Latest in-memory drafts for the selected card. Not published to avoid UI invalidations per keystroke.
+    private(set) var draftContent: String? = nil
+    private(set) var draftAnswer: String? = nil
+
     /// Snapshot captured at the moment selection begins, used for Cancel.
     private(set) var snapshot: CardSnapshot? = nil
     
@@ -94,11 +98,13 @@ final class SelectedCardModel: ObservableObject {
         if let card = try? modelContext.fetch(descriptor).first {
             selectedCard = card
             isNewlyCreated = isNew
+            clearDrafts()
             captureSnapshot()
         } else {
             selectedCard = nil
             isNewlyCreated = false
             snapshot = nil
+            clearDrafts()
         }
     }
     
@@ -107,6 +113,7 @@ final class SelectedCardModel: ObservableObject {
         selectedCard = nil
         isNewlyCreated = false
         snapshot = nil
+        clearDrafts()
     }
     
     /// Sets the `isNewlyCreated` flag.
@@ -129,6 +136,20 @@ final class SelectedCardModel: ObservableObject {
         if let card = selectedCard, let snapshot {
             snapshot.apply(to: card)
         }
+    }
+
+    /// Update the cached drafts without touching SwiftData models.
+    func updateDraft(content: String) {
+        draftContent = content
+    }
+
+    func updateDraft(answer: String) {
+        draftAnswer = answer
+    }
+
+    func clearDrafts() {
+        draftContent = nil
+        draftAnswer = nil
     }
 }
 

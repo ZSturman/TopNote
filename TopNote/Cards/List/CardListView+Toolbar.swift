@@ -107,6 +107,14 @@ extension CardListView {
         if let card = selectedCardModel.selectedCard {
             print("📝 [FINISH EDITS] Card ID: \(card.id)")
             print("📝 [FINISH EDITS] Card content: '\(card.content)'")
+
+            // Apply any cached drafts so we don't rely on per-keystroke model mutations
+            if let draftContent = selectedCardModel.draftContent {
+                card.content = draftContent
+            }
+            if card.cardType == .flashcard, let draftAnswer = selectedCardModel.draftAnswer {
+                card.answer = draftAnswer
+            }
             
             let isEmpty = card.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             print("📝 [FINISH EDITS] Content isEmpty: \(isEmpty)")
@@ -130,6 +138,7 @@ extension CardListView {
                 print("📝 [FINISH EDITS] ERROR saving context: \(error)")
             }
         }
+        selectedCardModel.clearDrafts()
         selectedCardModel.clearSelection()
     }
 
@@ -149,6 +158,7 @@ extension CardListView {
                 try? context.save()
             }
         }
+        selectedCardModel.clearDrafts()
         selectedCardModel.clearSelection()
     }
 }

@@ -237,12 +237,13 @@ extension CardListView {
     func scrollToCardIDChanged(to newID: UUID?, proxy: ScrollViewProxy) {
         guard let id = newID else { return }
         print("📝 [SCROLL] Attempting to scroll to card ID: \(id)")
-        // Scroll to new card if visible, or to the upcoming section if not
-        // Try scrolling to the card row. If not found, scroll to Upcoming section.
-        withAnimation {
-            proxy.scrollTo(id, anchor: .center)
+        // Delay slightly to ensure card is rendered and visible in the list
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                proxy.scrollTo(id, anchor: .center)
+            }
+            print("📝 [SCROLL] Scroll command sent")
         }
-        print("📝 [SCROLL] Scroll command sent")
         // Reset scrollToCardID after scrolling
         scrollToCardID = nil
     }

@@ -42,14 +42,16 @@ struct FolderQuery: EntityQuery, EnumerableEntityQuery {
 
     func entities(for identifiers: [Folder.ID]) async throws -> [Folder] {
         let ctx = ModelContext(container)
-        let all = try ctx.fetch(FetchDescriptor<Folder>())
+        var all = try ctx.fetch(FetchDescriptor<Folder>())
+        all.append(Folder.noFolder)
         guard !identifiers.isEmpty else { return all }
         return all.filter { identifiers.contains($0.id) }
     }
 
     func allEntities() async throws -> [Folder] {
         let ctx = ModelContext(container)
-        return try ctx.fetch(FetchDescriptor<Folder>())
+        let all = try ctx.fetch(FetchDescriptor<Folder>())
+        return all + [Folder.noFolder]
     }
 
     func suggestedEntities() async throws -> [Folder] {

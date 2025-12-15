@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import SwiftData
+import PhotosUI
 
 extension CardRow {
     struct CardRowMainContent: View {
@@ -24,6 +25,9 @@ extension CardRow {
         let onPriorityChanged: ((UUID) -> Void)?
         
         var moveAction: () -> Void
+        
+        @Binding var selectedContentPhoto: PhotosPickerItem?
+        @Binding var selectedAnswerPhoto: PhotosPickerItem?
 
         var body: some View {
             HStack {
@@ -35,7 +39,9 @@ extension CardRow {
                             draftContent: $draftContent,
                             draftAnswer: $draftAnswer,
                             showingFlashcardAnswer: $showingFlashcardAnswer,
-                            isContentEditorFocused: _isContentEditorFocused
+                            isContentEditorFocused: _isContentEditorFocused,
+                            selectedContentPhoto: $selectedContentPhoto,
+                            selectedAnswerPhoto: $selectedAnswerPhoto
                         )
                         CardRowInlineControls(
                             card: card,
@@ -107,13 +113,24 @@ extension CardRow {
         }
 
         var body: some View {
-            Text(card.displayContent)
-                .font(.headline)
-                .fontWeight(.semibold)
-                .lineLimit(2)
-                .multilineTextAlignment(.leading)
-                .foregroundColor(isArchived ? .gray : .primary)
-                .strikethrough(card.cardType == .todo && card.isComplete, color: .gray)
+            HStack(alignment: .top, spacing: 8) {
+                // Show thumbnail if content has an image
+                if let imageData = card.contentImageData, let uiImage = UIImage(data: imageData) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 50, height: 50)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                }
+                
+                Text(card.displayContent)
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .foregroundColor(isArchived ? .gray : .primary)
+                    .strikethrough(card.cardType == .todo && card.isComplete, color: .gray)
+            }
         }
     }
 
@@ -128,36 +145,89 @@ extension CardRow {
 
         @EnvironmentObject var selectedCardModel: SelectedCardModel
         @Environment(\.modelContext) var modelContext
+        
+        @Binding var selectedContentPhoto: PhotosPickerItem?
+        @Binding var selectedAnswerPhoto: PhotosPickerItem?
 
         var body: some View {
-            VStack(alignment: .leading, spacing: 4) {
-                TextEditor(text: $draftContent)
-                    .font(.headline.weight(.semibold))
-                    .frame(minHeight: 80, maxHeight: 220)
-                    .multilineTextAlignment(.leading)
-                    .disableAutocorrection(false)
-                    .textInputAutocapitalization(.sentences)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.accentColor.opacity(0.12))
-                    )
-                    .focused($isContentEditorFocused)
-                    .accessibilityIdentifier("Card Content Editor")
-                    .onAppear {
-                        if selectedCardModel.isNewlyCreated {
-                            isContentEditorFocused = true
+            VStack(alignment: .leading, spacing: 8) {
+                ZStack(alignment: .bottomTrailing) {
+                    TextEditor(text: $draftContent)
+                        .font(.headline.weight(.semibold))
+                        .frame(minHeight: 80, maxHeight: 220)
+                        .multilineTextAlignment(.leading)
+                        .disableAutocorrection(false)
+                        .textInputAutocapitalization(.sentences)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.accentColor.opacity(0.12))
+                        )
+                        .focused($isContentEditorFocused)
+                        .accessibilityIdentifier("Card Content Editor")
+                        .onAppear {
+                            if selectedCardModel.isNewlyCreated {
+                                isContentEditorFocused = true
+                                if card.cardType == .flashcard {
+                                    showingFlashcardAnswer = true
+                                }
+                            }
+                            draftContent = card.content
+                            selectedCardModel.updateDraft(content: card.content)
+                            if card.cardType == .flashcard {
+                                draftAnswer = card.answer ?? ""
+                                selectedCardModel.updateDraft(answer: draftAnswer)
+                            }
                         }
-                        draftContent = card.content
-                        selectedCardModel.updateDraft(content: card.content)
-                        if card.cardType == .flashcard {
-                            draftAnswer = card.answer ?? ""
-                            selectedCardModel.updateDraft(answer: draftAnswer)
+                        .onChange(of: draftContent) { _, newValue in
+                            // Cache draft locally without touching the model to avoid heavy per-keystroke work
+                            selectedCardModel.updateDraft(content: newValue)
+                        }
+                    
+                    // Content image picker - only show when no image exists
+                    if card.contentImageData == nil {
+                        PhotosPicker(selection: $selectedContentPhoto, matching: .images) {
+                            Image(systemName: "photo.badge.plus")
+                                .font(.system(size: 18))
+                                .foregroundColor(.accentColor)
+                                .padding(8)
+                                .background(.ultraThinMaterial)
+                                .clipShape(Circle())
+                        }
+                        .padding(8)
+                        .buttonStyle(.borderless)
+                        .onChange(of: selectedContentPhoto) { _, newValue in
+                            Task {
+                                if let data = try? await newValue?.loadTransferable(type: Data.self),
+                                   let uiImage = UIImage(data: data) {
+                                    card.contentImageData = uiImage.compressedJPEGData(quality: 0.8)
+                                }
+                            }
                         }
                     }
-                    .onChange(of: draftContent) { _, newValue in
-                        // Cache draft locally without touching the model to avoid heavy per-keystroke work
-                        selectedCardModel.updateDraft(content: newValue)
+                }
+                
+                // Display content image if present
+                if let imageData = card.contentImageData, let uiImage = UIImage(data: imageData) {
+                    ZStack(alignment: .topTrailing) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxHeight: 200)
+                            .cornerRadius(8)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                        
+                        Button(action: {
+                            card.contentImageData = nil
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.white)
+                                .background(Circle().fill(Color.black.opacity(0.6)))
+                                .padding(4)
+                        }
+                        .buttonStyle(.borderless)
+                        .padding(4)
                     }
+                }
 
                 if card.cardType != .flashcard {
                     TagInputView(card: card)
@@ -168,10 +238,19 @@ extension CardRow {
                     FlashcardAnswerInline(
                         card: card,
                         draftAnswer: $draftAnswer,
-                        showingFlashcardAnswer: $showingFlashcardAnswer
+                        showingFlashcardAnswer: $showingFlashcardAnswer,
+                        selectedAnswerPhoto: $selectedAnswerPhoto
                     )
                     .onChange(of: draftAnswer) { _, newValue in
                         selectedCardModel.updateDraft(answer: newValue)
+                    }
+                    .onChange(of: selectedAnswerPhoto) { _, newValue in
+                        Task {
+                            if let data = try? await newValue?.loadTransferable(type: Data.self),
+                               let uiImage = UIImage(data: data) {
+                                card.answerImageData = uiImage.compressedJPEGData(quality: 0.8)
+                            }
+                        }
                     }
                     if selectedCardModel.selectedCard?.id == card.id {
                         TagInputView(card: card)
@@ -261,21 +340,61 @@ extension CardRow {
         let card: Card
         @Binding var draftAnswer: String
         @Binding var showingFlashcardAnswer: Bool
+        @Binding var selectedAnswerPhoto: PhotosPickerItem?
 
         var body: some View {
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: 8) {
                 if showingFlashcardAnswer {
-                    TextEditor(text: $draftAnswer)
-                        .font(.subheadline)
-                        .frame(minHeight: 80, maxHeight: 200)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.accentColor.opacity(0.10))
-                        )
-                        .disableAutocorrection(false)
-                        .textInputAutocapitalization(.sentences)
-                        .padding(.vertical, 2)
-                        .accessibilityIdentifier("Card Answer Editor")
+                    ZStack(alignment: .bottomTrailing) {
+                        TextEditor(text: $draftAnswer)
+                            .font(.subheadline)
+                            .frame(minHeight: 80, maxHeight: 200)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.accentColor.opacity(0.10))
+                            )
+                            .disableAutocorrection(false)
+                            .textInputAutocapitalization(.sentences)
+                            .padding(.vertical, 2)
+                            .accessibilityIdentifier("Card Answer Editor")
+                        
+                        // Answer image picker - only show when no image exists
+                        if card.answerImageData == nil {
+                            PhotosPicker(selection: $selectedAnswerPhoto, matching: .images) {
+                                Image(systemName: "photo.badge.plus")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.accentColor)
+                                    .padding(6)
+                                    .background(.ultraThinMaterial)
+                                    .clipShape(Circle())
+                            }
+                            .padding(6)
+                            .buttonStyle(.borderless)
+                        }
+                    }
+                    
+                    // Display answer image if present
+                    if let imageData = card.answerImageData, let uiImage = UIImage(data: imageData) {
+                        ZStack(alignment: .topTrailing) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(maxHeight: 150)
+                                .cornerRadius(8)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                            
+                            Button(action: {
+                                card.answerImageData = nil
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.white)
+                                    .background(Circle().fill(Color.black.opacity(0.6)))
+                                    .padding(4)
+                            }
+                            .buttonStyle(.borderless)
+                            .padding(4)
+                        }
+                    }
 
                     Button {
                         withAnimation {

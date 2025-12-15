@@ -257,6 +257,21 @@ enum CardImport {
         }()
 
         let ratingValue: [[RatingType: Date]] = []
+        
+        // Extract image data from base64 strings
+        let contentImageDataValue: Data? = {
+            if let base64String = dict["contentImageBase64"] as? String {
+                return Data(base64Encoded: base64String)
+            }
+            return nil
+        }()
+        
+        let answerImageDataValue: Data? = {
+            if let base64String = dict["answerImageBase64"] as? String {
+                return Data(base64Encoded: base64String)
+            }
+            return nil
+        }()
 
         return Card(
             createdAt: createdAtValue,
@@ -272,6 +287,8 @@ enum CardImport {
             folder: folderValue,
             tags: tagsValue,
             answer: answerValue,
+            contentImageData: contentImageDataValue,
+            answerImageData: answerImageDataValue,
             rating: ratingValue,
             isArchived: isArchivedValue,
             answerRevealed: answerRevealedValue,

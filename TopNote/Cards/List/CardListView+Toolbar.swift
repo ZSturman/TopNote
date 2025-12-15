@@ -116,14 +116,17 @@ extension CardListView {
                 card.answer = draftAnswer
             }
             
-            let isEmpty = card.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            print("📝 [FINISH EDITS] Content isEmpty: \(isEmpty)")
+            let contentIsEmpty = card.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            let hasNoImage = card.contentImageData == nil
+            let shouldDelete = contentIsEmpty && hasNoImage
             
-            if isEmpty {
-                print("📝 [FINISH EDITS] DELETING card because content is empty")
+            print("📝 [FINISH EDITS] Content isEmpty: \(contentIsEmpty), hasNoImage: \(hasNoImage)")
+            
+            if shouldDelete {
+                print("📝 [FINISH EDITS] DELETING card because content is empty AND no image")
                 context.delete(card)
             } else {
-                print("📝 [FINISH EDITS] KEEPING card with content")
+                print("📝 [FINISH EDITS] KEEPING card (has content or image)")
             }
             
             do {

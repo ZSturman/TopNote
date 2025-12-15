@@ -9,7 +9,7 @@ import Foundation
 import SwiftData
 
 
-func placeholderCardEntry() -> CardEntry {
+func placeholderCardEntry(widgetIdentifier: String) -> CardEntry {
     let dummyCard = Card.makeDummy()
     let dummyCardEntity = CardEntity(
         id: UUID(),
@@ -26,7 +26,10 @@ func placeholderCardEntry() -> CardEntry {
         isArchived: dummyCard.isArchived,
         answerRevealed: false,
         skipEnabled: true,
-        tags: nil
+        tags: nil,
+        widgetTextHidden: false,
+        contentImageData: nil,
+        answerImageData: nil
     )
     return CardEntry(
         date: Date(),
@@ -36,11 +39,12 @@ func placeholderCardEntry() -> CardEntry {
         nextCardForQueue: dummyCardEntity,
         nextUpdateDate: Date().addingTimeInterval(300),
         selectedCardTypes: [.note],
-        selectedFolders: []
+        selectedFolders: [],
+        widgetIdentifier: widgetIdentifier
     )
 }
 
-func sampleCardEntry() -> CardEntry {
+func sampleCardEntry(widgetIdentifier: String) -> CardEntry {
     let sampleCard = Card.makeDummy()
     let sampleCardEntity = CardEntity(
         id: UUID(),
@@ -57,7 +61,10 @@ func sampleCardEntry() -> CardEntry {
         isArchived: sampleCard.isArchived,
         answerRevealed: false,
         skipEnabled: true,
-        tags: nil
+        tags: nil,
+        widgetTextHidden: false,
+        contentImageData: nil,
+        answerImageData: nil
     )
     return CardEntry(
         date: Date(),
@@ -67,7 +74,8 @@ func sampleCardEntry() -> CardEntry {
         nextCardForQueue: sampleCardEntity,
         nextUpdateDate: Date().addingTimeInterval(300),
         selectedCardTypes: [.note],
-        selectedFolders: []
+        selectedFolders: [],
+        widgetIdentifier: widgetIdentifier
     )
 }
 
@@ -96,7 +104,10 @@ func allCaughtUpCardEntry(currentDate: Date, totalNumberOfCards: Int, nextCardFo
         isArchived: card.isArchived,
         answerRevealed: false,
         skipEnabled: true,
-        tags: nil
+        tags: nil,
+        widgetTextHidden: false,
+        contentImageData: nil,
+        answerImageData: nil
     )
     let nextCardForQueueEntity: CardEntity? = {
         guard let nextCard = nextCardForQueue else { return nil }
@@ -115,7 +126,10 @@ func allCaughtUpCardEntry(currentDate: Date, totalNumberOfCards: Int, nextCardFo
             isArchived: nextCard.isArchived,
             answerRevealed: false,
             skipEnabled: true,
-            tags: nil
+            tags: nil,
+            widgetTextHidden: false,
+            contentImageData: nil,
+            answerImageData: nil
         )
     }()
     return CardEntry(
@@ -126,7 +140,7 @@ func allCaughtUpCardEntry(currentDate: Date, totalNumberOfCards: Int, nextCardFo
         nextCardForQueue: nextCardForQueueEntity,
         nextUpdateDate: Date(),
         selectedCardTypes: [],
-        selectedFolders: []
+        selectedFolders: [], widgetIdentifier: ""
     )
 }
 
@@ -173,7 +187,10 @@ func allCaughtUpCardEntry(currentDate: Date, totalNumberOfCards: Int, nextCardFo
         isArchived: placeholderCard.isArchived,
         answerRevealed: false,
         skipEnabled: true,
-        tags: nil
+        tags: nil,
+        widgetTextHidden: false,
+        contentImageData: nil,
+        answerImageData: nil
     )
     let nextCardForQueueEntity: CardEntity? = {
         guard let nextCard = nextCardForQueue else { return nil }
@@ -192,7 +209,10 @@ func allCaughtUpCardEntry(currentDate: Date, totalNumberOfCards: Int, nextCardFo
             isArchived: nextCard.isArchived,
             answerRevealed: false,
             skipEnabled: true,
-            tags: nil
+            tags: nil,
+            widgetTextHidden: false,
+            contentImageData: nil,
+            answerImageData: nil
         )
     }()
     return CardEntry(
@@ -203,11 +223,11 @@ func allCaughtUpCardEntry(currentDate: Date, totalNumberOfCards: Int, nextCardFo
         nextCardForQueue: nextCardForQueueEntity,
         nextUpdateDate: currentDate.addingTimeInterval(60),
         selectedCardTypes: [],
-        selectedFolders: []
+        selectedFolders: [], widgetIdentifier: ""
     )
 }
 
-func errorCardEntry() -> CardEntry {
+func errorCardEntry(widgetIdentifier: String) -> CardEntry {
     let dummyCard = Card.makeDummy()
     let dummyCardEntity = CardEntity(
         id: UUID(),
@@ -224,7 +244,10 @@ func errorCardEntry() -> CardEntry {
         isArchived: dummyCard.isArchived,
         answerRevealed: false,
         skipEnabled: true,
-        tags: nil
+        tags: nil,
+        widgetTextHidden: false,
+        contentImageData: nil,
+        answerImageData: nil
     )
     return CardEntry(
         date: Date(),
@@ -234,7 +257,8 @@ func errorCardEntry() -> CardEntry {
         nextCardForQueue: nil,
         nextUpdateDate: Date().addingTimeInterval(3600),
         selectedCardTypes: [],
-        selectedFolders: []
+        selectedFolders: [],
+        widgetIdentifier: widgetIdentifier
     )
 }
 

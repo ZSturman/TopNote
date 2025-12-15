@@ -7,6 +7,8 @@
 
 import Foundation
 import SwiftData
+import UIKit
+import SwiftUI
 
 /// Duplicates a Card and inserts the copy into the provided context.
 /// - Parameters:
@@ -30,6 +32,8 @@ func duplicateCard(_ card: Card, in context: ModelContext) -> Card {
         folder: card.folder,
         tags: card.unwrappedTags,
         answer: card.answer,
+        contentImageData: card.contentImageData,
+        answerImageData: card.answerImageData,
         rating: card.rating,
         isArchived: card.isArchived,
         //answerRevealed: card.answerRevealed,
@@ -79,4 +83,39 @@ func createCard(
     )
     context.insert(card)
     return card
+}
+
+// MARK: - Image Helpers
+
+extension UIImage {
+    /// Compresses image to JPEG with quality setting
+    /// - Parameter quality: Compression quality (0.0 to 1.0), defaults to 0.75 for balance
+    /// - Returns: Compressed JPEG data
+    func compressedJPEGData(quality: CGFloat = 0.75) -> Data? {
+        return self.jpegData(compressionQuality: quality)
+    }
+    
+    /// Prepares image for widget storage (thumbnail + compression)
+    /// - Returns: Optimized JPEG data suitable for widget display
+    func prepareForWidget() -> Data? {
+        let thumbnail = self.thumbnailImage(maxSize: 150)
+        return thumbnail.compressedJPEGData(quality: 0.7)
+    }
+}
+
+extension Data {
+    /// Converts Data to UIImage
+    var toUIImage: UIImage? {
+        return UIImage(data: self)
+    }
+}
+
+extension Image {
+    /// Creates a SwiftUI Image from Data
+    /// - Parameter data: Image data (JPEG, PNG, etc.)
+    /// - Returns: SwiftUI Image or nil if conversion fails
+    static func fromData(_ data: Data?) -> Image? {
+        guard let data = data, let uiImage = UIImage(data: data) else { return nil }
+        return Image(uiImage: uiImage)
+    }
 }

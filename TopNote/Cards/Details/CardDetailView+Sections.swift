@@ -7,15 +7,40 @@
 
 import Foundation
 import SwiftUI
+import PhotosUI
 
 extension CardDetailView {
     struct CardDetailContentSection: View {
         var card: Card
+        @State private var selectedContentPhoto: PhotosPickerItem?
+        @State private var showImageSourceMenu = false
         
         var body: some View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Content")
                     .font(.headline)
+                
+                // Display existing content image
+                if let imageData = card.contentImageData, let uiImage = UIImage(data: imageData) {
+                    ZStack(alignment: .topTrailing) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxHeight: 200)
+                            .cornerRadius(8)
+                        
+                        Button(action: {
+                            card.contentImageData = nil
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.white)
+                                .background(Circle().fill(Color.black.opacity(0.6)))
+                                .padding(8)
+                        }
+                    }
+                    .padding(.bottom, 4)
+                }
+                
                 TextEditor(text: Binding(
                     get: { card.content },
                     set: { card.content = $0 }
@@ -27,6 +52,22 @@ extension CardDetailView {
                         .stroke(Color.secondary.opacity(0.3))
                 )
                 .accessibilityIdentifier("DetailContentEditor")
+                
+                // Image picker button
+                PhotosPicker(selection: $selectedContentPhoto, matching: .images) {
+                    Label(card.contentImageData == nil ? "Add Image" : "Change Image", systemImage: "photo")
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                }
+                .onChange(of: selectedContentPhoto) { oldValue, newValue in
+                    Task {
+                        if let data = try? await newValue?.loadTransferable(type: Data.self),
+                           let uiImage = UIImage(data: data) {
+                            // Compress for storage
+                            card.contentImageData = uiImage.compressedJPEGData(quality: 0.8)
+                        }
+                    }
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -34,12 +75,34 @@ extension CardDetailView {
     
     struct CardDetailAnswerSection: View {
         var card: Card
+        @State private var selectedAnswerPhoto: PhotosPickerItem?
         
         var body: some View {
             if card.cardType == .flashcard {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Answer")
                         .font(.headline)
+                    
+                    // Display existing answer image
+                    if let imageData = card.answerImageData, let uiImage = UIImage(data: imageData) {
+                        ZStack(alignment: .topTrailing) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(maxHeight: 200)
+                                .cornerRadius(8)
+                            
+                            Button(action: {
+                                card.answerImageData = nil
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.white)
+                                    .background(Circle().fill(Color.black.opacity(0.6)))
+                                    .padding(8)
+                            }
+                        }
+                        .padding(.bottom, 4)
+                    }
                     
                     TextEditor(text: Binding(
                         get: { card.answer ?? "" },
@@ -52,6 +115,22 @@ extension CardDetailView {
                             .stroke(Color.secondary.opacity(0.3))
                     )
                     .accessibilityIdentifier("DetailAnswerEditor")
+                    
+                    // Image picker button
+                    PhotosPicker(selection: $selectedAnswerPhoto, matching: .images) {
+                        Label(card.answerImageData == nil ? "Add Image" : "Change Image", systemImage: "photo")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                    }
+                    .onChange(of: selectedAnswerPhoto) { oldValue, newValue in
+                        Task {
+                            if let data = try? await newValue?.loadTransferable(type: Data.self),
+                               let uiImage = UIImage(data: data) {
+                                // Compress for storage
+                                card.answerImageData = uiImage.compressedJPEGData(quality: 0.8)
+                            }
+                        }
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }

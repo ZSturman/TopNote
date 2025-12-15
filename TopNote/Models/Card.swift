@@ -9,6 +9,7 @@
 import Foundation
 import SwiftData
 import WidgetKit
+import UIKit
 
 @Model
 final class CardTag {
@@ -83,6 +84,10 @@ final class Card {
     var isComplete: Bool = false
     var resetRepeatIntervalOnComplete: Bool = true
     var skipEnabled: Bool = true
+
+    // MARK: - Widget Presentation
+    /// When true, widgets should hide card text overlays (content + answer).
+    var widgetTextHidden: Bool = false
         
     
     // MARK: - Rating Storage
@@ -214,6 +219,12 @@ final class Card {
     var content: String = ""
     var answer: String?
     
+    // MARK: - Image Data
+    /// Image data for the main content area (stored as JPEG)
+    @Attribute var contentImageData: Data?
+    /// Image data for the answer area (stored as JPEG)
+    @Attribute var answerImageData: Data?
+    
     /// Computed property to get or set the card type.
     var cardType: CardType {
         get { CardType(rawValue: cardTypeRaw) ?? .todo }
@@ -225,6 +236,35 @@ final class Card {
         get { PriorityType(rawValue: priorityRaw) ?? .low }
         set { priorityRaw = newValue.rawValue }
     }
+    
+    // MARK: - Image Computed Properties
+    
+
+    
+    /// Returns a UIImage from contentImageData if available
+    var contentImage: UIImage? {
+        guard let data = contentImageData else { return nil }
+        return UIImage(data: data)
+    }
+    
+    /// Returns a UIImage from answerImageData if available
+    var answerImage: UIImage? {
+        guard let data = answerImageData else { return nil }
+        return UIImage(data: data)
+    }
+    
+    /// Returns a thumbnail version of content image (for widget and list display)
+    var contentImageThumbnail: UIImage? {
+        guard let image = contentImage else { return nil }
+        return image.thumbnailImage(maxSize: 150)
+    }
+    
+    /// Returns a thumbnail version of answer image (for widget and list display)
+    var answerImageThumbnail: UIImage? {
+        guard let image = answerImage else { return nil }
+        return image.thumbnailImage(maxSize: 150)
+    }
+
  
     
     // MARK: - Initializer
@@ -243,6 +283,8 @@ final class Card {
         folder: Folder? = nil,
         tags: [CardTag] = [],
         answer: String? = nil,
+        contentImageData: Data? = nil,
+        answerImageData: Data? = nil,
         rating: [[RatingType: Date]] = [],
         isArchived: Bool = false,
         answerRevealed: Bool = false,
@@ -252,7 +294,8 @@ final class Card {
         ratingHardPolicy: RepeatPolicy = RepeatPolicy.aggressive,
         isComplete: Bool = false,
         resetRepeatIntervalOnComplete: Bool = true,
-        skipEnabled: Bool = true
+        skipEnabled: Bool = true,
+        widgetTextHidden: Bool = false
     ) {
         self.id = UUID()
         self.createdAt = createdAt
@@ -260,6 +303,8 @@ final class Card {
         self.priorityRaw = priorityTypeRaw.rawValue
         self.content = content
         self.answer = answer
+        self.contentImageData = contentImageData
+        self.answerImageData = answerImageData
         self.isRecurring = isRecurring
         self.skipCount = skipCount
         self.seenCount = seenCount
@@ -278,6 +323,7 @@ final class Card {
         self.isComplete = isComplete
         self.resetRepeatIntervalOnComplete = resetRepeatIntervalOnComplete
         self.skipEnabled = skipEnabled
+        self.widgetTextHidden = widgetTextHidden
     }
     
     
@@ -578,12 +624,15 @@ final class Card {
     }
     
     var displayContent: String {
-        content.isEmpty ? "Default content here" : content
+        content
     }
 
     var displayAnswer: String {
         if let answer, !answer.isEmpty {
             return answer
+        }
+        if answerImageData != nil {
+            return ""
         }
         return "Answer here..."
     }
@@ -776,6 +825,10 @@ struct CardExport: Codable {
     let completes: [Date]
     /// Array of rating events with rating type and date
     let ratings: [[String: Date]]
+    /// Base64 encoded content image data
+    let contentImageBase64: String?
+    /// Base64 encoded answer image data
+    let answerImageBase64: String?
 }
 
 // MARK: - Card Export Extension
@@ -815,7 +868,9 @@ extension Card {
             skips: skips,
             removals: removals,
             completes: completes,
-            ratings: ratingsForExport
+            ratings: ratingsForExport,
+            contentImageBase64: contentImageData?.base64EncodedString(),
+            answerImageBase64: answerImageData?.base64EncodedString()
         )
     }
 
@@ -866,6 +921,28 @@ extension Card {
             return "\"\(string.replacingOccurrences(of: "\"", with: "\"\""))\""
         }
         return string
+    }
+}
+
+// MARK: - UIImage Extension for Card Image Support
+extension UIImage {
+    /// Creates a thumbnail image scaled to fit within maxSize while preserving aspect ratio
+    /// - Parameter maxSize: Maximum dimension (width or height) in points
+    /// - Returns: Scaled UIImage
+    func thumbnailImage(maxSize: CGFloat) -> UIImage {
+        let size = self.size
+        let ratio = max(size.width, size.height) / maxSize
+        
+        if ratio <= 1 {
+            return self // Already smaller than max
+        }
+        
+        let newSize = CGSize(width: size.width / ratio, height: size.height / ratio)
+        
+        let renderer = UIGraphicsImageRenderer(size: newSize)
+        return renderer.image { _ in
+            self.draw(in: CGRect(origin: .zero, size: newSize))
+        }
     }
 }
 

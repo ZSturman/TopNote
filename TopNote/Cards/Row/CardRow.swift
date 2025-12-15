@@ -9,6 +9,7 @@ import SwiftUI
 import SwiftData
 import WidgetKit
 import TipKit
+import PhotosUI
 
 struct CardRow: View {
     @EnvironmentObject var selectedCardModel: SelectedCardModel
@@ -25,6 +26,8 @@ struct CardRow: View {
     @State var showingFlashcardAnswer = false
     @State var draftContent: String = ""
     @State var draftAnswer: String = ""
+    @State var selectedContentPhoto: PhotosPickerItem?
+    @State var selectedAnswerPhoto: PhotosPickerItem?
     @State var saveTask: Task<Void, Never>? = nil
 
     @State var activeSheet: CardRowSheet? = nil
@@ -49,13 +52,20 @@ struct CardRow: View {
     
     private func deleteIfEmptyAndNotSelected() {
         // Trim whitespace/newlines
-        let isEmpty = card.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        // Only log when content is empty (the interesting case) to reduce log spam
-        if isEmpty {
-            print("📝 [CardRow deleteIfEmpty] Card ID: \(card.id), isSelected: \(isSelected), isEmpty: \(isEmpty), content: '\(card.content)'")
+        let contentIsEmpty = card.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let hasNoImage = card.contentImageData == nil
+        let hasPendingImage = selectedContentPhoto != nil || selectedAnswerPhoto != nil
+        let shouldDelete = contentIsEmpty && hasNoImage && !hasPendingImage
+        
+        // Only log when content is empty or image is missing (the interesting cases) to reduce log spam
+        if contentIsEmpty || hasNoImage {
+            print("📝 [CardRow deleteIfEmpty] Card ID: \(card.id), isSelected: \(isSelected), contentIsEmpty: \(contentIsEmpty), hasNoImage: \(hasNoImage), hasPendingImage: \(hasPendingImage), content: '\(card.content)'")
         }
-        if !isSelected && isEmpty {
-            print("📝 [CardRow deleteIfEmpty] DELETING card because not selected and empty")
+        
+        // Allow cards with only an image (empty content is OK if there's an image)
+        // Only delete if both content is empty AND no image exists AND no pending image selection
+        if !isSelected && shouldDelete {
+            print("📝 [CardRow deleteIfEmpty] DELETING card because not selected, content empty, and no image")
             modelContext.delete(card)
             try? modelContext.save()
         }
@@ -72,7 +82,9 @@ struct CardRow: View {
                 isContentEditorFocused: $isContentEditorFocused,
                 folders: folders,
                 onPriorityChanged: onPriorityChanged,
-                moveAction: { activeSheet = .move }
+                moveAction: { activeSheet = .move },
+                selectedContentPhoto: $selectedContentPhoto,
+                selectedAnswerPhoto: $selectedAnswerPhoto
             )
             CardRowFooter(
                 card: card,

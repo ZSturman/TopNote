@@ -197,11 +197,12 @@ extension CardListView {
         return cards
     }
     var archivedCards: [Card] {
-        filteredCards.filter { $0.isArchived }.sorted { card1, card2 in
+        let result = filteredCards.filter { $0.isArchived }.sorted { card1, card2 in
             let date1 = card1.removals.last ?? card1.createdAt
             let date2 = card2.removals.last ?? card2.createdAt
             return date1 > date2 // Most recent first
         }
+        return result
     }
     var groupedByDay: [Date: [Card]] { groupCardsByDay(filteredCards) }
     var sortedKeys: [Date] {

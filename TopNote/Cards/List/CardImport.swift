@@ -287,8 +287,6 @@ enum CardImport {
             folder: folderValue,
             tags: tagsValue,
             answer: answerValue,
-            contentImageData: contentImageDataValue,
-            answerImageData: answerImageDataValue,
             rating: ratingValue,
             isArchived: isArchivedValue,
             answerRevealed: answerRevealedValue,

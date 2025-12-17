@@ -15,6 +15,7 @@ struct CardListView: View {
     
     @Query var cards: [Card]
     @Query var tags: [CardTag]
+    @Query var folders: [Folder]
     
     @Binding var selectedFolder: FolderSelection?
     var tagSelectionStates: [UUID: TagSelectionState]
@@ -48,6 +49,10 @@ struct CardListView: View {
     @State var scrollToCardID: UUID? = nil
     @State var priorityChangedForCardID: UUID? = nil
     @State var lastDeselectedCardID: UUID? = nil
+    
+    // New card sheet state
+    @State var showNewCardSheet = false
+    @State var newCardType: CardType = .note
     
     // Tip tracking
     @State var appOpenCount = 0
@@ -134,6 +139,16 @@ struct CardListView: View {
                 if let exportedFileURL {
                     ShareSheet(activityItems: [exportedFileURL])
                 }
+            }
+            .sheet(isPresented: $showNewCardSheet) {
+                NewCardSheet(
+                    cardType: newCardType,
+                    currentFolder: currentFolderForNewCard,
+                    currentTagIDs: currentSelectedTagIDs(),
+                    onSave: { newCard in
+                        handleNewCardCreated(newCard)
+                    }
+                )
             }
 
             .fileImporter(

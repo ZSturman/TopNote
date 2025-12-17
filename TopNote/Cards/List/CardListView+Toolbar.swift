@@ -105,8 +105,6 @@ extension CardListView {
     func finishEdits() {
         // Commit changes; if card is empty, delete it
         if let card = selectedCardModel.selectedCard {
-            print("📝 [FINISH EDITS] Card ID: \(card.id)")
-            print("📝 [FINISH EDITS] Card content: '\(card.content)'")
 
             // Apply any cached drafts so we don't rely on per-keystroke model mutations
             if let draftContent = selectedCardModel.draftContent {
@@ -117,26 +115,21 @@ extension CardListView {
             }
             
             let contentIsEmpty = card.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            let hasNoImage = card.contentImageData == nil
-            let shouldDelete = contentIsEmpty && hasNoImage
+            let shouldDelete = contentIsEmpty
             
-            print("📝 [FINISH EDITS] Content isEmpty: \(contentIsEmpty), hasNoImage: \(hasNoImage)")
             
             if shouldDelete {
-                print("📝 [FINISH EDITS] DELETING card because content is empty AND no image")
+            
                 context.delete(card)
-            } else {
-                print("📝 [FINISH EDITS] KEEPING card (has content or image)")
             }
             
             do {
                 try context.save()
-                print("📝 [FINISH EDITS] Context saved successfully")
                 
                 // DEBUG: Print card count after save
                 let fetchDescriptor = FetchDescriptor<Card>()
                 let count = (try? context.fetch(fetchDescriptor).count) ?? 0
-                print("📝 [FINISH EDITS] Card count after save: \(count)")
+             
             } catch {
                 print("📝 [FINISH EDITS] ERROR saving context: \(error)")
             }
@@ -147,16 +140,11 @@ extension CardListView {
 
     func cancelEdits() {
         if let card = selectedCardModel.selectedCard {
-            print("📝 [CANCEL EDITS] Card ID: \(card.id), isNewlyCreated: \(selectedCardModel.isNewlyCreated)")
             
             if selectedCardModel.isNewlyCreated {
-                // New card -> delete entirely
-                print("📝 [CANCEL EDITS] DELETING newly created card")
                 context.delete(card)
                 try? context.save()
             } else {
-                // Existing card -> restore snapshot
-                print("📝 [CANCEL EDITS] Restoring snapshot for existing card")
                 selectedCardModel.restoreSnapshotIfAvailable()
                 try? context.save()
             }

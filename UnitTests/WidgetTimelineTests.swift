@@ -23,7 +23,7 @@ struct CardEntityConversionTests {
     var modelContainer: ModelContainer
     
     init() throws {
-        let schema = Schema([Card.self, Folder.self])
+        let schema = Schema([Card.self, Folder.self, CardTag.self])
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         modelContainer = try ModelContainer(for: schema, configurations: [config])
         modelContext = ModelContext(modelContainer)
@@ -41,7 +41,7 @@ struct CardEntityConversionTests {
         )
         modelContext.insert(card)
         
-        let entity = CardEntity(card: card, widgetImageMaxSize: 600)
+        let entity = CardEntity(card: card)
         
         #expect(entity.id == card.id)
         #expect(entity.cardTypeRaw == card.cardType.rawValue)
@@ -59,7 +59,7 @@ struct CardEntityConversionTests {
         )
         modelContext.insert(card)
         
-        let entity = CardEntity(card: card, widgetImageMaxSize: 600)
+        let entity = CardEntity(card: card)
         
         #expect(entity.cardType == .flashcard)
         #expect(entity.answer == "A programming language")
@@ -75,7 +75,7 @@ struct CardEntityConversionTests {
         )
         modelContext.insert(card)
         
-        let entity = CardEntity(card: card, widgetImageMaxSize: 600)
+        let entity = CardEntity(card: card)
         
         #expect(entity.cardType == .todo)
         #expect(entity.content == "Complete this task")
@@ -308,10 +308,7 @@ struct CardEntryCreationTests {
             isArchived: false,
             answerRevealed: false,
             skipEnabled: true,
-            tags: nil,
-            widgetTextHidden: false,
-            contentImageData: nil,
-            answerImageData: nil
+            tags: nil
         )
         
         let entry = CardEntry(
@@ -332,53 +329,6 @@ struct CardEntryCreationTests {
         #expect(entry.widgetIdentifier == "test_widget")
     }
     
-    @Test func cardEntryWithImages() throws {
-        // Create test image data
-        let size = CGSize(width: 100, height: 100)
-        let renderer = UIGraphicsImageRenderer(size: size)
-        let testImage = renderer.image { context in
-            UIColor.cyan.setFill()
-            context.fill(CGRect(origin: .zero, size: size))
-        }
-        let imageData = testImage.jpegData(compressionQuality: 0.75)
-        
-        let entity = CardEntity(
-            id: UUID(),
-            createdAt: Date(),
-            cardTypeRaw: "flashcard",
-            content: "Question",
-            answer: "Answer",
-            isRecurring: true,
-            skipCount: 0,
-            seenCount: 0,
-            repeatInterval: 3600,
-            nextTimeInQueue: Date(),
-            folder: nil,
-            isArchived: false,
-            answerRevealed: false,
-            skipEnabled: true,
-            tags: ["test"],
-            widgetTextHidden: false,
-            contentImageData: imageData,
-            answerImageData: imageData
-        )
-        
-        let entry = CardEntry(
-            date: Date(),
-            card: entity,
-            queueCardCount: 1,
-            totalNumberOfCards: 1,
-            nextCardForQueue: nil,
-            nextUpdateDate: Date().addingTimeInterval(3600),
-            selectedCardTypes: [.flashcard],
-            selectedFolders: [],
-            widgetIdentifier: "test"
-        )
-        
-        #expect(entry.card.contentImageData != nil)
-        #expect(entry.card.answerImageData != nil)
-    }
-    
     @Test func cardEntryEmptyQueue() throws {
         let dummyEntity = CardEntity(
             id: UUID(),
@@ -395,10 +345,7 @@ struct CardEntryCreationTests {
             isArchived: false,
             answerRevealed: false,
             skipEnabled: false,
-            tags: nil,
-            widgetTextHidden: false,
-            contentImageData: nil,
-            answerImageData: nil
+            tags: nil
         )
         
         let entry = CardEntry(
@@ -528,16 +475,16 @@ struct MultipleCardProcessingTests {
     var modelContainer: ModelContainer
     
     init() throws {
-        let schema = Schema([Card.self, Folder.self])
+        let schema = Schema([Card.self, Folder.self, CardTag.self])
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         modelContainer = try ModelContainer(for: schema, configurations: [config])
         modelContext = ModelContext(modelContainer)
     }
     
-    @Test func processMultipleCardsWithImages() throws {
+    @Test func processMultipleCards() throws {
         var cards: [Card] = []
         
-        // Create multiple cards with images
+        // Create multiple cards
         for i in 0..<5 {
             let card = Card(
                 createdAt: Date(),
@@ -547,77 +494,53 @@ struct MultipleCardProcessingTests {
                 answer: nil
             )
             
-            let size = CGSize(width: 500, height: 500)
-            let renderer = UIGraphicsImageRenderer(size: size)
-            let image = renderer.image { context in
-                UIColor(
-                    red: CGFloat(i) / 5.0,
-                    green: 0.5,
-                    blue: 1.0 - CGFloat(i) / 5.0,
-                    alpha: 1.0
-                ).setFill()
-                context.fill(CGRect(origin: .zero, size: size))
-            }
-            card.contentImageData = image.pngData()
-            
             modelContext.insert(card)
             cards.append(card)
         }
         
         // Convert all cards to entities
-        let entities = cards.map { CardEntity(card: $0, widgetImageMaxSize: 600) }
+        let entities = cards.map { CardEntity(card: $0) }
         
         #expect(entities.count == 5)
-        
-        // All should have image data
-        for entity in entities {
-            #expect(entity.contentImageData != nil)
-        }
     }
     
-    @Test func processCardsWithMixedImageStates() throws {
-        let cardWithImage = Card(
+    @Test func processCardsWithMixedStates() throws {
+        let activeCard = Card(
             createdAt: Date(),
             cardType: .note,
             priorityTypeRaw: .none,
-            content: "Has image",
+            content: "Active card",
             answer: nil
         )
-        let size = CGSize(width: 200, height: 200)
-        let renderer = UIGraphicsImageRenderer(size: size)
-        let image = renderer.image { context in
-            UIColor.blue.setFill()
-            context.fill(CGRect(origin: .zero, size: size))
-        }
-        cardWithImage.contentImageData = image.pngData()
         
-        let cardWithoutImage = Card(
+        let archivedCard = Card(
             createdAt: Date(),
             cardType: .note,
             priorityTypeRaw: .none,
-            content: "No image",
-            answer: nil
+            content: "Archived card",
+            answer: nil,
+            isArchived: true
         )
         
-        let cardWithEmptyData = Card(
+        let flashcard = Card(
             createdAt: Date(),
-            cardType: .note,
+            cardType: .flashcard,
             priorityTypeRaw: .none,
-            content: "Empty data",
-            answer: nil
+            content: "Question",
+            answer: "Answer"
         )
-        cardWithEmptyData.contentImageData = Data()
         
-        modelContext.insert(cardWithImage)
-        modelContext.insert(cardWithoutImage)
-        modelContext.insert(cardWithEmptyData)
+        modelContext.insert(activeCard)
+        modelContext.insert(archivedCard)
+        modelContext.insert(flashcard)
         
-        let entities = [cardWithImage, cardWithoutImage, cardWithEmptyData]
-            .map { CardEntity(card: $0, widgetImageMaxSize: 600) }
+        let entities = [activeCard, archivedCard, flashcard]
+            .map { CardEntity(card: $0) }
         
-        #expect(entities[0].contentImageData != nil, "Card with image should have data")
-        #expect(entities[1].contentImageData == nil, "Card without image should have nil")
-        #expect(entities[2].contentImageData == nil, "Card with empty data should have nil")
+        #expect(entities.count == 3, "All cards should be converted to entities")
+        #expect(entities[0].isArchived == false)
+        #expect(entities[1].isArchived == true)
+        #expect(entities[2].cardType == .flashcard)
     }
 }
 

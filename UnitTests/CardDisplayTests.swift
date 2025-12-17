@@ -41,28 +41,4 @@ struct CardDisplayTests {
         )
         #expect(card.displayAnswer == "Answer here...")
     }
-    
-    @Test func displayAnswerEmptyWithImage() {
-        let card = Card(
-            createdAt: Date(),
-            cardType: .flashcard,
-            priorityTypeRaw: .none,
-            content: "Question",
-            answer: "",
-            answerImageData: Data() // Mock image data
-        )
-        #expect(card.displayAnswer == "")
-    }
-    
-    @Test func displayAnswerNilWithImage() {
-        let card = Card(
-            createdAt: Date(),
-            cardType: .flashcard,
-            priorityTypeRaw: .none,
-            content: "Question",
-            answer: nil,
-            answerImageData: Data() // Mock image data
-        )
-        #expect(card.displayAnswer == "")
-    }
 }

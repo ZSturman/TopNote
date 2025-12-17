@@ -93,20 +93,17 @@ struct TopNoteApp: App {
     
     private func queuedCardsCount(using context: ModelContext) -> Int {
         let now = Date()
-        // Count cards that are due (in queue) and not archived
+        // Count cards that are due (in queue) and not archived - using fetchCount for efficiency
         let predicate = #Predicate<Card> { card in
             card.isArchived == false && card.nextTimeInQueue <= now
         }
         let fetch = FetchDescriptor<Card>(predicate: predicate)
         do {
-            let count = try context.fetch(fetch).count
-            
-            // Also print total cards count for debugging
-            let allCardsDescriptor = FetchDescriptor<Card>()
-            let totalCount = try context.fetch(allCardsDescriptor).count
-            
+            // Use fetchCount instead of fetch().count to avoid loading all cards
+            let count = try context.fetchCount(fetch)
             return count
         } catch {
+            print("[TopNoteApp] Failed to count queued cards: \(error)")
             return 0
         }
     }

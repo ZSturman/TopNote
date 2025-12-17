@@ -9,27 +9,24 @@ import SwiftUI
 import SwiftData
 import WidgetKit
 import TipKit
-import PhotosUI
 
 struct CardRow: View {
     @EnvironmentObject var selectedCardModel: SelectedCardModel
     @Environment(\.modelContext) var modelContext
 
     var card: Card
+    var folders: [Folder]  // Passed from parent to avoid per-row queries
     var onCommit: (() -> Void)? = nil
     var onPriorityChanged: ((UUID) -> Void)? = nil
     var lastDeselectedCardID: UUID? = nil
 
-    @Query var tags: [CardTag]
-    @Query var folders: [Folder]
+    // REMOVED: @Query var tags: [CardTag] - this was creating 700+ separate queries
+    // REMOVED: @Query var folders: [Folder] - now passed as parameter
 
     // Selection / editing
     @State var showingFlashcardAnswer = false
     @State var draftContent: String = ""
     @State var draftAnswer: String = ""
-    // MARK: - IMAGE DISABLED
-    // @State var selectedContentPhoto: PhotosPickerItem?
-    // @State var selectedAnswerPhoto: PhotosPickerItem?
     @State var saveTask: Task<Void, Never>? = nil
 
     @State var activeSheet: CardRowSheet? = nil
@@ -53,26 +50,8 @@ struct CardRow: View {
     }
     
     private func deleteIfEmptyAndNotSelected() {
-        // Trim whitespace/newlines
-        let contentIsEmpty = card.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        // MARK: - IMAGE DISABLED
-        // let hasNoImage = card.contentImageData == nil
-        // let hasPendingImage = selectedContentPhoto != nil || selectedAnswerPhoto != nil
-        // let shouldDelete = contentIsEmpty && hasNoImage && !hasPendingImage
-        let shouldDelete = contentIsEmpty
-        
-        // Only log when content is empty (the interesting cases) to reduce log spam
-        if contentIsEmpty {
-            print("📝 [CardRow deleteIfEmpty] Card ID: \\(card.id), isSelected: \\(isSelected), contentIsEmpty: \\(contentIsEmpty), content: '\\(card.content)'")
-        }
-        
-        // Allow cards with only an image (empty content is OK if there's an image)
-        // Only delete if both content is empty AND no image exists AND no pending image selection
-        if !isSelected && shouldDelete {
-            print("📝 [CardRow deleteIfEmpty] DELETING card because not selected, content empty, and no image")
-            modelContext.delete(card)
-            try? modelContext.save()
-        }
+        // DISABLED: Auto-delete was causing issues - cards being deleted unexpectedly
+        // This function is no longer called but kept for reference
     }
 
     var body: some View {
@@ -150,7 +129,8 @@ struct CardRow: View {
             handleSelectionChange(newValue: newValue)
         }
         .onAppear {
-            deleteIfEmptyAndNotSelected()
+            // DISABLED: onAppear delete was causing cards to be deleted unexpectedly
+            // deleteIfEmptyAndNotSelected()
         }
     }
     
@@ -165,15 +145,12 @@ struct CardRow: View {
             if card.cardType == .flashcard {
                 let currentAnswer = card.answer ?? ""
                 let latestAnswer = selectedCardModel.draftAnswer ?? draftAnswer
-                if currentAnswer != latestAnswer { card.answer = latestAnswer }
+                if currentAnswer != latestAnswer { 
+                    card.answer = latestAnswer 
+                }
             }
-            do {
-                try modelContext.save()
-            } catch {
-                print("📝 [CardRow handleSelectionChange] ERROR saving: \(error)")
-            }
+            try? modelContext.save()
             selectedCardModel.clearDrafts()
-            deleteIfEmptyAndNotSelected()
         } else {
             // Initialize drafts on select
             selectedCardModel.clearDrafts()

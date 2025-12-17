@@ -172,12 +172,7 @@ extension CardRow {
                     .focused($isContentEditorFocused)
                     .accessibilityIdentifier("Card Content Editor")
                     .onAppear {
-                        if selectedCardModel.isNewlyCreated {
-                            isContentEditorFocused = true
-                            if card.cardType == .flashcard {
-                                showingFlashcardAnswer = true
-                            }
-                        }
+                        // Initialize draft content from card
                         draftContent = card.content
                         selectedCardModel.updateDraft(content: card.content)
                         if card.cardType == .flashcard {

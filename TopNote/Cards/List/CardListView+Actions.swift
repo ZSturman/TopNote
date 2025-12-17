@@ -10,16 +10,33 @@ import SwiftUI
 import SwiftData
 
 extension CardListView {
-    func addCard(ofType type: CardType) {
-        let wasEmptyBeforeInsert = cards.isEmpty
-
+    
+    // MARK: - Computed Properties for New Card Sheet
+    
+    var currentFolderForNewCard: Folder? {
+        guard let sel = selectedFolder else { return nil }
+        if case .folder(let f) = sel { return f }
+        return nil
+    }
+    
+    // MARK: - New Card Sheet Flow
+    
+    func presentNewCardSheet(ofType type: CardType) {
+        newCardType = type
+        showNewCardSheet = true
+    }
+    
+    func handleNewCardCreated(_ newCard: Card) {
+        let wasEmptyBeforeInsert = cards.count <= 1 // Card was just inserted
+        
+        // Ensure Upcoming filter is enabled
         if !filterOptions.contains(.upcoming) {
             filterOptions.append(.upcoming)
         }
         
         // Ensure the new card's type is visible in filters
         let cardTypeFilter: CardFilterOption
-        switch type {
+        switch newCard.cardType {
         case .todo: cardTypeFilter = .todo
         case .flashcard: cardTypeFilter = .flashcard
         case .note: cardTypeFilter = .note
@@ -28,87 +45,10 @@ extension CardListView {
             filterOptions.append(cardTypeFilter)
         }
         
-        // Expand Upcoming section for focus on new card
-        // Keep Queue section state as-is to avoid confusing the user
+        // Expand Upcoming section
         isUpcomingExpanded = true
         
-        let folderForNew: Folder? = {
-            guard let sel = selectedFolder else { return nil }
-            if case .folder(let f) = sel { return f }
-            return nil
-        }()
-        
-        // Gather tags corresponding to selected tag IDs
-        let selectedTagIDs = currentSelectedTagIDs()
-        let tagsForNew: [CardTag] = self.tags.filter { selectedTagIDs.contains($0.id) }
-        
-        // Set type-specific properties
-        let isRecurring = true
-        let skipEnabled: Bool
-        let skipPolicy: RepeatPolicy
-        let resetRepeatIntervalOnComplete: Bool
-        let repeatInterval: Int
-        
-        switch type {
-        case .flashcard:
-            skipEnabled = false
-            skipPolicy = .none
-            resetRepeatIntervalOnComplete = false
-            repeatInterval = 1440
-        case .todo:
-            skipEnabled = true
-            skipPolicy = .aggressive
-            resetRepeatIntervalOnComplete = true
-            repeatInterval = 720
-        case .note:
-            skipEnabled = true
-            skipPolicy = .mild
-            resetRepeatIntervalOnComplete = false
-            repeatInterval = 2880
-        }
-        
-        // Set nextTimeInQueue to slightly in the future so it appears in Upcoming section
-        // but near the top (earliest nextTimeInQueue when sorted ascending)
-        let now = Date()
-        let nextTimeInQueueForNewCard = now.addingTimeInterval(60) // 1 minute from now - puts it in Upcoming but near the top
-        
-        let newCard = Card(
-            createdAt: now,
-            cardType: type,
-            priorityTypeRaw: .none,
-            content: "",
-            isRecurring: isRecurring,
-            skipCount: 0,
-            seenCount: 0,
-            repeatInterval: repeatInterval,
-            initialRepeatInterval: repeatInterval,
-            nextTimeInQueue: nextTimeInQueueForNewCard,
-            folder: folderForNew,
-            tags: tagsForNew,
-            skipPolicy: skipPolicy,
-            ratingEasyPolicy: .mild,
-            ratingMedPolicy: .none,
-            ratingHardPolicy: .aggressive,
-            isComplete: false,
-            resetRepeatIntervalOnComplete: resetRepeatIntervalOnComplete,
-            skipEnabled: skipEnabled
-            
-        )
-        
-        // DEBUG: Print card count before insertion
-        let fetchDescriptor = FetchDescriptor<Card>()
-        let countBefore = (try? context.fetch(fetchDescriptor).count) ?? 0
-        
-        context.insert(newCard)
-        
-        // DEBUG: Print card count after insertion
-        let countAfter = (try? context.fetch(fetchDescriptor).count) ?? 0
-        
-        selectedCardModel.selectedCard = newCard
-        selectedCardModel.setIsNewlyCreated(true)
-        // Capture snapshot of the brand-new state so Cancel can delete instead of revert
-        selectedCardModel.captureSnapshot()
-        
+        // Donate tips
         if wasEmptyBeforeInsert {
             Task {
                 await AddWidgetTip.createdFirstCardEvent.donate()
@@ -122,7 +62,7 @@ extension CardListView {
         
         // Donate to card-type-specific events
         Task {
-            switch type {
+            switch newCard.cardType {
             case .note:
                 await FirstNoteTip_Skip.createdFirstNoteEvent.donate()
             case .todo:
@@ -132,12 +72,19 @@ extension CardListView {
             }
         }
         
-        // Scroll to new card after a brief delay to ensure it's rendered
-        // Use a longer delay to ensure SwiftUI has time to insert and render the new card
+        // Scroll to the new card after a brief delay to ensure it's rendered
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             scrollToCardID = newCard.id
         }
     }
+    
+    // MARK: - Legacy addCard (kept for reference, now uses sheet)
+    
+    func addCard(ofType type: CardType) {
+        // Now just presents the sheet instead of inline creation
+        presentNewCardSheet(ofType: type)
+    }
+    
     func delete(cards sectionCards: [Card], at offsets: IndexSet) {
         let toDelete = offsets.map { sectionCards[$0] }
         toDelete.forEach { card in

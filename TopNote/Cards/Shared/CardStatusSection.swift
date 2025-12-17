@@ -28,9 +28,10 @@ struct CardStatusSection: View {
     @State private var frozenOrder: [UUID] = []
     @State private var lastSelectedCardID: UUID? = nil
 
-    private var sortedCards: [Card] {
-        let sorted = cards.sorted(by: { card1, card2 in
-            // Normal sorting: priority first, then nextTimeInQueue, then ID for stability
+    /// Computes the sorted order without considering frozen order
+    /// Used to capture the correct display order before freezing
+    private func computeSortedOrder() -> [Card] {
+        cards.sorted(by: { card1, card2 in
             if card1.priority.sortValue != card2.priority.sortValue {
                 return card1.priority.sortValue < card2.priority.sortValue
             }
@@ -39,9 +40,15 @@ struct CardStatusSection: View {
                     ? card1.nextTimeInQueue < card2.nextTimeInQueue
                     : card1.nextTimeInQueue > card2.nextTimeInQueue
             }
-            // Use ID as stable tiebreaker
+            if card1.createdAt != card2.createdAt {
+                return card1.createdAt > card2.createdAt
+            }
             return card1.id.uuidString < card2.id.uuidString
         })
+    }
+
+    private var sortedCards: [Card] {
+        let sorted = computeSortedOrder()
         
         // Use frozen order if we have one and a card is selected
         if selectedCardModel.selectedCard != nil && !frozenOrder.isEmpty {
@@ -74,19 +81,16 @@ struct CardStatusSection: View {
                 onDelete(sortedCards, offsets)
             }
         }
-        // Handle frozen order updates outside of computed property
+        // Handle frozen order clearing on deselection
         .onChange(of: selectedCardModel.selectedCard?.id) { oldID, newID in
-            if newID != nil && oldID == nil {
-                // Card selected - freeze order immediately
-                frozenOrder = cards.map { $0.id }
-            } else if newID == nil && oldID != nil {
+            if newID == nil && oldID != nil {
                 // Card deselected - delay clearing frozen order to allow scroll to complete
                 // This prevents jarring reorder while scrolling is in progress
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                     frozenOrder = []
                 }
             }
-            // Switching between cards - keep frozen order (no action needed)
+            // Note: Frozen order is now captured in select() BEFORE selection changes
         }
     }
 
@@ -97,7 +101,15 @@ struct CardStatusSection: View {
             try? context.save()
             selectedCardModel.clearSelection()
         } else {
-            // Selecting a new card
+            // IMPORTANT: Capture frozen order BEFORE changing selection
+            // This ensures we freeze the exact visual order the user sees
+            if selectedCardModel.selectedCard == nil {
+                // Only freeze when going from no selection to selection
+                // (not when switching between cards)
+                frozenOrder = computeSortedOrder().map { $0.id }
+            }
+            
+            // Now update selection
             selectedCardModel.selectedCard = card
             selectedCardModel.setIsNewlyCreated(false)
             selectedCardModel.captureSnapshot()

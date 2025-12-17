@@ -55,6 +55,7 @@ extension CardListView {
                     CardStatusSection(
                         title: "Queue",
                         cards: queueCards,
+                        folders: folders,
                         onDelete: delete,
                         onPriorityChanged: { cardID in
                             priorityChangedForCardID = cardID
@@ -107,6 +108,7 @@ extension CardListView {
                 CardStatusSection(
                     title: "Upcoming",
                     cards: upcomingCards,
+                    folders: folders,
                     onDelete: delete,
                     onPriorityChanged: { cardID in
                         priorityChangedForCardID = cardID
@@ -147,6 +149,7 @@ extension CardListView {
                 CardStatusSection(
                     title: "Archived",
                     cards: archivedCards,
+                    folders: folders,
                     onDelete: delete,
                     onPriorityChanged: { cardID in
                         priorityChangedForCardID = cardID
@@ -185,7 +188,7 @@ extension CardListView {
                                     selectedCards.contains(card)
                                         ? .accentColor : .secondary
                                 )
-                                CardRow(card: card, lastDeselectedCardID: lastDeselectedCardID)
+                                CardRow(card: card, folders: folders, lastDeselectedCardID: lastDeselectedCardID)
                                     // Added id for card row for scrolling
                                     .id(card.id)
                             }
@@ -200,6 +203,7 @@ extension CardListView {
                         } else {
                             CardRow(
                                 card: card,
+                                folders: folders,
                                 lastDeselectedCardID: lastDeselectedCardID
                             )
                             // Added id for card row for scrolling
@@ -256,7 +260,7 @@ extension CardListView {
                                 selectedCards.contains(card)
                                     ? .accentColor : .secondary
                             )
-                            CardRow(card: card)
+                            CardRow(card: card, folders: folders)
                                 // Added id for card row for scrolling
                                 .id(card.id)
                         }
@@ -271,6 +275,7 @@ extension CardListView {
                     } else {
                         CardRow(
                             card: card,
+                            folders: folders
                         )
                         // Added id for card row for scrolling
                         .id(card.id)
@@ -301,7 +306,7 @@ extension CardListView {
                                 selectedCards.contains(card)
                                     ? .accentColor : .secondary
                             )
-                            CardRow(card: card, lastDeselectedCardID: lastDeselectedCardID)
+                            CardRow(card: card, folders: folders, lastDeselectedCardID: lastDeselectedCardID)
                                 // Added id for card row for scrolling
                                 .id(card.id)
                         }
@@ -316,6 +321,7 @@ extension CardListView {
                     } else {
                         CardRow(
                             card: card,
+                            folders: folders,
                             lastDeselectedCardID: lastDeselectedCardID
                         )
                         // Added id for card row for scrolling
@@ -355,7 +361,7 @@ extension CardListView {
                             selectedCards.contains(card)
                                 ? .accentColor : .secondary
                         )
-                        CardRow(card: card, lastDeselectedCardID: lastDeselectedCardID)
+                        CardRow(card: card, folders: folders, lastDeselectedCardID: lastDeselectedCardID)
                             // Added id for card row for scrolling
                             .id(card.id)
                     }
@@ -370,6 +376,7 @@ extension CardListView {
                 } else {
                     CardRow(
                         card: card,
+                        folders: folders,
                         lastDeselectedCardID: lastDeselectedCardID
                     )
                     // Added id for card row for scrolling

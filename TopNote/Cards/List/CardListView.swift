@@ -15,6 +15,7 @@ struct CardListView: View {
     
     @Query var cards: [Card]
     @Query var tags: [CardTag]
+    @Query var folders: [Folder]
     
     @Binding var selectedFolder: FolderSelection?
     var tagSelectionStates: [UUID: TagSelectionState]

@@ -32,8 +32,6 @@ func duplicateCard(_ card: Card, in context: ModelContext) -> Card {
         folder: card.folder,
         tags: card.unwrappedTags,
         answer: card.answer,
-        contentImageData: card.contentImageData,
-        answerImageData: card.answerImageData,
         rating: card.rating,
         isArchived: card.isArchived,
         //answerRevealed: card.answerRevealed,

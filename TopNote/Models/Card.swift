@@ -233,60 +233,7 @@ final class Card {
         set { priorityRaw = newValue.rawValue }
     }
     
-    // MARK: - Image Computed Properties
-    
-    // MARK: - Image Data
-    @Attribute(.externalStorage) var contentImageData: Data?
-    @Attribute(.externalStorage) var answerImageData: Data?
 
-    
-//    /// Returns a UIImage from contentImageData if available
-//    var contentImage: UIImage? {
-//        guard let data = contentImageData else { return nil }
-//        return UIImage(data: data)
-//    }
-    
-//    /// Returns a UIImage from answerImageData if available
-//    var answerImage: UIImage? {
-//        guard let data = answerImageData else { return nil }
-//        return UIImage(data: data)
-//    }
-    
-//    /// Returns a thumbnail version of content image (for widget and list display)
-//    var contentImageThumbnail: UIImage? {
-//        guard let image = contentImage else { return nil }
-//        return image.thumbnailImage(maxSize: 150)
-//    }
-//    
-//    /// Returns a thumbnail version of answer image (for widget and list display)
-//    var answerImageThumbnail: UIImage? {
-//        guard let image = answerImage else { return nil }
-//        return image.thumbnailImage(maxSize: 150)
-//    }
-    
-    // MARK: - Widget Thumbnail Pre-generation
-    
-//    /// Pre-generate widget thumbnails when image data changes
-//    /// Call this after setting contentImageData or answerImageData
-//    func preGenerateWidgetThumbnails() {
-//        WidgetThumbnailCache.generateThumbnails(
-//            for: id,
-//            contentImageData: contentImageData,
-//            answerImageData: answerImageData
-//        )
-//    }
-//    
-//    /// Set content image and pre-generate widget thumbnails
-//    func setContentImage(_ data: Data?) {
-//        contentImageData = data
-//        preGenerateWidgetThumbnails()
-//    }
-//    
-//    /// Set answer image and pre-generate widget thumbnails
-//    func setAnswerImage(_ data: Data?) {
-//        answerImageData = data
-//        preGenerateWidgetThumbnails()
-//    }
 
  
     
@@ -306,8 +253,6 @@ final class Card {
         folder: Folder? = nil,
         tags: [CardTag] = [],
         answer: String? = nil,
-        contentImageData: Data? = nil,
-        answerImageData: Data? = nil,
         rating: [[RatingType: Date]] = [],
         isArchived: Bool = false,
         answerRevealed: Bool = false,
@@ -326,8 +271,6 @@ final class Card {
         self.priorityRaw = priorityTypeRaw.rawValue
         self.content = content
         self.answer = answer
-        self.contentImageData = contentImageData
-        self.answerImageData = answerImageData
         self.isRecurring = isRecurring
         self.skipCount = skipCount
         self.seenCount = seenCount
@@ -653,9 +596,6 @@ final class Card {
     var displayAnswer: String {
         if let answer, !answer.isEmpty {
             return answer
-        }
-        if answerImageData != nil {
-            return ""
         }
         return "Answer here..."
     }

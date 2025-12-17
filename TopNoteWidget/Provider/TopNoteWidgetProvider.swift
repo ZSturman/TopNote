@@ -25,23 +25,6 @@ struct Provider: AppIntentTimelineProvider {
         // Basic per-instance widget identifier
         let widgetIdentifier = "\(context.family.rawValue)_\(abs(context.displaySize.width.hashValue ^ context.displaySize.height.hashValue))"
 
-        let widgetImageMaxSize: CGFloat = {
-            switch context.family {
-            case .systemSmall:
-                return 300
-            case .systemMedium:
-                return 600
-            case .systemLarge:
-                return 900
-            case .systemExtraLarge:
-                return 1100
-            case .accessoryCircular, .accessoryRectangular, .accessoryInline, .accessoryCorner:
-                return 300
-            @unknown default:
-                return 600
-            }
-        }()
-
         if configuration.showCardType.isEmpty {
             let entry = noCardTypesSelectedEntry(
                 currentDate: currentDate,
@@ -66,10 +49,10 @@ struct Provider: AppIntentTimelineProvider {
                 )
 
             let cardsInQueueEntities = cardsInQueue.map {
-                CardEntity(card: $0, widgetImageMaxSize: widgetImageMaxSize)
+                CardEntity(card: $0)
             }
             let nextCardEntity = nextCardForQueue.map {
-                CardEntity(card: $0, widgetImageMaxSize: widgetImageMaxSize)
+                CardEntity(card: $0)
             }
 
             let updateDate = nextCardEntity?.nextTimeInQueue ?? currentDate.addingTimeInterval(60)

@@ -262,10 +262,13 @@ extension CardListView {
             }
         }
         
-        // When a card is deselected and its priority changed, scroll to it after reordering
-        if newID == nil, let changedCardID = priorityChangedForCardID {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                scrollToCardID = changedCardID
+        // When a card is deselected, scroll to it after reordering
+        // This keeps the user oriented after the list re-sorts
+        if newID == nil, let oldID = oldID {
+            // Use priorityChangedForCardID if set, otherwise use the deselected card
+            let targetID = priorityChangedForCardID ?? oldID
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                scrollToCardID = targetID
                 priorityChangedForCardID = nil
             }
         } else if let id = newID {

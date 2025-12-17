@@ -42,6 +42,9 @@ extension CardListView {
         )
         let selectedCardTypes = Set(typeFilters.compactMap { $0.asCardType })
         let statusFilters = activeStatusFilters
+        let attributeFilters = Set(
+            filterOptions.filter { CardFilterOption.attributeFilters.contains($0) }
+        )
 
         // Apply type filter if any type options selected
         let typeFiltered: [Card] =
@@ -72,14 +75,31 @@ extension CardListView {
                 return matched
             }
 
+        // Apply attribute filters (e.g., has attachment)
+        // MARK: - IMAGE DISABLED
+        let attributeFiltered: [Card] = statusFiltered
+        /* ORIGINAL ATTRIBUTE FILTER CODE:
+        let attributeFiltered: [Card] =
+            attributeFilters.isEmpty
+            ? statusFiltered
+            : statusFiltered.filter { card in
+                var matched = true
+                if attributeFilters.contains(.hasAttachment) {
+                    // Card must have at least one attachment
+                    matched = matched && (card.contentImageData != nil || card.answerImageData != nil)
+                }
+                return matched
+            }
+        */
+
         // Folder filtering as before
         let folderFiltered: [Card] = {
-            guard let selected = selectedFolder else { return statusFiltered }
+            guard let selected = selectedFolder else { return attributeFiltered }
             switch selected {
             case .folder(let folder):
-                return statusFiltered.filter { $0.folder?.id == folder.id }
+                return attributeFiltered.filter { $0.folder?.id == folder.id }
             case .allCards:
-                return statusFiltered
+                return attributeFiltered
             }
         }()
 

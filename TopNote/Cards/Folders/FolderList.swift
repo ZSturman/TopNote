@@ -19,6 +19,7 @@ public struct FolderList: View {
     @Binding var selectedFolder: FolderSelection?
     @Binding  var tagSelectionStates: [UUID: TagSelectionState]
     @State private var showNewFolderInput: Bool = false
+    @State private var showManageFolders: Bool = false
     
     
     public var body: some View {
@@ -90,11 +91,24 @@ public struct FolderList: View {
                     }
                     .accessibilityIdentifier("NewFolderButton")
                     Spacer()
+                    
+                    Button {
+                        showManageFolders.toggle()
+                    } label: {
+                        HStack {
+                            Image(systemName: "folder.badge.gearshape")
+                            Text("Manage")
+                        }
+                    }
+                    .accessibilityIdentifier("ManageFoldersButton")
                 }
             
         }
         .sheet(isPresented: $showNewFolderInput) {
             NewFolderForm(selectedFolder: $selectedFolder)
+        }
+        .sheet(isPresented: $showManageFolders) {
+            ManageFoldersView()
         }
 
     }

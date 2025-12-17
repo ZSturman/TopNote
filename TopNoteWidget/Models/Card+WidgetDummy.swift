@@ -5,7 +5,11 @@
 //  Created by Zachary Sturman on 12/13/25.
 //
 
+
+@testable import TopNote
+import SwiftData
 import Foundation
+import Testing
 
 extension Card {
     static func makeDummy() -> Card {

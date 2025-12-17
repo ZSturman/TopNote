@@ -21,7 +21,7 @@ struct NewFolderForm: View {
     
     private var isFolderNameValid: Bool {
         let trimmedName = newFolderName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return !trimmedName.isEmpty && !existingFolders.contains { $0.name == trimmedName }
+        return !trimmedName.isEmpty && !existingFolders.contains { $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame }
     }
     
     var body: some View {
@@ -43,7 +43,7 @@ struct NewFolderForm: View {
                             .font(.caption)
                             .foregroundColor(.red)
                             .accessibilityLabel("Folder name required")
-                    } else if existingFolders.contains(where: { $0.name == trimmedName }) {
+                    } else if existingFolders.contains(where: { $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame }) {
                         Text("A folder with this name already exists.")
                             .font(.caption)
                             .foregroundColor(.red)

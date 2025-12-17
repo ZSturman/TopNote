@@ -20,6 +20,17 @@ final class Folder {
 // ——— satisfy Sendable so AppEntity (which inherits Sendable) will compile ———
 extension Folder: @unchecked Sendable { }
 
+// ——— Hashable conformance for Set usage ———
+extension Folder: Hashable {
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+    
+    static func == (lhs: Folder, rhs: Folder) -> Bool {
+        lhs.id == rhs.id
+    }
+}
+
 // ——— AppIntents conformance in its own extension ———
 extension Folder: AppEntity {
     // tie in your query

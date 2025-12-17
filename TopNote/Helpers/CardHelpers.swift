@@ -86,36 +86,57 @@ func createCard(
 }
 
 // MARK: - Image Helpers
-
-extension UIImage {
-    /// Compresses image to JPEG with quality setting
-    /// - Parameter quality: Compression quality (0.0 to 1.0), defaults to 0.75 for balance
-    /// - Returns: Compressed JPEG data
-    func compressedJPEGData(quality: CGFloat = 0.75) -> Data? {
-        return self.jpegData(compressionQuality: quality)
-    }
-    
-    /// Prepares image for widget storage (thumbnail + compression)
-    /// - Returns: Optimized JPEG data suitable for widget display
-    func prepareForWidget() -> Data? {
-        let thumbnail = self.thumbnailImage(maxSize: 150)
-        return thumbnail.compressedJPEGData(quality: 0.7)
-    }
-}
-
-extension Data {
-    /// Converts Data to UIImage
-    var toUIImage: UIImage? {
-        return UIImage(data: self)
-    }
-}
-
-extension Image {
-    /// Creates a SwiftUI Image from Data
-    /// - Parameter data: Image data (JPEG, PNG, etc.)
-    /// - Returns: SwiftUI Image or nil if conversion fails
-    static func fromData(_ data: Data?) -> Image? {
-        guard let data = data, let uiImage = UIImage(data: data) else { return nil }
-        return Image(uiImage: uiImage)
-    }
-}
+//
+//extension UIImage {
+//    /// Maximum dimension for stored images to reduce memory pressure on widgets
+//    private static let maxStorageDimension: CGFloat = 2000
+//    
+//    /// Resizes image if it exceeds the maximum dimension while maintaining aspect ratio
+//    /// - Parameter maxDimension: Maximum width or height
+//    /// - Returns: Resized image or self if already within limits
+//    func resizedIfNeeded(maxDimension: CGFloat = UIImage.maxStorageDimension) -> UIImage {
+//        let maxSide = max(size.width, size.height)
+//        guard maxSide > maxDimension else { return self }
+//        
+//        let ratio = maxDimension / maxSide
+//        let newSize = CGSize(width: size.width * ratio, height: size.height * ratio)
+//        
+//        let renderer = UIGraphicsImageRenderer(size: newSize)
+//        return renderer.image { _ in
+//            self.draw(in: CGRect(origin: .zero, size: newSize))
+//        }
+//    }
+//    
+//    /// Compresses image to JPEG with quality setting
+//    /// Automatically resizes large images to reduce memory pressure
+//    /// - Parameter quality: Compression quality (0.0 to 1.0), defaults to 0.75 for balance
+//    /// - Returns: Compressed JPEG data
+//    func compressedJPEGData(quality: CGFloat = 0.75) -> Data? {
+//        let resized = self.resizedIfNeeded()
+//        return resized.jpegData(compressionQuality: quality)
+//    }
+//    
+//    /// Prepares image for widget storage (thumbnail + compression)
+//    /// - Returns: Optimized JPEG data suitable for widget display
+//    func prepareForWidget() -> Data? {
+//        let thumbnail = self.thumbnailImage(maxSize: 150)
+//        return thumbnail.compressedJPEGData(quality: 0.7)
+//    }
+//}
+//
+//extension Data {
+//    /// Converts Data to UIImage
+//    var toUIImage: UIImage? {
+//        return UIImage(data: self)
+//    }
+//}
+//
+//extension Image {
+//    /// Creates a SwiftUI Image from Data
+//    /// - Parameter data: Image data (JPEG, PNG, etc.)
+//    /// - Returns: SwiftUI Image or nil if conversion fails
+//    static func fromData(_ data: Data?) -> Image? {
+//        guard let data = data, let uiImage = UIImage(data: data) else { return nil }
+//        return Image(uiImage: uiImage)
+//    }
+//}

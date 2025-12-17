@@ -5,9 +5,11 @@
 //  Created by Zachary Sturman on 11/15/25.
 //
 
-import Testing
-import SwiftData
 @testable import TopNote
+import SwiftData
+import Foundation
+import Testing
+
 import Foundation
 
 // MARK: - Card Timing Tests

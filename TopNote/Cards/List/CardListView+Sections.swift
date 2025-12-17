@@ -59,7 +59,8 @@ extension CardListView {
                         onPriorityChanged: { cardID in
                             priorityChangedForCardID = cardID
                         },
-                        priorityChangedForCardID: priorityChangedForCardID
+                        priorityChangedForCardID: priorityChangedForCardID,
+                        lastDeselectedCardID: lastDeselectedCardID
                     )
                     .environment(\.ascending, ascending)
                     .popoverTip(firstQueueCardTip, arrowEdge: .top)
@@ -110,7 +111,8 @@ extension CardListView {
                     onPriorityChanged: { cardID in
                         priorityChangedForCardID = cardID
                     },
-                    priorityChangedForCardID: priorityChangedForCardID
+                    priorityChangedForCardID: priorityChangedForCardID,
+                    lastDeselectedCardID: lastDeselectedCardID
                 )
                 .environment(\.ascending, ascending)
             }
@@ -149,7 +151,8 @@ extension CardListView {
                     onPriorityChanged: { cardID in
                         priorityChangedForCardID = cardID
                     },
-                    priorityChangedForCardID: priorityChangedForCardID
+                    priorityChangedForCardID: priorityChangedForCardID,
+                    lastDeselectedCardID: lastDeselectedCardID
                 )
                 .environment(\.ascending, ascending)
             }
@@ -182,7 +185,7 @@ extension CardListView {
                                     selectedCards.contains(card)
                                         ? .accentColor : .secondary
                                 )
-                                CardRow(card: card)
+                                CardRow(card: card, lastDeselectedCardID: lastDeselectedCardID)
                                     // Added id for card row for scrolling
                                     .id(card.id)
                             }
@@ -197,6 +200,7 @@ extension CardListView {
                         } else {
                             CardRow(
                                 card: card,
+                                lastDeselectedCardID: lastDeselectedCardID
                             )
                             // Added id for card row for scrolling
                             .id(card.id)
@@ -297,7 +301,7 @@ extension CardListView {
                                 selectedCards.contains(card)
                                     ? .accentColor : .secondary
                             )
-                            CardRow(card: card)
+                            CardRow(card: card, lastDeselectedCardID: lastDeselectedCardID)
                                 // Added id for card row for scrolling
                                 .id(card.id)
                         }
@@ -312,6 +316,7 @@ extension CardListView {
                     } else {
                         CardRow(
                             card: card,
+                            lastDeselectedCardID: lastDeselectedCardID
                         )
                         // Added id for card row for scrolling
                         .id(card.id)
@@ -350,7 +355,7 @@ extension CardListView {
                             selectedCards.contains(card)
                                 ? .accentColor : .secondary
                         )
-                        CardRow(card: card)
+                        CardRow(card: card, lastDeselectedCardID: lastDeselectedCardID)
                             // Added id for card row for scrolling
                             .id(card.id)
                     }
@@ -365,6 +370,7 @@ extension CardListView {
                 } else {
                     CardRow(
                         card: card,
+                        lastDeselectedCardID: lastDeselectedCardID
                     )
                     // Added id for card row for scrolling
                     .id(card.id)

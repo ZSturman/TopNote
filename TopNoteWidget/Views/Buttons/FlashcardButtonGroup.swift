@@ -15,7 +15,6 @@ struct FlashcardButtonGroup: View {
     let skipEnabled: Bool
     let card: CardEntity
     let widgetID: String
-    let showTextToggle: Bool
 
     init(
         isCardFlipped: Bool,
@@ -23,18 +22,15 @@ struct FlashcardButtonGroup: View {
         skipEnabled: Bool,
         card: CardEntity,
         widgetID: String,
-        showTextToggle: Bool = false
     ) {
         self.isCardFlipped = isCardFlipped
         self.skipCount = skipCount
         self.skipEnabled = skipEnabled
         self.card = card
         self.widgetID = widgetID
-        self.showTextToggle = showTextToggle
     }
 
     var body: some View {
-        let isTextHidden = WidgetStateManager.shared.isTextHidden(widgetID: widgetID, cardID: card.id)
 
         if isCardFlipped {
             HStack(spacing: 12) {
@@ -47,31 +43,6 @@ struct FlashcardButtonGroup: View {
                 RecurringMessage(card: card)
 
                 Spacer()
-
-                if showTextToggle {
-                    Button(intent: ToggleWidgetTextIntent(card: card, widgetID: widgetID)) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.gray.opacity(0.85))
-                                .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
-
-                            Image(systemName: "textformat.characters")
-                                .font(.caption)
-                                .foregroundColor(.white)
-
-                            if !isTextHidden {
-                                Capsule()
-                                    .fill(Color.white)
-                                    .frame(width: 22, height: 2)
-                                    .rotationEffect(.degrees(33))
-                                    .shadow(color: .gray.opacity(0.1), radius: 3, x: 0, y: 1)
-                            }
-                        }
-                    }
-                    .frame(width: buttonSize, height: buttonSize)
-                    .buttonStyle(WidgetButtonStyle(color: .gray))
-                    .accessibilityLabel(Text(isTextHidden ? "Show text" : "Hide text"))
-                }
 
                 skipOrNextButton()
             }
@@ -97,31 +68,6 @@ struct FlashcardButtonGroup: View {
                 RecurringMessage(card: card)
 
                 Spacer()
-
-                if showTextToggle {
-                    Button(intent: ToggleWidgetTextIntent(card: card, widgetID: widgetID)) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.gray.opacity(0.85))
-                                .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
-
-                            Image(systemName: "textformat.characters")
-                                .font(.caption)
-                                .foregroundColor(.white)
-
-                            if !isTextHidden {
-                                Capsule()
-                                    .fill(Color.white)
-                                    .frame(width: 22, height: 2)
-                                    .rotationEffect(.degrees(33))
-                                    .shadow(color: .gray.opacity(0.1), radius: 3, x: 0, y: 1)
-                            }
-                        }
-                    }
-                    .frame(width: buttonSize, height: buttonSize)
-                    .buttonStyle(WidgetButtonStyle(color: .gray))
-                    .accessibilityLabel(Text(isTextHidden ? "Show text" : "Hide text"))
-                }
 
                 if skipEnabled {
                     Button(intent: SkipCardIntent(card: card)) {

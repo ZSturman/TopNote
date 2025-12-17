@@ -30,7 +30,10 @@
       shouldUseLaunchSchemeArgsEnv = "YES">
       <TestPlans>
          <TestPlanReference
-            reference = "container:../TopNote.xctestplan"
+            reference = "container:../TopNote.xctestplan">
+         </TestPlanReference>
+         <TestPlanReference
+            reference = "container:TopNote.xctestplan"
             default = "YES">
          </TestPlanReference>
       </TestPlans>
@@ -40,7 +43,7 @@
             parallelizable = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "EF4D5DDA2D74E4D4002FC7BB"
+               BlueprintIdentifier = "EF2D8A192EF055140028F011"
                BuildableName = "TopNoteTests.xctest"
                BlueprintName = "TopNoteTests"
                ReferencedContainer = "container:TopNote.xcodeproj">

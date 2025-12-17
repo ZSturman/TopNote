@@ -18,6 +18,10 @@ enum CardFilterOption: String, CaseIterable, Identifiable {
     case upcoming
     case archived
     
+    // MARK: - IMAGE DISABLED
+    // CARD ATTRIBUTES
+    // case hasAttachment
+    
     var id: String { rawValue }
     
     static var typeFilters: [CardFilterOption] {
@@ -25,6 +29,11 @@ enum CardFilterOption: String, CaseIterable, Identifiable {
        }
        static var statusFilters: [CardFilterOption] {
            [.enqueue, .upcoming, .archived]
+       }
+       // MARK: - IMAGE DISABLED
+       static var attributeFilters: [CardFilterOption] {
+           // [.hasAttachment]
+           []
        }
     
     var localizedName: String {
@@ -35,6 +44,8 @@ enum CardFilterOption: String, CaseIterable, Identifiable {
         case .enqueue:   return "Queue"
         case .upcoming:  return "Upcoming"
         case .archived:  return "Archived"
+        // MARK: - IMAGE DISABLED
+        // case .hasAttachment: return "Has Attachment"
         }
     }
 }

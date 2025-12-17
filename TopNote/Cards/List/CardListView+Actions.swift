@@ -16,6 +16,18 @@ extension CardListView {
         if !filterOptions.contains(.upcoming) {
             filterOptions.append(.upcoming)
         }
+        
+        // Ensure the new card's type is visible in filters
+        let cardTypeFilter: CardFilterOption
+        switch type {
+        case .todo: cardTypeFilter = .todo
+        case .flashcard: cardTypeFilter = .flashcard
+        case .note: cardTypeFilter = .note
+        }
+        if !filterOptions.contains(cardTypeFilter) {
+            filterOptions.append(cardTypeFilter)
+        }
+        
         // Expand Upcoming section for focus on new card
         // Keep Queue section state as-is to avoid confusing the user
         isUpcomingExpanded = true
@@ -86,14 +98,11 @@ extension CardListView {
         // DEBUG: Print card count before insertion
         let fetchDescriptor = FetchDescriptor<Card>()
         let countBefore = (try? context.fetch(fetchDescriptor).count) ?? 0
-        print("📝 [ADD CARD] Card count BEFORE insert: \(countBefore)")
         
         context.insert(newCard)
-        print("📝 [ADD CARD] Inserted new card with ID: \(newCard.id), content: '\(newCard.content)'")
         
         // DEBUG: Print card count after insertion
         let countAfter = (try? context.fetch(fetchDescriptor).count) ?? 0
-        print("📝 [ADD CARD] Card count AFTER insert: \(countAfter)")
         
         selectedCardModel.selectedCard = newCard
         selectedCardModel.setIsNewlyCreated(true)
@@ -126,25 +135,20 @@ extension CardListView {
         // Scroll to new card after a brief delay to ensure it's rendered
         // Use a longer delay to ensure SwiftUI has time to insert and render the new card
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            print("📝 [ADD CARD] Scrolling to new card ID: \(newCard.id)")
             scrollToCardID = newCard.id
         }
     }
     func delete(cards sectionCards: [Card], at offsets: IndexSet) {
         let toDelete = offsets.map { sectionCards[$0] }
-        print("📝 [DELETE] Deleting \(toDelete.count) cards")
         toDelete.forEach { card in
-            print("📝 [DELETE] Deleting card ID: \(card.id), content: '\(card.content)'")
             context.delete(card)
         }
         do {
             try context.save()
-            print("📝 [DELETE] Context saved successfully")
             
             // DEBUG: Print card count after delete
             let fetchDescriptor = FetchDescriptor<Card>()
             let count = (try? context.fetch(fetchDescriptor).count) ?? 0
-            print("📝 [DELETE] Card count after delete: \(count)")
         } catch {
             print("📝 [DELETE] ERROR saving context: \(error)")
         }
@@ -236,19 +240,28 @@ extension CardListView {
     
     func scrollToCardIDChanged(to newID: UUID?, proxy: ScrollViewProxy) {
         guard let id = newID else { return }
-        print("📝 [SCROLL] Attempting to scroll to card ID: \(id)")
         // Delay slightly to ensure card is rendered and visible in the list
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             withAnimation(.easeInOut(duration: 0.3)) {
                 proxy.scrollTo(id, anchor: .center)
             }
-            print("📝 [SCROLL] Scroll command sent")
         }
         // Reset scrollToCardID after scrolling
         scrollToCardID = nil
     }
     
     func handleSelectionChange(oldID: UUID?, newID: UUID?) {
+        // Track the last deselected card for fade-out animation
+        if let oldID = oldID, newID != oldID {
+            lastDeselectedCardID = oldID
+            // Clear after animation completes
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                if lastDeselectedCardID == oldID {
+                    lastDeselectedCardID = nil
+                }
+            }
+        }
+        
         // When a card is deselected and its priority changed, scroll to it after reordering
         if newID == nil, let changedCardID = priorityChangedForCardID {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {

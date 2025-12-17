@@ -12,16 +12,8 @@ import TipKit
 
 @main
 struct TopNoteApp: App {
-    // 1) Build your shared container
-    private let sharedModelContainer: ModelContainer = {
-        let schema = Schema([Card.self, Folder.self, CardTag.self])
-        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-        do {
-            return try ModelContainer(for: schema, configurations: [config])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
+    // Use the shared container defined in SharedModel.swift (configured with App Group)
+    private let modelContainer = sharedModelContainer
     
     @Environment(\.scenePhase) private var scenePhase
     
@@ -29,7 +21,7 @@ struct TopNoteApp: App {
         WindowGroup {
             ContentView()
             // 3) Inject both the SwiftData container and your manager
-                .modelContainer(sharedModelContainer)
+                .modelContainer(modelContainer)
                 .task {
                         do {
                             try Tips.configure([
@@ -43,7 +35,7 @@ struct TopNoteApp: App {
                 }
                 #if DEBUG
                 .task {
-                    seedDemoDataIfNeeded(into: sharedModelContainer)
+                    seedDemoDataIfNeeded(into: modelContainer)
                 }
                 #endif
                 .task {
@@ -60,6 +52,7 @@ struct TopNoteApp: App {
                 }
         }
     }
+    
     
     // MARK: - Badge Authorization
     
@@ -81,7 +74,7 @@ struct TopNoteApp: App {
     
     @MainActor
     private func updateAppBadge() async {
-        let context = ModelContext(sharedModelContainer)
+        let context = ModelContext(modelContainer)
         let count = queuedCardsCount(using: context)
         
         if #available(iOS 17.0, *) {
@@ -107,16 +100,13 @@ struct TopNoteApp: App {
         let fetch = FetchDescriptor<Card>(predicate: predicate)
         do {
             let count = try context.fetch(fetch).count
-            print("📝 [APP BADGE] Queued cards count: \(count)")
             
             // Also print total cards count for debugging
             let allCardsDescriptor = FetchDescriptor<Card>()
             let totalCount = try context.fetch(allCardsDescriptor).count
-            print("📝 [APP BADGE] Total cards count: \(totalCount)")
             
             return count
         } catch {
-            print("📝 [APP BADGE] Failed to fetch queued count: \(error)")
             return 0
         }
     }

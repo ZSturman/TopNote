@@ -12,7 +12,8 @@ import PhotosUI
 extension CardDetailView {
     struct CardDetailContentSection: View {
         var card: Card
-        @State private var selectedContentPhoto: PhotosPickerItem?
+        // MARK: - IMAGE DISABLED
+        // @State private var selectedContentPhoto: PhotosPickerItem?
         @State private var showImageSourceMenu = false
         
         var body: some View {
@@ -20,6 +21,7 @@ extension CardDetailView {
                 Text("Content")
                     .font(.headline)
                 
+                /* MARK: - IMAGE DISABLED
                 // Display existing content image
                 if let imageData = card.contentImageData, let uiImage = UIImage(data: imageData) {
                     ZStack(alignment: .topTrailing) {
@@ -30,7 +32,7 @@ extension CardDetailView {
                             .cornerRadius(8)
                         
                         Button(action: {
-                            card.contentImageData = nil
+                            card.setContentImage(nil)
                         }) {
                             Image(systemName: "xmark.circle.fill")
                                 .foregroundColor(.white)
@@ -40,6 +42,7 @@ extension CardDetailView {
                     }
                     .padding(.bottom, 4)
                 }
+                */
                 
                 TextEditor(text: Binding(
                     get: { card.content },
@@ -53,6 +56,7 @@ extension CardDetailView {
                 )
                 .accessibilityIdentifier("DetailContentEditor")
                 
+                /* MARK: - IMAGE DISABLED
                 // Image picker button
                 PhotosPicker(selection: $selectedContentPhoto, matching: .images) {
                     Label(card.contentImageData == nil ? "Add Image" : "Change Image", systemImage: "photo")
@@ -63,11 +67,12 @@ extension CardDetailView {
                     Task {
                         if let data = try? await newValue?.loadTransferable(type: Data.self),
                            let uiImage = UIImage(data: data) {
-                            // Compress for storage
-                            card.contentImageData = uiImage.compressedJPEGData(quality: 0.8)
+                            // Compress for storage and pre-generate widget thumbnails
+                            card.setContentImage(uiImage.compressedJPEGData(quality: 0.8))
                         }
                     }
                 }
+                */
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -75,7 +80,8 @@ extension CardDetailView {
     
     struct CardDetailAnswerSection: View {
         var card: Card
-        @State private var selectedAnswerPhoto: PhotosPickerItem?
+        // MARK: - IMAGE DISABLED
+        // @State private var selectedAnswerPhoto: PhotosPickerItem?
         
         var body: some View {
             if card.cardType == .flashcard {
@@ -83,6 +89,7 @@ extension CardDetailView {
                     Text("Answer")
                         .font(.headline)
                     
+                    /* MARK: - IMAGE DISABLED
                     // Display existing answer image
                     if let imageData = card.answerImageData, let uiImage = UIImage(data: imageData) {
                         ZStack(alignment: .topTrailing) {
@@ -93,7 +100,7 @@ extension CardDetailView {
                                 .cornerRadius(8)
                             
                             Button(action: {
-                                card.answerImageData = nil
+                                card.setAnswerImage(nil)
                             }) {
                                 Image(systemName: "xmark.circle.fill")
                                     .foregroundColor(.white)
@@ -103,6 +110,7 @@ extension CardDetailView {
                         }
                         .padding(.bottom, 4)
                     }
+                    */
                     
                     TextEditor(text: Binding(
                         get: { card.answer ?? "" },
@@ -116,6 +124,7 @@ extension CardDetailView {
                     )
                     .accessibilityIdentifier("DetailAnswerEditor")
                     
+                    /* MARK: - IMAGE DISABLED
                     // Image picker button
                     PhotosPicker(selection: $selectedAnswerPhoto, matching: .images) {
                         Label(card.answerImageData == nil ? "Add Image" : "Change Image", systemImage: "photo")
@@ -126,11 +135,12 @@ extension CardDetailView {
                         Task {
                             if let data = try? await newValue?.loadTransferable(type: Data.self),
                                let uiImage = UIImage(data: data) {
-                                // Compress for storage
-                                card.answerImageData = uiImage.compressedJPEGData(quality: 0.8)
+                                // Compress for storage and pre-generate widget thumbnails
+                                card.setAnswerImage(uiImage.compressedJPEGData(quality: 0.8))
                             }
                         }
                     }
+                    */
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }

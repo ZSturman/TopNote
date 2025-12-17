@@ -12,27 +12,25 @@ import WidgetKit
 struct QueueManager {
     let context: ModelContext
 
-    private func updateEnqueueStatsIfNeeded(for cards: [Card], currentDate: Date) {
-        var updatedAny = false
+    // MARK: - Enqueue Stats
+    
+    /// Updates enqueue statistics only for the top card to reduce unnecessary work
+    /// Previously iterated all cards on every fetch
+    private func updateEnqueueStatsIfNeeded(for card: Card?, currentDate: Date) {
+        guard let card = card, card.isEnqueue(currentDate: currentDate) else { return }
+        
+        let lastEnqueue = card.enqueues.last
+        let isNewQueueEntry = lastEnqueue == nil || lastEnqueue! < card.nextTimeInQueue
 
-        for card in cards {
-            guard card.isEnqueue(currentDate: currentDate) else { continue }
-
-            let lastEnqueue = card.enqueues.last
-            let isNewQueueEntry = lastEnqueue == nil || lastEnqueue! < card.nextTimeInQueue
-
-            if isNewQueueEntry {
-                card.seenCount += 1
-                card.enqueues.append(currentDate)
-                updatedAny = true
-            }
-        }
-
-        if updatedAny {
+        if isNewQueueEntry {
+            card.seenCount += 1
+            card.enqueues.append(currentDate)
             try? context.save()
         }
     }
 
+    // MARK: - Queue Fetching
+    
     func fetchQueueCards(currentDate: Date, configuration: ConfigurationAppIntent) throws -> [Card] {
         let fetched = try context.fetch(FetchDescriptor<Card>())
 
@@ -48,6 +46,7 @@ struct QueueManager {
         let includesNoFolder = configuration.showFolders.contains(where: { $0.isNoFolderSentinel })
 
         let filtered = fetched.filter { card in
+            // Check if card is in queue first (most common filter)
             guard card.isEnqueue(currentDate: currentDate) else { return false }
 
             if filterByFolders {
@@ -67,11 +66,15 @@ struct QueueManager {
             return true
         }
 
-        updateEnqueueStatsIfNeeded(for: filtered, currentDate: currentDate)
-
-        return filtered.sorted {
+        // Sort by priority first, then by next time in queue
+        let sorted = filtered.sorted {
             ($0.priority.sortValue, $0.nextTimeInQueue) < ($1.priority.sortValue, $1.nextTimeInQueue)
         }
+        
+        // Only update enqueue stats for the top card (optimization)
+        updateEnqueueStatsIfNeeded(for: sorted.first, currentDate: currentDate)
+
+        return sorted
     }
 
     func fetchQueueCardsAndSummary(
@@ -82,6 +85,8 @@ struct QueueManager {
         return (queueCards, queueCards.first, queueCards.count)
     }
 
+    // MARK: - Card Actions
+    
     func skipTopCard(currentDate: Date, configuration: ConfigurationAppIntent) async throws {
         let queueCards = try fetchQueueCards(currentDate: currentDate, configuration: configuration)
         guard let topCard = queueCards.first else { return }

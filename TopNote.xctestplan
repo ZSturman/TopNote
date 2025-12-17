@@ -1,0 +1,31 @@
+{
+  "configurations" : [
+    {
+      "id" : "F803D3E5-9DF1-461A-A1DC-122169478375",
+      "name" : "Configuration 1",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:TopNote.xcodeproj",
+        "identifier" : "EF48D3C32EC96B21000F9E21",
+        "name" : "UnitTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:TopNote.xcodeproj",
+        "identifier" : "EF48D3B42EC96B05000F9E21",
+        "name" : "UITests"
+      }
+    }
+  ],
+  "version" : 1
+}

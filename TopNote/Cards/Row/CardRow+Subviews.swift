@@ -26,8 +26,11 @@ extension CardRow {
         
         var moveAction: () -> Void
         
-        @Binding var selectedContentPhoto: PhotosPickerItem?
-        @Binding var selectedAnswerPhoto: PhotosPickerItem?
+        // MARK: - IMAGE DISABLED
+        // @Binding var selectedContentPhoto: PhotosPickerItem?
+        // @Binding var selectedAnswerPhoto: PhotosPickerItem?
+        var selectedContentPhoto: PhotosPickerItem? = nil
+        var selectedAnswerPhoto: PhotosPickerItem? = nil
 
         var body: some View {
             HStack {
@@ -39,9 +42,10 @@ extension CardRow {
                             draftContent: $draftContent,
                             draftAnswer: $draftAnswer,
                             showingFlashcardAnswer: $showingFlashcardAnswer,
-                            isContentEditorFocused: _isContentEditorFocused,
-                            selectedContentPhoto: $selectedContentPhoto,
-                            selectedAnswerPhoto: $selectedAnswerPhoto
+                            isContentEditorFocused: _isContentEditorFocused
+                            // MARK: - IMAGE DISABLED
+                            // selectedContentPhoto: $selectedContentPhoto,
+                            // selectedAnswerPhoto: $selectedAnswerPhoto
                         )
                         CardRowInlineControls(
                             card: card,
@@ -114,6 +118,7 @@ extension CardRow {
 
         var body: some View {
             HStack(alignment: .top, spacing: 8) {
+                /* MARK: - IMAGE DISABLED
                 // Show thumbnail if content has an image
                 if let imageData = card.contentImageData, let uiImage = UIImage(data: imageData) {
                     Image(uiImage: uiImage)
@@ -122,6 +127,7 @@ extension CardRow {
                         .frame(width: 50, height: 50)
                         .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
+                */
                 
                 Text(card.displayContent)
                     .font(.headline)
@@ -146,42 +152,47 @@ extension CardRow {
         @EnvironmentObject var selectedCardModel: SelectedCardModel
         @Environment(\.modelContext) var modelContext
         
-        @Binding var selectedContentPhoto: PhotosPickerItem?
-        @Binding var selectedAnswerPhoto: PhotosPickerItem?
+        // MARK: - IMAGE DISABLED
+        // @Binding var selectedContentPhoto: PhotosPickerItem?
+        // @Binding var selectedAnswerPhoto: PhotosPickerItem?
 
         var body: some View {
             VStack(alignment: .leading, spacing: 8) {
-                ZStack(alignment: .bottomTrailing) {
-                    TextEditor(text: $draftContent)
-                        .font(.headline.weight(.semibold))
-                        .frame(minHeight: 80, maxHeight: 220)
-                        .multilineTextAlignment(.leading)
-                        .disableAutocorrection(false)
-                        .textInputAutocapitalization(.sentences)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.accentColor.opacity(0.12))
-                        )
-                        .focused($isContentEditorFocused)
-                        .accessibilityIdentifier("Card Content Editor")
-                        .onAppear {
-                            if selectedCardModel.isNewlyCreated {
-                                isContentEditorFocused = true
-                                if card.cardType == .flashcard {
-                                    showingFlashcardAnswer = true
-                                }
-                            }
-                            draftContent = card.content
-                            selectedCardModel.updateDraft(content: card.content)
+                // MARK: - IMAGE DISABLED - Removed ZStack wrapper for PhotosPicker
+                TextEditor(text: $draftContent)
+                    .font(.headline.weight(.semibold))
+                    .frame(minHeight: 80, maxHeight: 220)
+                    .multilineTextAlignment(.leading)
+                    .disableAutocorrection(false)
+                    .textInputAutocapitalization(.sentences)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.accentColor.opacity(0.12))
+                    )
+                    .focused($isContentEditorFocused)
+                    .accessibilityIdentifier("Card Content Editor")
+                    .onAppear {
+                        if selectedCardModel.isNewlyCreated {
+                            isContentEditorFocused = true
                             if card.cardType == .flashcard {
-                                draftAnswer = card.answer ?? ""
-                                selectedCardModel.updateDraft(answer: draftAnswer)
+                                showingFlashcardAnswer = true
                             }
                         }
-                        .onChange(of: draftContent) { _, newValue in
-                            // Cache draft locally without touching the model to avoid heavy per-keystroke work
-                            selectedCardModel.updateDraft(content: newValue)
+                        draftContent = card.content
+                        selectedCardModel.updateDraft(content: card.content)
+                        if card.cardType == .flashcard {
+                            draftAnswer = card.answer ?? ""
+                            selectedCardModel.updateDraft(answer: draftAnswer)
                         }
+                    }
+                    .onChange(of: draftContent) { _, newValue in
+                        // Cache draft locally without touching the model to avoid heavy per-keystroke work
+                        selectedCardModel.updateDraft(content: newValue)
+                    }
+                
+                /* MARK: - IMAGE DISABLED - Content image picker and display
+                ZStack(alignment: .bottomTrailing) {
+                    // TextEditor was inside this ZStack
                     
                     // Content image picker - only show when no image exists
                     if card.contentImageData == nil {
@@ -199,7 +210,7 @@ extension CardRow {
                             Task {
                                 if let data = try? await newValue?.loadTransferable(type: Data.self),
                                    let uiImage = UIImage(data: data) {
-                                    card.contentImageData = uiImage.compressedJPEGData(quality: 0.8)
+                                    card.setContentImage(uiImage.compressedJPEGData(quality: 0.8))
                                 }
                             }
                         }
@@ -217,7 +228,7 @@ extension CardRow {
                             .frame(maxWidth: .infinity, alignment: .center)
                         
                         Button(action: {
-                            card.contentImageData = nil
+                            card.setContentImage(nil)
                         }) {
                             Image(systemName: "xmark.circle.fill")
                                 .foregroundColor(.white)
@@ -228,6 +239,7 @@ extension CardRow {
                         .padding(4)
                     }
                 }
+                */
 
                 if card.cardType != .flashcard {
                     TagInputView(card: card)
@@ -238,20 +250,23 @@ extension CardRow {
                     FlashcardAnswerInline(
                         card: card,
                         draftAnswer: $draftAnswer,
-                        showingFlashcardAnswer: $showingFlashcardAnswer,
-                        selectedAnswerPhoto: $selectedAnswerPhoto
+                        showingFlashcardAnswer: $showingFlashcardAnswer
+                        // MARK: - IMAGE DISABLED
+                        // selectedAnswerPhoto: $selectedAnswerPhoto
                     )
                     .onChange(of: draftAnswer) { _, newValue in
                         selectedCardModel.updateDraft(answer: newValue)
                     }
+                    /* MARK: - IMAGE DISABLED - Answer image picker
                     .onChange(of: selectedAnswerPhoto) { _, newValue in
                         Task {
                             if let data = try? await newValue?.loadTransferable(type: Data.self),
                                let uiImage = UIImage(data: data) {
-                                card.answerImageData = uiImage.compressedJPEGData(quality: 0.8)
+                                card.setAnswerImage(uiImage.compressedJPEGData(quality: 0.8))
                             }
                         }
                     }
+                    */
                     if selectedCardModel.selectedCard?.id == card.id {
                         TagInputView(card: card)
                             .padding(.vertical, 4)
@@ -340,23 +355,28 @@ extension CardRow {
         let card: Card
         @Binding var draftAnswer: String
         @Binding var showingFlashcardAnswer: Bool
-        @Binding var selectedAnswerPhoto: PhotosPickerItem?
+        // MARK: - IMAGE DISABLED
+        // @Binding var selectedAnswerPhoto: PhotosPickerItem?
 
         var body: some View {
             VStack(alignment: .leading, spacing: 8) {
                 if showingFlashcardAnswer {
+                    // MARK: - IMAGE DISABLED - Removed ZStack wrapper for PhotosPicker
+                    TextEditor(text: $draftAnswer)
+                        .font(.subheadline)
+                        .frame(minHeight: 80, maxHeight: 200)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.accentColor.opacity(0.10))
+                        )
+                        .disableAutocorrection(false)
+                        .textInputAutocapitalization(.sentences)
+                        .padding(.vertical, 2)
+                        .accessibilityIdentifier("Card Answer Editor")
+                    
+                    /* MARK: - IMAGE DISABLED - Answer image picker and display
                     ZStack(alignment: .bottomTrailing) {
-                        TextEditor(text: $draftAnswer)
-                            .font(.subheadline)
-                            .frame(minHeight: 80, maxHeight: 200)
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.accentColor.opacity(0.10))
-                            )
-                            .disableAutocorrection(false)
-                            .textInputAutocapitalization(.sentences)
-                            .padding(.vertical, 2)
-                            .accessibilityIdentifier("Card Answer Editor")
+                        // TextEditor was inside this ZStack
                         
                         // Answer image picker - only show when no image exists
                         if card.answerImageData == nil {
@@ -384,7 +404,7 @@ extension CardRow {
                                 .frame(maxWidth: .infinity, alignment: .center)
                             
                             Button(action: {
-                                card.answerImageData = nil
+                                card.setAnswerImage(nil)
                             }) {
                                 Image(systemName: "xmark.circle.fill")
                                     .foregroundColor(.white)
@@ -395,6 +415,7 @@ extension CardRow {
                             .padding(4)
                         }
                     }
+                    */
 
                     Button {
                         withAnimation {

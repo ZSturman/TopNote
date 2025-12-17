@@ -23,7 +23,8 @@ struct ConfigurationAppIntent: WidgetConfigurationIntent {
     var effectiveFolders: [Folder] {
         if showFolders.isEmpty {
             do {
-                let container = try ModelContainer(for: Folder.self)
+                // Prefer the shared container if available (keeps widget/app consistent).
+                let container = sharedModelContainer
                 let context = ModelContext(container)
                 let allFolders = try context.fetch(FetchDescriptor<Folder>())
                 return allFolders + [Folder.noFolder]

@@ -25,11 +25,7 @@ struct TopNoteWidgetEntryView: View {
             } else {
                 GeometryReader { geometry in
                     ZStack {
-                        widgetBackgroundView(for: entry.card, widgetID: entry.widgetIdentifier)
-                            .frame(width: geometry.size.width, height: geometry.size.height)
-                            .clipped()
-
-                        let hideText = effectiveTextHidden(for: entry.card, widgetID: entry.widgetIdentifier)
+                        backgroundColor()
 
                         VStack(spacing: 6) {
                             if isNoCardTypesSelected {
@@ -70,8 +66,8 @@ struct TopNoteWidgetEntryView: View {
                                 ZStack(alignment: .top) {
 
                                     headerRow
-                                        .opacity(hideText ? 0 : 1)
-                                        .accessibilityHidden(hideText)
+//                                        .opacity(hideText ? 0 : 1)
+//                                        .accessibilityHidden(hideText)
                                         .padding(.horizontal, 14)
                                         .padding(.top, 10)
                                 }
@@ -98,7 +94,7 @@ struct TopNoteWidgetEntryView: View {
             }
         }
         .onAppear {
-            let shared = UserDefaults(suiteName: "group.com.zacharysturman.TopNote")
+            let shared = UserDefaults(suiteName: "group.com.zacharysturman.topnote")
             shared?.set(true, forKey: "hasWidget")
         }
     }
@@ -124,7 +120,6 @@ struct TopNoteWidgetEntryView: View {
     private var combinedFoldersTagsView: some View {
         let tags = entry.card.tags
         let folder = entry.card.folder
-        let hasImage = hasBackgroundImage(for: entry.card)
 
         return HStack(spacing: 8) {
             if let folder {
@@ -137,12 +132,9 @@ struct TopNoteWidgetEntryView: View {
                         .lineLimit(1)
                         .truncationMode(.tail)
                 }
-                .foregroundColor(hasImage ? .white : .secondary)
-                .shadow(color: hasImage ? .black.opacity(0.7) : .clear, radius: 2, x: 0, y: 1)
+                .foregroundColor(.secondary)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background(hasImage ? Color.black.opacity(0.3) : Color.clear)
-                .clipShape(Capsule())
                 .accessibilityLabel(Text(folder.name))
             }
 
@@ -156,12 +148,9 @@ struct TopNoteWidgetEntryView: View {
                         .lineLimit(1)
                         .truncationMode(.tail)
                 }
-                .foregroundColor(hasImage ? .white : .secondary)
-                .shadow(color: hasImage ? .black.opacity(0.7) : .clear, radius: 2, x: 0, y: 1)
+                .foregroundColor(.secondary)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background(hasImage ? Color.black.opacity(0.3) : Color.clear)
-                .clipShape(Capsule())
                 .accessibilityLabel(Text("Tags: \(tags.joined(separator: ", "))"))
             }
         }
@@ -169,7 +158,6 @@ struct TopNoteWidgetEntryView: View {
     }
 
     private func countBadge(count: Int) -> some View {
-        let hasImage = hasBackgroundImage(for: entry.card)
 
         return HStack(spacing: 4) {
             ForEach(entry.selectedCardTypes, id: \.self) { type in
@@ -177,22 +165,17 @@ struct TopNoteWidgetEntryView: View {
                     .font(.caption2)
                     .minimumScaleFactor(0.7)
                     .imageScale(.medium)
-                    .foregroundColor(hasImage ? .white : .accentColor)
-                    .shadow(color: hasImage ? .black.opacity(0.7) : .clear, radius: 2, x: 0, y: 1)
                     .accessibilityLabel(Text(type.rawValue))
             }
 
             Text("\(count)")
                 .font(.caption2).bold()
                 .minimumScaleFactor(0.7)
-                .foregroundColor(hasImage ? .white : .secondary)
-                .shadow(color: hasImage ? .black.opacity(0.7) : .clear, radius: 2, x: 0, y: 1)
+                .foregroundColor( .secondary)
                 .monospacedDigit()
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        .background(hasImage ? Color.black.opacity(0.3) : Color.clear)
-        .clipShape(Capsule())
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text("Items: \(count)"))
     }
@@ -209,59 +192,10 @@ struct TopNoteWidgetEntryView: View {
         (text ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    private func shouldShowTextToggle(for card: CardEntity) -> Bool {
-        switch card.cardType {
-        case .flashcard:
-            if card.answerRevealed {
-                let hasAnswerImage = card.answerImageData != nil
-                let hasAnyText = !isEmptyText(card.content) || !isEmptyText(card.answer)
-                return hasAnswerImage && hasAnyText
-            } else {
-                let hasContentImage = card.contentImageData != nil
-                let hasContentText = !isEmptyText(card.content)
-                return hasContentImage && hasContentText
-            }
-        case .todo, .note:
-            let hasContentImage = card.contentImageData != nil
-            let hasContentText = !isEmptyText(card.content)
-            return hasContentImage && hasContentText
-        }
-    }
 
-    private func effectiveTextHidden(for card: CardEntity, widgetID: String) -> Bool {
-        if shouldShowTextToggle(for: card) {
-            return WidgetStateManager.shared.isTextHidden(widgetID: widgetID, cardID: card.id)
-        }
-        return false
-    }
-
-    @ViewBuilder
-    private func widgetBackgroundView(for card: CardEntity, widgetID: String) -> some View {
-        let isFlipped = card.cardType == .flashcard &&
-            WidgetStateManager.shared.isFlipped(widgetID: widgetID, cardID: card.id)
-
-        if card.cardType == .flashcard, isFlipped {
-            if let data = card.answerImageData, let uiImage = UIImage(data: data) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFill()
-            } else {
-                backgroundColor()
-            }
-        } else {
-            if let data = card.contentImageData, let uiImage = UIImage(data: data) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFill()
-            } else {
-                backgroundColor()
-            }
-        }
-    }
 
     @ViewBuilder
     private func cardButtonsView(for card: CardEntity, widgetID: String) -> some View {
-        let showTextToggle = shouldShowTextToggle(for: card)
         let isFlipped = card.cardType == .flashcard &&
             WidgetStateManager.shared.isFlipped(widgetID: widgetID, cardID: card.id)
 
@@ -273,39 +207,27 @@ struct TopNoteWidgetEntryView: View {
                 skipEnabled: card.skipEnabled,
                 card: card,
                 widgetID: widgetID,
-                showTextToggle: showTextToggle
             )
         case .todo:
             TodoCardButtonGroup(
                 skipEnabled: card.skipEnabled,
                 card: card,
                 widgetID: widgetID,
-                showTextToggle: showTextToggle
             )
         case .note:
             NoteCardButtonGroup(
                 skipEnabled: card.skipEnabled,
                 card: card,
                 widgetID: widgetID,
-                showTextToggle: showTextToggle
             )
         }
     }
 
-    private func hasBackgroundImage(for card: CardEntity, isFlipped: Bool = false) -> Bool {
-        if card.cardType == .flashcard && isFlipped {
-            return card.answerImageData != nil
-        } else {
-            return card.contentImageData != nil
-        }
-    }
 
     @ViewBuilder
     private func cardContentView(for card: CardEntity, widgetID: String) -> some View {
-        let hideText = effectiveTextHidden(for: card, widgetID: widgetID)
         let isFlipped = card.cardType == .flashcard &&
             WidgetStateManager.shared.isFlipped(widgetID: widgetID, cardID: card.id)
-        let hasImage = hasBackgroundImage(for: card, isFlipped: isFlipped)
 
         switch card.cardType {
         case .flashcard:
@@ -315,71 +237,55 @@ struct TopNoteWidgetEntryView: View {
 
                 VStack(spacing: isLargeWidget ? 4 : 2) {
                     HStack(alignment: .top, spacing: 6) {
-                        if !hideText, !isEmptyText(card.content) {
+                        if !isEmptyText(card.content) {
                             Text(card.content)
                                 .font(.caption2)
-                                .foregroundColor(hasImage ? .white : .secondary)
+                                .foregroundColor(.secondary)
                                 .lineLimit(isLargeWidget ? 2 : 1)
                                 .minimumScaleFactor(0.6)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                .shadow(color: hasImage ? .black.opacity(0.8) : .clear, radius: 3, x: 0, y: 1)
-                                .shadow(color: hasImage ? .black.opacity(0.5) : .clear, radius: 1, x: 0, y: 0)
                         }
                     }
                     .frame(height: contentHeight)
 
                     VStack(alignment: .leading, spacing: 2) {
-                        if !hideText, let answer = card.answer, !isEmptyText(answer) {
+                        if let answer = card.answer, !isEmptyText(answer) {
                             Text(answer)
                                 .font(isLargeWidget ? .title3 : .subheadline)
-                                .fontWeight(hasImage ? .medium : .regular)
-                                .foregroundColor(hasImage ? .white : .primary)
+                                .fontWeight(.regular)
+                                .foregroundColor(.primary)
                                 .lineLimit(isLargeWidget ? 15 : 6)
                                 .minimumScaleFactor(0.5)
                                 .fixedSize(horizontal: false, vertical: false)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                .shadow(color: hasImage ? .black.opacity(0.8) : .clear, radius: 3, x: 0, y: 1)
-                                .shadow(color: hasImage ? .black.opacity(0.5) : .clear, radius: 1, x: 0, y: 0)
                         }
                     }
-                    .frame(maxHeight: .infinity, alignment: .top)
                 }
-                .padding(hasImage ? 8 : 0)
-                .background(hasImage && !hideText ? Color.black.opacity(0.45) : nil)
-                .cornerRadius(8)
+                .padding(0)
             } else {
-                if !hideText, !isEmptyText(card.content) {
+                if !isEmptyText(card.content) {
                     Text(card.content)
                         .font(family == .systemLarge || family == .systemExtraLarge ? .title3 : .subheadline)
-                        .fontWeight(hasImage ? .medium : .regular)
-                        .foregroundColor(hasImage ? .white : .primary)
+                        .fontWeight(.regular)
+                        .foregroundColor(.primary)
                         .lineLimit(family == .systemLarge || family == .systemExtraLarge ? 12 : 5)
                         .minimumScaleFactor(0.5)
                         .fixedSize(horizontal: false, vertical: false)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .shadow(color: hasImage ? .black.opacity(0.8) : .clear, radius: 3, x: 0, y: 1)
-                        .shadow(color: hasImage ? .black.opacity(0.5) : .clear, radius: 1, x: 0, y: 0)
-                        .padding(hasImage ? 8 : 0)
-                        .background(hasImage ? Color.black.opacity(0.45) : nil)
-                        .cornerRadius(8)
                 }
             }
         case .todo, .note:
-            if !hideText, !isEmptyText(card.content) {
+            if !isEmptyText(card.content) {
                 Text(card.content)
                     .font(family == .systemLarge || family == .systemExtraLarge ? .title3 : .subheadline)
-                    .fontWeight(hasImage ? .medium : .regular)
-                    .foregroundColor(hasImage ? .white : .primary)
+                    .fontWeight(.regular)
+                    .foregroundColor(.primary)
                     .lineLimit(family == .systemLarge || family == .systemExtraLarge ? 12 : 5)
                     .minimumScaleFactor(0.5)
                     .fixedSize(horizontal: false, vertical: false)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .shadow(color: hasImage ? .black.opacity(0.8) : .clear, radius: 3, x: 0, y: 1)
-                    .shadow(color: hasImage ? .black.opacity(0.5) : .clear, radius: 1, x: 0, y: 0)
-                    .padding(hasImage ? 8 : 0)
-                    .background(hasImage ? Color.black.opacity(0.45) : nil)
-                    .cornerRadius(8)
             }
         }
     }
 }
+

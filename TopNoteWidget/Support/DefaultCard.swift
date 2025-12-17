@@ -10,7 +10,22 @@ import SwiftData
 
 
 func placeholderCardEntry(widgetIdentifier: String) -> CardEntry {
-    let dummyCard = Card.makeDummy()
+    let dummyCard = Card(
+        createdAt: Date(),
+        cardType: .note,
+        priorityTypeRaw: .none,
+        content: "Sample note content",
+        isRecurring: false,
+        skipCount: 0,
+        seenCount: 0,
+        repeatInterval: 240,
+        nextTimeInQueue: Date().addingTimeInterval(300),
+        folder: nil,
+        tags: [],
+        answer: nil,
+        rating: [],
+        isArchived: false
+    )
     let dummyCardEntity = CardEntity(
         id: UUID(),
         createdAt: dummyCard.createdAt,
@@ -27,9 +42,9 @@ func placeholderCardEntry(widgetIdentifier: String) -> CardEntry {
         answerRevealed: false,
         skipEnabled: true,
         tags: nil,
-        widgetTextHidden: false,
-        contentImageData: nil,
-        answerImageData: nil
+//         widgetTextHidden: false,
+        // contentImageData: nil,
+        // answerImageData: nil
     )
     return CardEntry(
         date: Date(),
@@ -45,7 +60,22 @@ func placeholderCardEntry(widgetIdentifier: String) -> CardEntry {
 }
 
 func sampleCardEntry(widgetIdentifier: String) -> CardEntry {
-    let sampleCard = Card.makeDummy()
+    let sampleCard = Card(
+        createdAt: Date(),
+        cardType: .note,
+        priorityTypeRaw: .none,
+        content: "Sample note content",
+        isRecurring: false,
+        skipCount: 0,
+        seenCount: 0,
+        repeatInterval: 240,
+        nextTimeInQueue: Date().addingTimeInterval(300),
+        folder: nil,
+        tags: [],
+        answer: nil,
+        rating: [],
+        isArchived: false
+    )
     let sampleCardEntity = CardEntity(
         id: UUID(),
         createdAt: sampleCard.createdAt,
@@ -62,9 +92,9 @@ func sampleCardEntry(widgetIdentifier: String) -> CardEntry {
         answerRevealed: false,
         skipEnabled: true,
         tags: nil,
-        widgetTextHidden: false,
-        contentImageData: nil,
-        answerImageData: nil
+        // //widgetTextHidden: false,
+        // contentImageData: nil,
+        // answerImageData: nil
     )
     return CardEntry(
         date: Date(),
@@ -105,9 +135,9 @@ func allCaughtUpCardEntry(currentDate: Date, totalNumberOfCards: Int, nextCardFo
         answerRevealed: false,
         skipEnabled: true,
         tags: nil,
-        widgetTextHidden: false,
-        contentImageData: nil,
-        answerImageData: nil
+//         widgetTextHidden: false,
+        // contentImageData: nil,
+        // answerImageData: nil
     )
     let nextCardForQueueEntity: CardEntity? = {
         guard let nextCard = nextCardForQueue else { return nil }
@@ -127,9 +157,9 @@ func allCaughtUpCardEntry(currentDate: Date, totalNumberOfCards: Int, nextCardFo
             answerRevealed: false,
             skipEnabled: true,
             tags: nil,
-            widgetTextHidden: false,
-            contentImageData: nil,
-            answerImageData: nil
+//             widgetTextHidden: false,
+            // contentImageData: nil,
+            // answerImageData: nil
         )
     }()
     return CardEntry(
@@ -188,9 +218,9 @@ func allCaughtUpCardEntry(currentDate: Date, totalNumberOfCards: Int, nextCardFo
         answerRevealed: false,
         skipEnabled: true,
         tags: nil,
-        widgetTextHidden: false,
-        contentImageData: nil,
-        answerImageData: nil
+//         widgetTextHidden: false,
+        // contentImageData: nil,
+        // answerImageData: nil
     )
     let nextCardForQueueEntity: CardEntity? = {
         guard let nextCard = nextCardForQueue else { return nil }
@@ -210,9 +240,9 @@ func allCaughtUpCardEntry(currentDate: Date, totalNumberOfCards: Int, nextCardFo
             answerRevealed: false,
             skipEnabled: true,
             tags: nil,
-            widgetTextHidden: false,
-            contentImageData: nil,
-            answerImageData: nil
+//             widgetTextHidden: false,
+            // contentImageData: nil,
+            // answerImageData: nil
         )
     }()
     return CardEntry(
@@ -228,7 +258,22 @@ func allCaughtUpCardEntry(currentDate: Date, totalNumberOfCards: Int, nextCardFo
 }
 
 func errorCardEntry(widgetIdentifier: String) -> CardEntry {
-    let dummyCard = Card.makeDummy()
+    let dummyCard = Card(
+        createdAt: Date(),
+        cardType: .note,
+        priorityTypeRaw: .none,
+        content: "Sample note content",
+        isRecurring: false,
+        skipCount: 0,
+        seenCount: 0,
+        repeatInterval: 240,
+        nextTimeInQueue: Date().addingTimeInterval(300),
+        folder: nil,
+        tags: [],
+        answer: nil,
+        rating: [],
+        isArchived: false
+    )
     let dummyCardEntity = CardEntity(
         id: UUID(),
         createdAt: dummyCard.createdAt,
@@ -245,9 +290,9 @@ func errorCardEntry(widgetIdentifier: String) -> CardEntry {
         answerRevealed: false,
         skipEnabled: true,
         tags: nil,
-        widgetTextHidden: false,
-        contentImageData: nil,
-        answerImageData: nil
+//         widgetTextHidden: false,
+        // contentImageData: nil,
+        // answerImageData: nil
     )
     return CardEntry(
         date: Date(),
@@ -382,3 +427,4 @@ func allCaughtUpMessage(for types: [CardType], folders: [Folder]? = nil) -> Stri
         }
     }
 }
+

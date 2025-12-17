@@ -10,6 +10,7 @@ import WidgetKit
 import SwiftUI
 import AppIntents
 import UIKit
+import os.log
 
 struct CardEntity: AppEntity {
     var id: UUID
@@ -27,10 +28,14 @@ struct CardEntity: AppEntity {
     var answerRevealed: Bool
     var skipEnabled: Bool
     var tags: [String]?
-    var widgetTextHidden: Bool
+    // var widgetTextHidden: Bool
     // Image data for widget display (compressed thumbnails)
-    var contentImageData: Data?
-    var answerImageData: Data?
+    // var contentImageData: Data?
+    // var answerImageData: Data?
+    
+    // Flags to indicate card has image but couldn't be loaded (for placeholder display)
+    // var contentImageLoadFailed: Bool = false
+    // var answerImageLoadFailed: Bool = false
 
     var cardType: CardType {
         CardType(rawValue: cardTypeRaw) ?? .note
@@ -64,18 +69,72 @@ struct CardEntry: TimelineEntry {
     let widgetIdentifier: String
 }
 
+// MARK: - IMAGE DISABLED
+// Image functionality is temporarily disabled. The Card model schema is preserved for production compatibility.
 extension CardEntity {
     init(card: Card, widgetImageMaxSize: CGFloat) {
-        // Optimize images for widget display (thumbnail + compression)
-        func makeThumbnailData(from imageData: Data?) -> Data? {
-            guard
-                let imageData,
-                let image = UIImage(data: imageData)
-            else { return nil }
-
+        // IMAGE DISABLED: Skip all image loading to improve performance
+        // The image properties are preserved in the CardEntity struct for API compatibility
+        
+        /* ORIGINAL IMAGE LOADING CODE:
+        // Determine appropriate cache size based on requested widget size
+        let cacheSize: WidgetThumbnailCache.WidgetSize = {
+            switch widgetImageMaxSize {
+            case ...350: return .small
+            case ...650: return .medium
+            case ...950: return .large
+            default: return .extraLarge
+            }
+        }()
+        
+        // Try to load image from cache first, then fall back to on-demand with retry
+        func loadThumbnailData(
+            cardID: UUID,
+            imageType: WidgetThumbnailCache.ImageType,
+            rawDataLoader: () -> Data?
+        ) -> (data: Data?, loadFailed: Bool) {
+            // First, try pre-generated cache (fast path - no external storage access needed)
+            if let cachedData = WidgetThumbnailCache.getThumbnail(
+                cardID: cardID,
+                imageType: imageType,
+                size: cacheSize
+            ) {
+                return (cachedData, false)
+            }
+            
+            // Fall back to on-demand processing with retry for external storage
+            let rawData = ExternalStorageRetry.loadImageWithRetry(
+                loader: rawDataLoader,
+                cardID: cardID,
+                imageType: imageType,
+                config: .aggressive
+            )
+            
+            // Check if card has image data but we couldn't load it
+            guard let imageData = rawData, !imageData.isEmpty else {
+                // Check if the card actually has image data (nil vs failed to load)
+                let hasImageData = rawDataLoader() != nil
+                if hasImageData {
+                    return (nil, true)
+                }
+                return (nil, false)
+            }
+            
+            // Attempt to decode and process the image
+            guard let image = UIImage(data: imageData) else {
+                return (nil, true)
+            }
+            
             let thumbnail = image.widgetThumbnail(maxSize: widgetImageMaxSize)
-            return thumbnail.jpegData(compressionQuality: 0.75)
+            
+            // Compress to JPEG
+            guard let jpegData = thumbnail.jpegData(compressionQuality: 0.75) else {
+                return (nil, true)
+            }
+            
+            return (jpegData, false)
         }
+        */
 
         self.id = card.id
         self.createdAt = card.createdAt
@@ -92,8 +151,30 @@ extension CardEntity {
         self.answerRevealed = card.answerRevealed
         self.skipEnabled = card.skipEnabled
         self.tags = card.unwrappedTags.map(\.name)
-        self.widgetTextHidden = card.widgetTextHidden
-        self.contentImageData = makeThumbnailData(from: card.contentImageData)
-        self.answerImageData = makeThumbnailData(from: card.answerImageData)
+        // self.widgetTextHidden = card.widgetTextHidden
+        
+        // IMAGE DISABLED: Always set image data to nil
+//        self.contentImageData = nil
+//        self.contentImageLoadFailed = false
+//        self.answerImageData = nil
+//        self.answerImageLoadFailed = false
+//        
+        /* ORIGINAL IMAGE LOADING CODE:
+        let contentResult = loadThumbnailData(
+            cardID: card.id,
+            imageType: .content,
+            rawDataLoader: { card.contentImageData }
+        )
+        self.contentImageData = contentResult.data
+        self.contentImageLoadFailed = contentResult.loadFailed
+        
+        let answerResult = loadThumbnailData(
+            cardID: card.id,
+            imageType: .answer,
+            rawDataLoader: { card.answerImageData }
+        )
+        self.answerImageData = answerResult.data
+        self.answerImageLoadFailed = answerResult.loadFailed
+        */
     }
 }

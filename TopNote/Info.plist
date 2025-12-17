@@ -6,9 +6,6 @@
 	<array>
 		<string>remote-notification</string>
 	</array>
-	<key>NSCameraUsageDescription</key>
-	<string>TopNote needs access to your camera to take photos for your cards.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>TopNote needs access to your photo library to attach images to your cards.</string>
+	<!-- IMAGE DISABLED: Camera and Photo Library permissions removed -->
 </dict>
 </plist>

@@ -18,6 +18,7 @@ struct CardStatusSection: View {
     let onDelete: ([Card], IndexSet) -> Void
     var onPriorityChanged: ((UUID) -> Void)? = nil
     var priorityChangedForCardID: UUID? = nil
+    var lastDeselectedCardID: UUID? = nil
 
     @Environment(\.ascending) private var ascending: Bool
     
@@ -75,7 +76,8 @@ struct CardStatusSection: View {
             ForEach(sortedCards) { card in
                 CardRow(
                     card: card,
-                    onPriorityChanged: onPriorityChanged
+                    onPriorityChanged: onPriorityChanged,
+                    lastDeselectedCardID: lastDeselectedCardID
                 )
                 // Added .id(card.id) for programmatic scrolling support
                 .id(card.id)

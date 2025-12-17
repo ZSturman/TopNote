@@ -219,11 +219,7 @@ final class Card {
     var content: String = ""
     var answer: String?
     
-    // MARK: - Image Data
-    /// Image data for the main content area (stored as JPEG)
-    @Attribute var contentImageData: Data?
-    /// Image data for the answer area (stored as JPEG)
-    @Attribute var answerImageData: Data?
+
     
     /// Computed property to get or set the card type.
     var cardType: CardType {
@@ -239,31 +235,58 @@ final class Card {
     
     // MARK: - Image Computed Properties
     
+    // MARK: - Image Data
+    @Attribute(.externalStorage) var contentImageData: Data?
+    @Attribute(.externalStorage) var answerImageData: Data?
 
     
-    /// Returns a UIImage from contentImageData if available
-    var contentImage: UIImage? {
-        guard let data = contentImageData else { return nil }
-        return UIImage(data: data)
-    }
+//    /// Returns a UIImage from contentImageData if available
+//    var contentImage: UIImage? {
+//        guard let data = contentImageData else { return nil }
+//        return UIImage(data: data)
+//    }
     
-    /// Returns a UIImage from answerImageData if available
-    var answerImage: UIImage? {
-        guard let data = answerImageData else { return nil }
-        return UIImage(data: data)
-    }
+//    /// Returns a UIImage from answerImageData if available
+//    var answerImage: UIImage? {
+//        guard let data = answerImageData else { return nil }
+//        return UIImage(data: data)
+//    }
     
-    /// Returns a thumbnail version of content image (for widget and list display)
-    var contentImageThumbnail: UIImage? {
-        guard let image = contentImage else { return nil }
-        return image.thumbnailImage(maxSize: 150)
-    }
+//    /// Returns a thumbnail version of content image (for widget and list display)
+//    var contentImageThumbnail: UIImage? {
+//        guard let image = contentImage else { return nil }
+//        return image.thumbnailImage(maxSize: 150)
+//    }
+//    
+//    /// Returns a thumbnail version of answer image (for widget and list display)
+//    var answerImageThumbnail: UIImage? {
+//        guard let image = answerImage else { return nil }
+//        return image.thumbnailImage(maxSize: 150)
+//    }
     
-    /// Returns a thumbnail version of answer image (for widget and list display)
-    var answerImageThumbnail: UIImage? {
-        guard let image = answerImage else { return nil }
-        return image.thumbnailImage(maxSize: 150)
-    }
+    // MARK: - Widget Thumbnail Pre-generation
+    
+//    /// Pre-generate widget thumbnails when image data changes
+//    /// Call this after setting contentImageData or answerImageData
+//    func preGenerateWidgetThumbnails() {
+//        WidgetThumbnailCache.generateThumbnails(
+//            for: id,
+//            contentImageData: contentImageData,
+//            answerImageData: answerImageData
+//        )
+//    }
+//    
+//    /// Set content image and pre-generate widget thumbnails
+//    func setContentImage(_ data: Data?) {
+//        contentImageData = data
+//        preGenerateWidgetThumbnails()
+//    }
+//    
+//    /// Set answer image and pre-generate widget thumbnails
+//    func setAnswerImage(_ data: Data?) {
+//        answerImageData = data
+//        preGenerateWidgetThumbnails()
+//    }
 
  
     
@@ -826,9 +849,9 @@ struct CardExport: Codable {
     /// Array of rating events with rating type and date
     let ratings: [[String: Date]]
     /// Base64 encoded content image data
-    let contentImageBase64: String?
+    // let contentImageBase64: String?
     /// Base64 encoded answer image data
-    let answerImageBase64: String?
+    // let answerImageBase64: String?
 }
 
 // MARK: - Card Export Extension
@@ -869,8 +892,8 @@ extension Card {
             removals: removals,
             completes: completes,
             ratings: ratingsForExport,
-            contentImageBase64: contentImageData?.base64EncodedString(),
-            answerImageBase64: answerImageData?.base64EncodedString()
+            // contentImageBase64: contentImageData?.base64EncodedString(),
+            // answerImageBase64: answerImageData?.base64EncodedString()
         )
     }
 
@@ -924,25 +947,25 @@ extension Card {
     }
 }
 
-// MARK: - UIImage Extension for Card Image Support
-extension UIImage {
-    /// Creates a thumbnail image scaled to fit within maxSize while preserving aspect ratio
-    /// - Parameter maxSize: Maximum dimension (width or height) in points
-    /// - Returns: Scaled UIImage
-    func thumbnailImage(maxSize: CGFloat) -> UIImage {
-        let size = self.size
-        let ratio = max(size.width, size.height) / maxSize
-        
-        if ratio <= 1 {
-            return self // Already smaller than max
-        }
-        
-        let newSize = CGSize(width: size.width / ratio, height: size.height / ratio)
-        
-        let renderer = UIGraphicsImageRenderer(size: newSize)
-        return renderer.image { _ in
-            self.draw(in: CGRect(origin: .zero, size: newSize))
-        }
-    }
-}
+//// MARK: - UIImage Extension for Card Image Support
+//extension UIImage {
+//    /// Creates a thumbnail image scaled to fit within maxSize while preserving aspect ratio
+//    /// - Parameter maxSize: Maximum dimension (width or height) in points
+//    /// - Returns: Scaled UIImage
+//    func thumbnailImage(maxSize: CGFloat) -> UIImage {
+//        let size = self.size
+//        let ratio = max(size.width, size.height) / maxSize
+//        
+//        if ratio <= 1 {
+//            return self // Already smaller than max
+//        }
+//        
+//        let newSize = CGSize(width: size.width / ratio, height: size.height / ratio)
+//        
+//        let renderer = UIGraphicsImageRenderer(size: newSize)
+//        return renderer.image { _ in
+//            self.draw(in: CGRect(origin: .zero, size: newSize))
+//        }
+//    }
+//}
 

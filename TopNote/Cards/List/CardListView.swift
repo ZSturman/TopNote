@@ -47,6 +47,7 @@ struct CardListView: View {
     @State var searchText = ""
     @State var scrollToCardID: UUID? = nil
     @State var priorityChangedForCardID: UUID? = nil
+    @State var lastDeselectedCardID: UUID? = nil
     
     // Tip tracking
     @State var appOpenCount = 0

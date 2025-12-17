@@ -52,9 +52,8 @@ struct Provider: AppIntentTimelineProvider {
             return Timeline(entries: [entry], policy: .never)
         }
 
-        guard let container = try? ModelContainer(for: Card.self) else {
-            return Timeline(entries: [], policy: .never)
-        }
+        // Use the shared container that's configured with App Group
+        let container = sharedModelContainer
 
         let modelContext = ModelContext(container)
         let queueManager = QueueManager(context: modelContext)
@@ -134,27 +133,7 @@ func noCardTypesSelectedEntry(
     selectedFolders: [Folder],
     widgetIdentifier: String
 ) -> CardEntry {
-    let dummyCard = Card.makeDummy()
-    let dummyCardEntity = CardEntity(
-        id: dummyCard.id,
-        createdAt: dummyCard.createdAt,
-        cardTypeRaw: dummyCard.cardType.rawValue,
-        content: dummyCard.content,
-        answer: dummyCard.answer,
-        isRecurring: dummyCard.isRecurring,
-        skipCount: dummyCard.skipCount,
-        seenCount: dummyCard.seenCount,
-        repeatInterval: dummyCard.repeatInterval,
-        nextTimeInQueue: dummyCard.nextTimeInQueue,
-        folder: dummyCard.folder,
-        isArchived: dummyCard.isArchived,
-        answerRevealed: dummyCard.answerRevealed,
-        skipEnabled: dummyCard.skipEnabled,
-        tags: nil,
-        widgetTextHidden: dummyCard.widgetTextHidden,
-        contentImageData: nil,
-        answerImageData: nil
-    )
+    let dummyCardEntity = makeDummyCardEntity()
 
     return CardEntry(
         date: currentDate,
@@ -178,27 +157,7 @@ func allCaughtUpCardEntry(
     selectedFolders: [Folder],
     widgetIdentifier: String
 ) -> CardEntry {
-    let dummyCard = Card.makeDummy()
-    let dummyCardEntity = CardEntity(
-        id: dummyCard.id,
-        createdAt: dummyCard.createdAt,
-        cardTypeRaw: dummyCard.cardType.rawValue,
-        content: dummyCard.content,
-        answer: dummyCard.answer,
-        isRecurring: dummyCard.isRecurring,
-        skipCount: dummyCard.skipCount,
-        seenCount: dummyCard.seenCount,
-        repeatInterval: dummyCard.repeatInterval,
-        nextTimeInQueue: dummyCard.nextTimeInQueue,
-        folder: dummyCard.folder,
-        isArchived: dummyCard.isArchived,
-        answerRevealed: dummyCard.answerRevealed,
-        skipEnabled: dummyCard.skipEnabled,
-        tags: nil,
-        widgetTextHidden: dummyCard.widgetTextHidden,
-        contentImageData: nil,
-        answerImageData: nil
-    )
+    let dummyCardEntity = makeDummyCardEntity()
 
     return CardEntry(
         date: currentDate,
@@ -213,79 +172,24 @@ func allCaughtUpCardEntry(
     )
 }
 
-//// Placeholder / snapshot helpers can be implemented as needed
-//func placeholderCardEntry(widgetIdentifier: String) -> CardEntry {
-//    let dummy = Card.makeDummy()
-//    let dummyEntity = CardEntity(
-//        id: dummy.id,
-//        createdAt: dummy.createdAt,
-//        cardTypeRaw: dummy.cardType.rawValue,
-//        content: "Sample card content",
-//        answer: "Sample answer",
-//        isRecurring: false,
-//        skipCount: 0,
-//        seenCount: 0,
-//        repeatInterval: 0,
-//        nextTimeInQueue: Date(),
-//        folder: nil,
-//        isArchived: false,
-//        answerRevealed: false,
-//        skipEnabled: true,
-//        tags: nil,
-//        widgetTextHidden: false,
-//        contentImageData: nil,
-//        answerImageData: nil
-//    )
-//
-//    return CardEntry(
-//        date: Date(),
-//        card: dummyEntity,
-//        queueCardCount: 1,
-//        totalNumberOfCards: 1,
-//        nextCardForQueue: nil,
-//        nextUpdateDate: Date().addingTimeInterval(3600),
-//        selectedCardTypes: [.note],
-//        selectedFolders: [],
-//        widgetIdentifier: widgetIdentifier
-//    )
-//}
-//
-//func sampleCardEntry(widgetIdentifier: String) -> CardEntry {
-//    placeholderCardEntry(widgetIdentifier: widgetIdentifier)
-//}
-//
-//func errorCardEntry(widgetIdentifier: String) -> CardEntry {
-//    let dummy = Card.makeDummy()
-//    let dummyEntity = CardEntity(
-//        id: dummy.id,
-//        createdAt: dummy.createdAt,
-//        cardTypeRaw: dummy.cardType.rawValue,
-//        content: "Unable to load cards.",
-//        answer: nil,
-//        isRecurring: false,
-//        skipCount: 0,
-//        seenCount: 0,
-//        repeatInterval: 0,
-//        nextTimeInQueue: Date(),
-//        folder: nil,
-//        isArchived: false,
-//        answerRevealed: false,
-//        skipEnabled: false,
-//        tags: nil,
-//        widgetTextHidden: false,
-//        contentImageData: nil,
-//        answerImageData: nil
-//    )
-//
-//    return CardEntry(
-//        date: Date(),
-//        card: dummyEntity,
-//        queueCardCount: 0,
-//        totalNumberOfCards: 0,
-//        nextCardForQueue: nil,
-//        nextUpdateDate: Date().addingTimeInterval(3600),
-//        selectedCardTypes: [],
-//        selectedFolders: [],
-//        widgetIdentifier: widgetIdentifier
-//    )
-//}
+
+private func makeDummyCardEntity() -> CardEntity {
+    return CardEntity(
+        id: UUID(),
+        createdAt: Date(),
+        cardTypeRaw: "note",
+        content: "",
+        answer: nil,
+        isRecurring: false,
+        skipCount: 0,
+        seenCount: 0,
+        repeatInterval: 0,
+        nextTimeInQueue: Date().addingTimeInterval(3600),
+        folder: nil,
+        isArchived: false,
+        answerRevealed: false,
+        skipEnabled: true,
+        tags: nil,
+        // widgetTextHidden: false,
+    )
+}

@@ -39,9 +39,9 @@ struct CardEntityQuery: EntityQuery {
                 answerRevealed: card.answerRevealed,
                 skipEnabled: card.skipEnabled,
                 tags: card.unwrappedTags.map(\.name),
-                widgetTextHidden: card.widgetTextHidden,
-                contentImageData: nil,
-                answerImageData: nil
+                // widgetTextHidden: card.widgetTextHidden,
+                //contentImageData: nil,
+                // answerImageData: nil
             )
         }
     }

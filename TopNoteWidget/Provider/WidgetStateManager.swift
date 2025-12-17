@@ -9,11 +9,11 @@ import Foundation
 
 final class WidgetStateManager {
     static let shared = WidgetStateManager()
-    private let defaults = UserDefaults(suiteName: "group.com.zacharysturman.TopNote")
+    private let defaults = UserDefaults(suiteName: "group.com.zacharysturman.topnote")
 
-    private func textHiddenKey(for widgetID: String, cardID: UUID) -> String {
-        "widget_\(widgetID)_card_\(cardID.uuidString)_textHidden"
-    }
+//    private func textHiddenKey(for widgetID: String, cardID: UUID) -> String {
+//        "widget_\(widgetID)_card_\(cardID.uuidString)_textHidden"
+//    }
 
     private func flipStateKey(for widgetID: String, cardID: UUID) -> String {
         "widget_\(widgetID)_card_\(cardID.uuidString)_flipped"
@@ -26,14 +26,14 @@ final class WidgetStateManager {
     private func flipTimestampKey(for widgetID: String, cardID: UUID) -> String {
         "widget_\(widgetID)_card_\(cardID.uuidString)_flipTimestamp"
     }
-
-    func isTextHidden(widgetID: String, cardID: UUID) -> Bool {
-        defaults?.bool(forKey: textHiddenKey(for: widgetID, cardID: cardID)) ?? false
-    }
-
-    func setTextHidden(_ hidden: Bool, widgetID: String, cardID: UUID) {
-        defaults?.set(hidden, forKey: textHiddenKey(for: widgetID, cardID: cardID))
-    }
+//
+//    func isTextHidden(widgetID: String, cardID: UUID) -> Bool {
+//        defaults?.bool(forKey: textHiddenKey(for: widgetID, cardID: cardID)) ?? false
+//    }
+//
+//    func setTextHidden(_ hidden: Bool, widgetID: String, cardID: UUID) {
+//        defaults?.set(hidden, forKey: textHiddenKey(for: widgetID, cardID: cardID))
+//    }
 
     func isFlipped(widgetID: String, cardID: UUID) -> Bool {
         defaults?.bool(forKey: flipStateKey(for: widgetID, cardID: cardID)) ?? false
@@ -74,10 +74,10 @@ final class WidgetStateManager {
 
         if let lastCardID, lastCardID != currentCardID {
             setFlipped(false, widgetID: widgetID, cardID: lastCardID)
-            setTextHidden(false, widgetID: widgetID, cardID: currentCardID)
+            //setTextHidden(false, widgetID: widgetID, cardID: currentCardID)
             setFlipped(false, widgetID: widgetID, cardID: currentCardID)
         } else if lastCardID == nil {
-            setTextHidden(false, widgetID: widgetID, cardID: currentCardID)
+           // setTextHidden(false, widgetID: widgetID, cardID: currentCardID)
             setFlipped(false, widgetID: widgetID, cardID: currentCardID)
         } else if shouldResetFlipState(widgetID: widgetID, cardID: currentCardID) {
             setFlipped(false, widgetID: widgetID, cardID: currentCardID)

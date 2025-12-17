@@ -48,6 +48,23 @@ struct CardFilterMenu: View {
                     }
                 }
             }
+            Section("Attributes") {
+                ForEach(CardFilterOption.attributeFilters, id: \.self) { option in
+                    Button(action: {
+                        if let idx = selectedOptions.firstIndex(of: option) {
+                            selectedOptions.remove(at: idx)
+                        } else {
+                            selectedOptions.append(option)
+                        }
+                    }) {
+                        Label(
+                            option.localizedName,
+                            systemImage: selectedOptions.contains(option)
+                                ? "checkmark.circle.fill" : "circle"
+                        )
+                    }
+                }
+            }
         } label: {
             Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
         }

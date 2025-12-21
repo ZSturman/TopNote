@@ -35,7 +35,8 @@ struct CardListView: View {
     @State var isUpcomingExpanded = true
     @State var isArchivedExpanded = false
     
-
+    // Export/Import sheet
+    @State var showExportImportSheet = false
 
     @State var importMode: ImportMode = .json
     @State var showImportPicker = false
@@ -53,6 +54,7 @@ struct CardListView: View {
     // New card sheet state
     @State var showNewCardSheet = false
     @State var newCardType: CardType = .note
+    @State var showAIGeneratorFromDialog = false
     
     // Tip tracking
     @State var appOpenCount = 0
@@ -148,6 +150,12 @@ struct CardListView: View {
                     onSave: { newCard in
                         handleNewCardCreated(newCard)
                     }
+                )
+            }
+            .sheet(isPresented: $showExportImportSheet) {
+                ExportImportSheet(
+                    filteredCards: filteredCards,
+                    allCards: cards
                 )
             }
 

@@ -38,8 +38,21 @@ struct NewCardSheet: View {
     // UI state
     @State private var showingFlashcardAnswer: Bool = false
     @State private var newTagText: String = ""
+    @State private var showAIGenerator: Bool = false
     @FocusState private var isContentFocused: Bool
     @FocusState private var isAnswerFocused: Bool
+    
+    /// Placeholder text based on card type
+    private var contentPlaceholder: String {
+        switch cardType {
+        case .note:
+            return "Enter your note..."
+        case .todo:
+            return "Enter your task..."
+        case .flashcard:
+            return "Enter your question..."
+        }
+    }
     
     init(
         cardType: CardType,
@@ -75,14 +88,58 @@ struct NewCardSheet: View {
     var body: some View {
         NavigationStack {
             Form {
+                // MARK: - AI Generation Section
+                if #available(iOS 26.0, *) {
+                    Section {
+                        Button {
+                            showAIGenerator = true
+                        } label: {
+                            HStack {
+                                Image(systemName: "sparkles")
+                                    .font(.title2)
+                                    .foregroundStyle(.purple)
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Generate with AI")
+                                        .font(.headline)
+                                        .foregroundStyle(.primary)
+                                    Text("Create multiple cards using Apple Intelligence")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                
+                                Spacer()
+                                
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(.vertical, 4)
+                        }
+                        .buttonStyle(.plain)
+                    } footer: {
+                        Text("Use AI to quickly generate notes, to-dos, or flashcards based on a topic.")
+                    }
+                }
+                
                 // MARK: - Content Section
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
-                        TextEditor(text: $content)
-                            .font(.headline.weight(.semibold))
-                            .frame(minHeight: 100, maxHeight: 200)
-                            .focused($isContentFocused)
-                            .accessibilityIdentifier("NewCard Content Editor")
+                        ZStack(alignment: .topLeading) {
+                            if content.isEmpty {
+                                Text(contentPlaceholder)
+                                    .foregroundStyle(.secondary)
+                                    .font(.headline.weight(.semibold))
+                                    .padding(.top, 8)
+                                    .padding(.leading, 4)
+                                    .allowsHitTesting(false)
+                            }
+                            TextEditor(text: $content)
+                                .font(.headline.weight(.semibold))
+                                .frame(minHeight: 100, maxHeight: 200)
+                                .focused($isContentFocused)
+                                .accessibilityIdentifier("NewCard Content Editor")
+                        }
                     }
                 } header: {
                     Text("Content")
@@ -92,11 +149,21 @@ struct NewCardSheet: View {
                 if cardType == .flashcard {
                     Section {
                         if showingFlashcardAnswer {
-                            TextEditor(text: $answer)
-                                .font(.subheadline)
-                                .frame(minHeight: 80, maxHeight: 150)
-                                .focused($isAnswerFocused)
-                                .accessibilityIdentifier("NewCard Answer Editor")
+                            ZStack(alignment: .topLeading) {
+                                if answer.isEmpty {
+                                    Text("Enter the answer...")
+                                        .foregroundStyle(.secondary)
+                                        .font(.subheadline)
+                                        .padding(.top, 8)
+                                        .padding(.leading, 4)
+                                        .allowsHitTesting(false)
+                                }
+                                TextEditor(text: $answer)
+                                    .font(.subheadline)
+                                    .frame(minHeight: 80, maxHeight: 150)
+                                    .focused($isAnswerFocused)
+                                    .accessibilityIdentifier("NewCard Answer Editor")
+                            }
                             
                             Button("Hide Answer") {
                                 withAnimation {
@@ -128,31 +195,44 @@ struct NewCardSheet: View {
                     }
                     
                     // Tags
-                    VStack(alignment: .leading, spacing: 8) {
-                        TextField("Add a tag", text: $newTagText)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .font(.footnote)
-                            .onSubmit {
-                                addTag()
-                            }
+                    VStack(alignment: .leading, spacing: 12) {
+                        // Tag input field with iOS-style design
+                        HStack {
+                            Image(systemName: "tag")
+                                .foregroundStyle(.secondary)
+                                .font(.subheadline)
+                            TextField("Add a tag...", text: $newTagText)
+                                .textFieldStyle(.plain)
+                                .font(.subheadline)
+                                .onSubmit {
+                                    addTag()
+                                }
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(10)
                         
+                        // Selected tags as pill chips
                         if !selectedTags.isEmpty {
                             ScrollView(.horizontal, showsIndicators: false) {
-                                HStack {
+                                HStack(spacing: 8) {
                                     ForEach(selectedTags, id: \.id) { tag in
-                                        HStack(spacing: 4) {
+                                        HStack(spacing: 6) {
                                             Text(tag.name)
-                                                .font(.footnote)
-                                                .padding(.horizontal, 4)
-                                                .padding(.vertical, 2)
-                                                .background(Color.gray.opacity(0.2))
-                                                .cornerRadius(8)
+                                                .font(.subheadline)
                                             Button(action: { removeTag(tag) }) {
                                                 Image(systemName: "xmark.circle.fill")
-                                                    .font(.footnote)
-                                                    .foregroundColor(.red)
+                                                    .font(.caption)
+                                                    .foregroundStyle(.secondary)
                                             }
+                                            .buttonStyle(.plain)
                                         }
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 6)
+                                        .background(Color.accentColor.opacity(0.15))
+                                        .foregroundStyle(Color.accentColor)
+                                        .clipShape(Capsule())
                                     }
                                 }
                             }
@@ -168,17 +248,21 @@ struct NewCardSheet: View {
                             }
                             if !filteredTags.isEmpty {
                                 ScrollView(.horizontal, showsIndicators: false) {
-                                    HStack {
+                                    HStack(spacing: 8) {
                                         ForEach(filteredTags.prefix(5)) { tag in
-                                            Button(tag.name) {
+                                            Button {
                                                 selectedTags.append(tag)
                                                 newTagText = ""
+                                            } label: {
+                                                Text(tag.name)
+                                                    .font(.subheadline)
+                                                    .padding(.horizontal, 12)
+                                                    .padding(.vertical, 6)
+                                                    .background(Color(.systemGray5))
+                                                    .foregroundStyle(.primary)
+                                                    .clipShape(Capsule())
                                             }
-                                            .font(.footnote)
-                                            .padding(.horizontal, 8)
-                                            .padding(.vertical, 4)
-                                            .background(Color.accentColor.opacity(0.1))
-                                            .cornerRadius(8)
+                                            .buttonStyle(.plain)
                                         }
                                     }
                                 }
@@ -189,69 +273,19 @@ struct NewCardSheet: View {
                     Text("Organization")
                 }
                 
-                // MARK: - Settings Section
-                Section {
-                    // Priority
-                    Picker("Priority", selection: $priority) {
-                        ForEach(PriorityType.allCases) { p in
-                            Text(p.rawValue).tag(p)
-                        }
-                    }
-                    
-                    // Recurring toggle
-                    Toggle("Recurring", isOn: $isRecurring)
-                    
-                    // Interval picker
-                    Picker("Repeat Interval", selection: $repeatInterval) {
-                        ForEach(RepeatInterval.allCases.filter { $0.hours != nil }, id: \.self) { interval in
-                            Text(interval.rawValue).tag(interval)
-                        }
-                    }
-                } header: {
-                    Text("Schedule")
-                }
-                
-                // MARK: - Policies Section
-                Section {
-                    // Skip settings
-                    Toggle("Enable Skip", isOn: $skipEnabled)
-                    
-                    if skipEnabled {
-                        Picker("On Skip", selection: $skipPolicy) {
-                            ForEach(RepeatPolicy.allCases, id: \.self) { policy in
-                                Text(policy.rawValue).tag(policy)
-                            }
-                        }
-                    }
-                    
-                    // Todo-specific: reset interval on complete
-                    if cardType == .todo {
-                        Toggle("Reset Interval On Complete", isOn: $resetRepeatIntervalOnComplete)
-                    }
-                    
-                    // Flashcard-specific: rating policies
-                    if cardType == .flashcard {
-                        Picker("On Easy", selection: $ratingEasyPolicy) {
-                            ForEach(RepeatPolicy.allCases, id: \.self) { policy in
-                                Text(policy.rawValue).tag(policy)
-                            }
-                        }
-                        
-                        Picker("On Good", selection: $ratingMedPolicy) {
-                            ForEach(RepeatPolicy.allCases, id: \.self) { policy in
-                                Text(policy.rawValue).tag(policy)
-                            }
-                        }
-                        
-                        Picker("On Hard", selection: $ratingHardPolicy) {
-                            ForEach(RepeatPolicy.allCases, id: \.self) { policy in
-                                Text(policy.rawValue).tag(policy)
-                            }
-                        }
-                    }
-                } header: {
-                    Text("Policies")
-                }
+                // MARK: - Schedule & Policies Sections
+                CardOptionsSection(
+                    cardType: cardType,
+                    priority: $priority,
+                    isRecurring: $isRecurring,
+                    repeatInterval: $repeatInterval,
+                    skipEnabled: $skipEnabled,
+                    skipPolicy: $skipPolicy,
+                    resetRepeatIntervalOnComplete: $resetRepeatIntervalOnComplete,
+                    ratingEasyPolicy: $ratingEasyPolicy,
+                    ratingMedPolicy: $ratingMedPolicy,
+                    ratingHardPolicy: $ratingHardPolicy
+                )
             }
             .navigationTitle("New \(cardType.rawValue)")
             .navigationBarTitleDisplayMode(.inline)
@@ -282,6 +316,16 @@ struct NewCardSheet: View {
                 if cardType == .flashcard {
                     showingFlashcardAnswer = true
                 }
+            }
+            .sheet(isPresented: $showAIGenerator) {
+                AICardGeneratorWrapper(
+                    currentFolder: selectedFolder,
+                    currentTagIDs: selectedTags.map { $0.id },
+                    onCardsCreated: { cards in
+                        // Cards were created by AI, dismiss this sheet
+                        dismiss()
+                    }
+                )
             }
         }
     }

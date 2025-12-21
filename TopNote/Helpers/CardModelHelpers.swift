@@ -38,9 +38,18 @@ private struct SortOrderKey: EnvironmentKey {
     static let defaultValue: Bool = true
 }
 
+private struct SortCriteriaKey: EnvironmentKey {
+    static let defaultValue: CardSortCriteria = .enqueuedAt
+}
+
 extension EnvironmentValues {
     var ascending: Bool {
         get { self[SortOrderKey.self] }
         set { self[SortOrderKey.self] = newValue }
+    }
+    
+    var sortCriteria: CardSortCriteria {
+        get { self[SortCriteriaKey.self] }
+        set { self[SortCriteriaKey.self] = newValue }
     }
 }

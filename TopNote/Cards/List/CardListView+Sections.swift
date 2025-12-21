@@ -64,6 +64,7 @@ extension CardListView {
                         lastDeselectedCardID: lastDeselectedCardID
                     )
                     .environment(\.ascending, ascending)
+                    .environment(\.sortCriteria, sortCriteria)
                     .popoverTip(firstQueueCardTip, arrowEdge: .top)
                     .onAppear {
                         if !hasViewedQueueCard && !queueCards.isEmpty {
@@ -117,6 +118,7 @@ extension CardListView {
                     lastDeselectedCardID: lastDeselectedCardID
                 )
                 .environment(\.ascending, ascending)
+                .environment(\.sortCriteria, sortCriteria)
             }
         }
         .padding(.bottom, isUpcomingExpanded ? 0 : 8)
@@ -158,6 +160,7 @@ extension CardListView {
                     lastDeselectedCardID: lastDeselectedCardID
                 )
                 .environment(\.ascending, ascending)
+                .environment(\.sortCriteria, sortCriteria)
             }
         }
         .padding(.bottom, isArchivedExpanded ? 0 : 8)
@@ -397,6 +400,60 @@ extension CardListView {
         }
     }
     
+    var contentSortSection: some View {
+        List {
+            ForEach(
+                filteredCards.sorted(by: {
+                    let comparison = $0.content.localizedStandardCompare($1.content)
+                    return ascending
+                        ? comparison == .orderedAscending
+                        : comparison == .orderedDescending
+                })
+            ) { card in
+                if selectionMode {
+                    HStack {
+                        Image(
+                            systemName: selectedCards.contains(card)
+                                ? "checkmark.circle.fill" : "circle"
+                        )
+                        .foregroundColor(
+                            selectedCards.contains(card)
+                                ? .accentColor : .secondary
+                        )
+                        CardRow(card: card, folders: folders, lastDeselectedCardID: lastDeselectedCardID)
+                            .id(card.id)
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        if selectedCards.contains(card) {
+                            selectedCards.remove(card)
+                        } else {
+                            selectedCards.insert(card)
+                        }
+                    }
+                } else {
+                    CardRow(
+                        card: card,
+                        folders: folders,
+                        lastDeselectedCardID: lastDeselectedCardID
+                    )
+                    .id(card.id)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .contentShape(Rectangle())
+                    .onTapGesture { select(card) }
+                    .accessibilityAddTraits(.isButton)
+                    .animation(
+                        .default,
+                        value: selectedCardModel.selectedCard?.id
+                    )
+                }
+            }
+            .onDelete { offsets in
+                delete(cards: filteredCards, at: offsets)
+            }
+        }
+    }
+    
     @ViewBuilder
     var contentListView: some View {
         switch sortCriteria {
@@ -424,6 +481,8 @@ extension CardListView {
             skipCountSection
         case .seenCount:
             seenCountSection
+        case .content:
+            contentSortSection
         }
     }
     

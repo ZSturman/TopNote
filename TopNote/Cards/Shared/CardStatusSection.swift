@@ -22,6 +22,7 @@ struct CardStatusSection: View {
     var lastDeselectedCardID: UUID? = nil
 
     @Environment(\.ascending) private var ascending: Bool
+    @Environment(\.sortCriteria) private var sortCriteria: CardSortCriteria
     
     // Track the card IDs in the order they were when selection started
     // This prevents visual reordering during editing
@@ -32,6 +33,22 @@ struct CardStatusSection: View {
     /// Used to capture the correct display order before freezing
     private func computeSortedOrder() -> [Card] {
         cards.sorted(by: { card1, card2 in
+            // For content sorting, use alphabetical comparison
+            if sortCriteria == .content {
+                let comparison = card1.content.localizedStandardCompare(card2.content)
+                if comparison != .orderedSame {
+                    return ascending
+                        ? comparison == .orderedAscending
+                        : comparison == .orderedDescending
+                }
+                // Fall back to createdAt for equal content
+                if card1.createdAt != card2.createdAt {
+                    return card1.createdAt > card2.createdAt
+                }
+                return card1.id.uuidString < card2.id.uuidString
+            }
+            
+            // Default sorting: priority first, then by criteria
             if card1.priority.sortValue != card2.priority.sortValue {
                 return card1.priority.sortValue < card2.priority.sortValue
             }

@@ -242,13 +242,51 @@ extension CardListView {
         .accessibilityIdentifier("addCard")
         .accessibilityLabel("Add Card")
         .confirmationDialog("Add Card", isPresented: $showAddCardActionSheet) {
-            Button("Note") { addCard(ofType: .note) }
-                .accessibilityIdentifier("AddNoteButton")
-            Button("To-do") { addCard(ofType: .todo) }
-                .accessibilityIdentifier("AddTodoButton")
-            Button("Flashcard") { addCard(ofType: .flashcard) }
-                .accessibilityIdentifier("AddFlashcardButton")
+            Button {
+                addCard(ofType: .note)
+            } label: {
+                Label("Note", systemImage: CardType.note.systemImage)
+            }
+            .accessibilityIdentifier("AddNoteButton")
+            
+            Button {
+                addCard(ofType: .todo)
+            } label: {
+                Label("To-do", systemImage: CardType.todo.systemImage)
+            }
+            .accessibilityIdentifier("AddTodoButton")
+            
+            Button {
+                addCard(ofType: .flashcard)
+            } label: {
+                Label("Flashcard", systemImage: CardType.flashcard.systemImage)
+            }
+            .accessibilityIdentifier("AddFlashcardButton")
+            
+            if #available(iOS 26.0, *) {
+                Button {
+                    showAIGeneratorFromDialog = true
+                } label: {
+                    Label("Generate with AI", systemImage: "sparkles")
+                }
+                .accessibilityIdentifier("AddWithAIButton")
+            }
+            
             Button("Cancel", role: .cancel) {}
+        }
+        .sheet(isPresented: $showAIGeneratorFromDialog) {
+            AICardGeneratorWrapper(
+                currentFolder: currentFolderForNewCard,
+                currentTagIDs: currentSelectedTagIDs(),
+                onCardsCreated: { cards in
+                    // Scroll to the first created card after a short delay
+                    if let firstCard = cards.first {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            scrollToCardID = firstCard.id
+                        }
+                    }
+                }
+            )
         }
     }
 }

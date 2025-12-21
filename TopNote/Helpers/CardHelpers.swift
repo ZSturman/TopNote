@@ -54,33 +54,79 @@ func createCard(
     answer: String? = nil,
     folder: Folder? = nil,
     tags: [CardTag] = [],
-    isRecurring: Bool = false
+    isRecurring: Bool = false,
+    priority: PriorityType = .none,
+    repeatInterval: Int = 240,
+    nextTimeInQueue: Date? = nil,
+    skipEnabled: Bool = true,
+    skipPolicy: RepeatPolicy = .none,
+    resetRepeatIntervalOnComplete: Bool = true,
+    ratingEasyPolicy: RepeatPolicy = .mild,
+    ratingMedPolicy: RepeatPolicy = .none,
+    ratingHardPolicy: RepeatPolicy = .aggressive
 ) -> Card {
     let now = Date()
+    let queueTime = nextTimeInQueue ?? now
     let card = Card(
         createdAt: now,
         cardType: cardType,
-        priorityTypeRaw: .none,
+        priorityTypeRaw: priority,
         content: content,
         isRecurring: isRecurring,
         skipCount: 0,
         seenCount: 0,
-        repeatInterval: 240,
-        //isDynamic: true,
-        nextTimeInQueue: now,
+        repeatInterval: repeatInterval,
+        initialRepeatInterval: repeatInterval,
+        nextTimeInQueue: queueTime,
         folder: folder,
         tags: tags,
         answer: answer,
         rating: [],
         isArchived: false,
-        //answerRevealed: false,
-        skipPolicy: .none,
-        ratingEasyPolicy: .mild,
-        ratingMedPolicy: .none,
-        ratingHardPolicy: .aggressive
+        skipPolicy: skipPolicy,
+        ratingEasyPolicy: ratingEasyPolicy,
+        ratingMedPolicy: ratingMedPolicy,
+        ratingHardPolicy: ratingHardPolicy,
+        isComplete: false,
+        resetRepeatIntervalOnComplete: resetRepeatIntervalOnComplete,
+        skipEnabled: skipEnabled
     )
     context.insert(card)
     return card
+}
+
+/// Creates and inserts multiple Cards from AI-generated card data.
+/// - Parameters:
+///   - generatedCards: Array of GeneratedCardFallback from AI generation
+///   - context: The ModelContext to insert cards into
+///   - folder: Optional folder to assign to all cards
+///   - tags: Tags to assign to all cards
+/// - Returns: Array of created Card instances
+@discardableResult
+func createCards(
+    from generatedCards: [GeneratedCardFallback],
+    in context: ModelContext,
+    folder: Folder? = nil,
+    tags: [CardTag] = []
+) -> [Card] {
+    var createdCards: [Card] = []
+    
+    for generated in generatedCards {
+        guard generated.isValid else { continue }
+        
+        let card = createCard(
+            in: context,
+            cardType: generated.resolvedCardType,
+            content: generated.cleanedContent,
+            answer: generated.cleanedAnswer,
+            folder: folder,
+            tags: tags,
+            isRecurring: true
+        )
+        createdCards.append(card)
+    }
+    
+    return createdCards
 }
 
 // MARK: - Image Helpers

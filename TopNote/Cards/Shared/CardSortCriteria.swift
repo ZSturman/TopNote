@@ -13,6 +13,7 @@ enum CardSortCriteria: String, CaseIterable, Identifiable {
     case createdAt
     case skipCount
     case seenCount
+    case content
     
     var id: String { rawValue }
     
@@ -23,11 +24,12 @@ enum CardSortCriteria: String, CaseIterable, Identifiable {
             return SortDescriptor(\.nextTimeInQueue, order: ascending ? .forward : .reverse)
         case .createdAt:
             return SortDescriptor(\.createdAt, order: ascending ? .forward : .reverse)
-
         case .skipCount:
             return SortDescriptor(\.skipCount, order: ascending ? .forward : .reverse)
         case .seenCount:
             return SortDescriptor(\.seenCount, order: ascending ? .forward : .reverse)
+        case .content:
+            return SortDescriptor(\.content, order: ascending ? .forward : .reverse)
         }
     }
     
@@ -38,6 +40,7 @@ enum CardSortCriteria: String, CaseIterable, Identifiable {
         case .createdAt:  return "Created"
         case .skipCount:  return "Skips"
         case .seenCount:  return "Seen"
+        case .content:    return "Content (A-Z)"
         }
     }
 }

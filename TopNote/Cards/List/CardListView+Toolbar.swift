@@ -57,37 +57,31 @@ extension CardListView {
                     finishEdits()
                 }
             } else {
-                Menu {
-                    Menu("Export Filtered Cards") {
-                        Button("as JSON") {
-                            exportCardsAsJSON(filteredCards)
-                        }
-                        Button("as CSV") {
-                            exportCardsAsCSV(filteredCards)
-                        }
-                    }
-                    Menu("Import Cards") {
-                        Button("from JSON") {
-                           
-                            importMode = .json
-                            showImportPicker = true
-                        }
-                        Button("from CSV") {
-                            importMode = .csv
-                            showImportPicker = true
-                        }
-                    }
+                // Export/Import button - opens dedicated sheet
+                Button {
+                    showExportImportSheet = true
                 } label: {
-                    Image(systemName: "gear")
+                    Image(systemName: "square.and.arrow.up.on.square")
                 }
-                //.popoverTip(importExportTip, arrowEdge: .bottom)
+                .accessibilityLabel("Export & Import")
+                
                 Menu {
                     ForEach(CardSortCriteria.allCases) { opt in
-                        Button(opt.localizedName) { sortCriteria = opt }
+                        Button {
+                            sortCriteria = opt
+                        } label: {
+                            if sortCriteria == opt {
+                                Label(opt.localizedName, systemImage: "checkmark")
+                            } else {
+                                Text(opt.localizedName)
+                            }
+                        }
                     }
                     Divider()
-                    Button(ascending ? "Ascending" : "Descending") {
+                    Button {
                         ascending.toggle()
+                    } label: {
+                        Label(ascending ? "Ascending" : "Descending", systemImage: ascending ? "arrow.up" : "arrow.down")
                     }
                 } label: {
                     Label("Sort", systemImage: "arrow.up.arrow.down")
@@ -95,7 +89,7 @@ extension CardListView {
                 .menuActionDismissBehavior(.disabled)
                 .accessibilityIdentifier("Sort")
                 // Show filter menu only for enqueuedAt and createdAt
-                if sortCriteria == .enqueuedAt || sortCriteria == .createdAt {
+                if sortCriteria == .enqueuedAt || sortCriteria == .createdAt || sortCriteria == .content {
                     CardFilterMenu(selectedOptions: $filterOptions)
                 }
             }

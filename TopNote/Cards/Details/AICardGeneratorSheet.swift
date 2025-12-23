@@ -28,9 +28,9 @@ struct AICardGeneratorSheet: View {
     
     // Generation settings
     @State private var topic: String = ""
-    @State private var generateNotes: Bool = true
+    @State private var generateNotes: Bool = false
     @State private var generateTodos: Bool = false
-    @State private var generateFlashcards: Bool = false
+    @State private var generateFlashcards: Bool = true
     @State private var cardCount: Int = 3
     @State private var styleHint: String = ""
     
@@ -78,7 +78,7 @@ struct AICardGeneratorSheet: View {
     @State private var editingCardID: UUID? = nil
     @State private var editContent: String = ""
     @State private var editAnswer: String = ""
-    
+    @State private var regeneratingCardID: UUID? = nil    
     // Focus state for keyboard dismissal
     @FocusState private var isTopicFocused: Bool
     @FocusState private var isStyleHintFocused: Bool
@@ -116,89 +116,8 @@ struct AICardGeneratorSheet: View {
                         Text("Describe what you want to create cards about. Be specific for better results.")
                     }
                 
-                // MARK: - Card Types Section
+                // MARK: - Flashcards Section
                 Section {
-                    // Notes toggle with expandable settings
-                    Toggle(isOn: $generateNotes) {
-                        Label("Notes", systemImage: "doc.text")
-                    }
-                    .tint(.yellow)
-                    
-                    if generateNotes {
-                        Button {
-                            withAnimation {
-                                notesOptionsExpanded.toggle()
-                            }
-                        } label: {
-                            HStack {
-                                Label("Notes Settings", systemImage: "gearshape")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                                Spacer()
-                                Image(systemName: notesOptionsExpanded ? "chevron.up" : "chevron.down")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        
-                        if notesOptionsExpanded {
-                            CardOptionsSection(
-                                cardType: .note,
-                                priority: $notesPriority,
-                                isRecurring: $notesIsRecurring,
-                                repeatInterval: $notesRepeatInterval,
-                                skipEnabled: $notesSkipEnabled,
-                                skipPolicy: $notesSkipPolicy,
-                                resetRepeatIntervalOnComplete: .constant(false),
-                                ratingEasyPolicy: .constant(.mild),
-                                ratingMedPolicy: .constant(.none),
-                                ratingHardPolicy: .constant(.aggressive)
-                            )
-                        }
-                    }
-                    
-                    // Todos toggle with expandable settings
-                    Toggle(isOn: $generateTodos) {
-                        Label("To-dos", systemImage: "checklist")
-                    }
-                    .tint(.green)
-                    
-                    if generateTodos {
-                        Button {
-                            withAnimation {
-                                todosOptionsExpanded.toggle()
-                            }
-                        } label: {
-                            HStack {
-                                Label("To-do Settings", systemImage: "gearshape")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                                Spacer()
-                                Image(systemName: todosOptionsExpanded ? "chevron.up" : "chevron.down")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        
-                        if todosOptionsExpanded {
-                            CardOptionsSection(
-                                cardType: .todo,
-                                priority: $todosPriority,
-                                isRecurring: $todosIsRecurring,
-                                repeatInterval: $todosRepeatInterval,
-                                skipEnabled: $todosSkipEnabled,
-                                skipPolicy: $todosSkipPolicy,
-                                resetRepeatIntervalOnComplete: $todosResetRepeatIntervalOnComplete,
-                                ratingEasyPolicy: .constant(.mild),
-                                ratingMedPolicy: .constant(.none),
-                                ratingHardPolicy: .constant(.aggressive)
-                            )
-                        }
-                    }
-                    
-                    // Flashcards toggle with expandable settings
                     Toggle(isOn: $generateFlashcards) {
                         Label("Flashcards", systemImage: "rectangle.on.rectangle.angled")
                     }
@@ -246,13 +165,97 @@ struct AICardGeneratorSheet: View {
                     }
                 }
                 
+                // MARK: - Notes Section
+                Section {
+                    Toggle(isOn: $generateNotes) {
+                        Label("Notes", systemImage: "doc.text")
+                    }
+                    .tint(.yellow)
+                    
+                    if generateNotes {
+                        Button {
+                            withAnimation {
+                                notesOptionsExpanded.toggle()
+                            }
+                        } label: {
+                            HStack {
+                                Label("Notes Settings", systemImage: "gearshape")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                Image(systemName: notesOptionsExpanded ? "chevron.up" : "chevron.down")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        
+                        if notesOptionsExpanded {
+                            CardOptionsSection(
+                                cardType: .note,
+                                priority: $notesPriority,
+                                isRecurring: $notesIsRecurring,
+                                repeatInterval: $notesRepeatInterval,
+                                skipEnabled: $notesSkipEnabled,
+                                skipPolicy: $notesSkipPolicy,
+                                resetRepeatIntervalOnComplete: .constant(false),
+                                ratingEasyPolicy: .constant(.mild),
+                                ratingMedPolicy: .constant(.none),
+                                ratingHardPolicy: .constant(.aggressive)
+                            )
+                        }
+                    }
+                }
+                
+                // MARK: - Todos Section
+                Section {
+                    Toggle(isOn: $generateTodos) {
+                        Label("To-dos", systemImage: "checklist")
+                    }
+                    .tint(.green)
+                    
+                    if generateTodos {
+                        Button {
+                            withAnimation {
+                                todosOptionsExpanded.toggle()
+                            }
+                        } label: {
+                            HStack {
+                                Label("To-do Settings", systemImage: "gearshape")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                Image(systemName: todosOptionsExpanded ? "chevron.up" : "chevron.down")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        
+                        if todosOptionsExpanded {
+                            CardOptionsSection(
+                                cardType: .todo,
+                                priority: $todosPriority,
+                                isRecurring: $todosIsRecurring,
+                                repeatInterval: $todosRepeatInterval,
+                                skipEnabled: $todosSkipEnabled,
+                                skipPolicy: $todosSkipPolicy,
+                                resetRepeatIntervalOnComplete: $todosResetRepeatIntervalOnComplete,
+                                ratingEasyPolicy: .constant(.mild),
+                                ratingMedPolicy: .constant(.none),
+                                ratingHardPolicy: .constant(.aggressive)
+                            )
+                        }
+                    }
+                }
+                
                 // MARK: - Count Section
                 Section {
                     Stepper("Generate \(cardCount) card\(cardCount == 1 ? "" : "s")", value: $cardCount, in: 1...5)
                 } header: {
                     Text("Number of Cards")
                 } footer: {
-                    Text("Generate 1-5 cards at a time for best results.")
+                    Text("Generate up to 5 cards at a time.")
                 }
                 
                 // MARK: - Optional Style Hint
@@ -325,6 +328,7 @@ struct AICardGeneratorSheet: View {
                             GeneratedCardRow(
                                 card: $card,
                                 isEditing: editingCardID == card.id,
+                                isRegenerating: regeneratingCardID == card.id,
                                 editContent: $editContent,
                                 editAnswer: $editAnswer,
                                 onEdit: {
@@ -340,6 +344,9 @@ struct AICardGeneratorSheet: View {
                                 },
                                 onDelete: {
                                     deleteCard(card)
+                                },
+                                onRegenerate: {
+                                    regenerateSingleCard(card)
                                 }
                             )
                         }
@@ -420,12 +427,14 @@ struct AICardGeneratorSheet: View {
                 let prompt = """
                 Generate exactly \(cardCount) cards about: \(topic)
                 
-                Card types to include: \(typesDescription)
+                IMPORTANT: You must ONLY generate cards of these types: \(typesDescription)
+                Do NOT generate any other card types. Every card must be one of: \(typesDescription)
                 \(styleInstruction)
                 
                 Requirements:
+                - ONLY use card types from this list: \(typesDescription)
                 - Each card's content must be under 150 characters (suitable for a widget)
-                - For flashcards, the answer must be under 100 characters
+                - For flashcards (only if flashcard is in the allowed types), the answer must be under 100 characters
                 - Make content clear, concise, and actionable
                 - Distribute evenly among the requested card types if multiple are selected
                 - For todos: make them actionable tasks
@@ -440,7 +449,17 @@ struct AICardGeneratorSheet: View {
                 
                 // Access the generated content from the response
                 let generatedBatch = response.content
-                let cards = generatedBatch.cards.filter { $0.isValid }.map { generated -> GeneratedCardFallback in
+                // Filter to only include valid cards of the selected types
+                let allowedTypes = self.selectedCardTypes
+                let cards = generatedBatch.cards.filter { card in
+                    guard card.isValid else { return false }
+                    let resolvedType = card.resolvedCardType
+                    switch resolvedType {
+                    case .note: return allowedTypes.contains("note")
+                    case .todo: return allowedTypes.contains("todo")
+                    case .flashcard: return allowedTypes.contains("flashcard")
+                    }
+                }.map { generated -> GeneratedCardFallback in
                     var card = GeneratedCardFallback(
                         cardType: generated.cardType,
                         content: generated.cleanedContent,
@@ -524,6 +543,79 @@ struct AICardGeneratorSheet: View {
         generatedCards.removeAll { $0.id == card.id }
     }
     
+    private func regenerateSingleCard(_ card: GeneratedCardFallback) {
+        regeneratingCardID = card.id
+        
+        Task {
+            do {
+                #if canImport(FoundationModels)
+                let session = LanguageModelSession()
+                
+                let cardTypeName = card.resolvedCardType.rawValue.lowercased()
+                let styleInstruction = styleHint.isEmpty ? "" : " Style: \(styleHint)."
+                
+                let prompt = """
+                Generate exactly 1 \(cardTypeName) card about: \(topic)
+                
+                IMPORTANT: You must ONLY generate a \(cardTypeName) card. Do NOT generate any other card type.
+                \(styleInstruction)
+                
+                Requirements:
+                - The card type MUST be '\(cardTypeName)'
+                - Content must be under 150 characters (suitable for a widget)
+                - For flashcards, the answer must be under 100 characters
+                - Make content clear, concise, and actionable
+                - Generate something different from: "\(card.content)"
+                """
+                
+                let response = try await session.respond(
+                    to: prompt,
+                    generating: GeneratedCardBatch.self
+                )
+                
+                let generatedBatch = response.content
+                if let newCard = generatedBatch.cards.first(where: { $0.isValid }) {
+                    var regeneratedCard = GeneratedCardFallback(
+                        cardType: cardTypeName,
+                        content: newCard.cleanedContent,
+                        answer: newCard.cleanedAnswer
+                    )
+                    
+                    // Copy settings from original card
+                    regeneratedCard.priority = card.priority
+                    regeneratedCard.isRecurring = card.isRecurring
+                    regeneratedCard.repeatInterval = card.repeatInterval
+                    regeneratedCard.skipEnabled = card.skipEnabled
+                    regeneratedCard.skipPolicy = card.skipPolicy
+                    regeneratedCard.resetRepeatIntervalOnComplete = card.resetRepeatIntervalOnComplete
+                    regeneratedCard.ratingEasyPolicy = card.ratingEasyPolicy
+                    regeneratedCard.ratingMedPolicy = card.ratingMedPolicy
+                    regeneratedCard.ratingHardPolicy = card.ratingHardPolicy
+                    
+                    await MainActor.run {
+                        if let index = generatedCards.firstIndex(where: { $0.id == card.id }) {
+                            generatedCards[index] = regeneratedCard
+                        }
+                        regeneratingCardID = nil
+                    }
+                } else {
+                    await MainActor.run {
+                        regeneratingCardID = nil
+                    }
+                }
+                #else
+                await MainActor.run {
+                    regeneratingCardID = nil
+                }
+                #endif
+            } catch {
+                await MainActor.run {
+                    regeneratingCardID = nil
+                }
+            }
+        }
+    }
+    
     private func saveAllCards() {
         var createdCards: [Card] = []
         
@@ -571,12 +663,14 @@ struct AICardGeneratorSheet: View {
 private struct GeneratedCardRow: View {
     @Binding var card: GeneratedCardFallback
     let isEditing: Bool
+    let isRegenerating: Bool
     @Binding var editContent: String
     @Binding var editAnswer: String
     let onEdit: () -> Void
     let onSaveEdit: () -> Void
     let onCancelEdit: () -> Void
     let onDelete: () -> Void
+    let onRegenerate: () -> Void
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -593,6 +687,21 @@ private struct GeneratedCardRow: View {
                 Spacer()
                 
                 if !isEditing {
+                    Button {
+                        onRegenerate()
+                    } label: {
+                        if isRegenerating {
+                            ProgressView()
+                                .scaleEffect(0.7)
+                        } else {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.caption)
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                    .buttonBorderShape(.circle)
+                    .disabled(isRegenerating)
+                    
                     Button {
                         onEdit()
                     } label: {

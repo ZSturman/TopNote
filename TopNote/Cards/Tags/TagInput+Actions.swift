@@ -46,15 +46,7 @@ extension TagInputView {
     }
     
     func getOrCreateTag(withName name: String) -> CardTag {
-        let normalizedName = name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        if let existingTag = allTags.first(where: {
-            $0.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == normalizedName
-        }) {
-            return existingTag
-        }
-        let newTag = CardTag(name: name)
-        modelContext.insert(newTag)
-        Card.throttledWidgetReload()
-        return newTag
+        // Delegate to centralized TagManager for consistent tag handling
+        return TagManager.getOrCreateTag(name: name, context: modelContext)
     }
 }

@@ -18,7 +18,8 @@ struct CardRowSwipeLeft: View {
     var body: some View {
         Button(role: .destructive) { 
             selectedCardModel.clearSelection()
-            modelContext.delete(card)
+            card.softDelete(at: Date())
+            try? modelContext.save()
         } label: {
             Label("Delete", systemImage: "trash")
         }

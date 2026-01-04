@@ -9,7 +9,7 @@ import Foundation
 import SwiftData
 
 enum CardImport {
-    static func makeCard(from dict: [String: Any], context: ModelContext)
+    static func makeCard(from dict: [String: Any], context: ModelContext, overrides: CardImportOverrides? = nil)
         -> Card?
     {
         // Helper: Folder lookup or creation by name
@@ -24,17 +24,11 @@ enum CardImport {
             return f
         }
 
-        // Helper: Tag lookup or creation by name
+        // Helper: Tag lookup or creation by name (using centralized TagManager)
         func tagsForNames(_ names: [String]) -> [CardTag] {
             names.compactMap { tagName in
                 guard !tagName.isEmpty else { return nil }
-                let req = FetchDescriptor<CardTag>(
-                    predicate: #Predicate { $0.name == tagName }
-                )
-                if let found = try? context.fetch(req).first { return found }
-                let t = CardTag(name: tagName)
-                context.insert(t)
-                return t
+                return TagManager.getOrCreateTag(name: tagName, context: context)
             }
         }
 
@@ -46,6 +40,9 @@ enum CardImport {
             rawCardType = "todo"
         }
         let cardType = CardType(caseInsensitiveRawValue: rawCardType)
+        
+        // Get card type-specific overrides if provided
+        let typeOverrides = overrides?.settings(for: cardType)
 
         let contentValue: String
         if let contentStr = dict["content"] as? String, !contentStr.isEmpty {
@@ -83,25 +80,27 @@ enum CardImport {
             nextTimeInQueueValue = Date()
         }
 
-        // Updated logic for defaults based on cardType
+        // Updated logic for defaults based on cardType (with override support)
 
-        // isRecurring
+        // isRecurring - check overrides first
         let isRecurringValue: Bool = {
-            if let val = dict["isRecurring"] as? Bool {
+            if let overrideSettings = typeOverrides {
+                return overrideSettings.isRecurring
+            } else if let val = dict["isRecurring"] as? Bool {
                 return val
             } else {
                 return true
             }
         }()
 
-        // repeatInterval
+        // repeatInterval - check overrides first
         let repeatIntervalValue: Int = {
-            if let val = dict["repeatInterval"] as? Int {
+            if let overrideSettings = typeOverrides {
+                return overrideSettings.repeatInterval
+            } else if let val = dict["repeatInterval"] as? Int {
                 return val
             } else {
-
                 return 720
-
             }
         }()
 
@@ -110,20 +109,24 @@ enum CardImport {
             if let val = dict["initialRepeatInterval"] as? Int {
                 return val
             } else {
-
                 return repeatIntervalValue
-
             }
         }()
 
-        // folder
-        let folderNameValue: String
-        if let val = dict["folder"] as? String {
-            folderNameValue = val
-        } else {
-            folderNameValue = ""
-        }
-        let folderValue = folderForName(folderNameValue)
+        // folder - check overrides first
+        let folderValue: Folder? = {
+            if let overrideFolder = overrides?.folder {
+                return overrideFolder
+            } else {
+                let folderNameValue: String
+                if let val = dict["folder"] as? String {
+                    folderNameValue = val
+                } else {
+                    folderNameValue = ""
+                }
+                return folderForName(folderNameValue)
+            }
+        }()
 
         // tags
         let tagNamesValue: [String]
@@ -142,9 +145,11 @@ enum CardImport {
             isArchivedValue = false
         }
 
-        // skipPolicy
+        // skipPolicy - check overrides first
         let skipPolicyValue: RepeatPolicy = {
-            if let val = dict["skipPolicy"] as? String,
+            if let overrideSettings = typeOverrides {
+                return overrideSettings.skipPolicy
+            } else if let val = dict["skipPolicy"] as? String,
                 let policy = RepeatPolicy(rawValue: val)
             {
                 return policy
@@ -160,9 +165,11 @@ enum CardImport {
             }
         }()
 
-        // ratingEasyPolicy
+        // ratingEasyPolicy - check overrides first
         let ratingEasyPolicyValue: RepeatPolicy = {
-            if let val = dict["ratingEasyPolicy"] as? String,
+            if let overrideSettings = typeOverrides {
+                return overrideSettings.ratingEasyPolicy
+            } else if let val = dict["ratingEasyPolicy"] as? String,
                 let policy = RepeatPolicy(rawValue: val)
             {
                 return policy
@@ -170,15 +177,16 @@ enum CardImport {
                 if cardType == .flashcard {
                     return .mild
                 } else {
-                    // For other types, no default mentioned, keep as .mild for safety
                     return .mild
                 }
             }
         }()
 
-        // ratingMedPolicy
+        // ratingMedPolicy - check overrides first
         let ratingMedPolicyValue: RepeatPolicy = {
-            if let val = dict["ratingMedPolicy"] as? String,
+            if let overrideSettings = typeOverrides {
+                return overrideSettings.ratingMedPolicy
+            } else if let val = dict["ratingMedPolicy"] as? String,
                 let policy = RepeatPolicy(rawValue: val)
             {
                 return policy
@@ -191,9 +199,11 @@ enum CardImport {
             }
         }()
 
-        // ratingHardPolicy
+        // ratingHardPolicy - check overrides first
         let ratingHardPolicyValue: RepeatPolicy = {
-            if let val = dict["ratingHardPolicy"] as? String,
+            if let overrideSettings = typeOverrides {
+                return overrideSettings.ratingHardPolicy
+            } else if let val = dict["ratingHardPolicy"] as? String,
                 let policy = RepeatPolicy(rawValue: val)
             {
                 return policy
@@ -227,9 +237,11 @@ enum CardImport {
             }
         }()
 
-        // resetRepeatIntervalOnComplete
+        // resetRepeatIntervalOnComplete - check overrides first
         let resetRepeatIntervalOnCompleteValue: Bool = {
-            if let val = dict["resetRepeatIntervalOnComplete"] as? Bool {
+            if let overrideSettings = typeOverrides {
+                return overrideSettings.resetRepeatIntervalOnComplete
+            } else if let val = dict["resetRepeatIntervalOnComplete"] as? Bool {
                 return val
             } else {
                 if cardType == .todo {
@@ -240,9 +252,11 @@ enum CardImport {
             }
         }()
 
-        // skipEnabled
+        // skipEnabled - check overrides first
         let skipEnabledValue: Bool = {
-            if let val = dict["skipEnabled"] as? Bool {
+            if let overrideSettings = typeOverrides {
+                return overrideSettings.skipEnabled
+            } else if let val = dict["skipEnabled"] as? Bool {
                 return val
             } else {
                 switch cardType {
@@ -253,6 +267,19 @@ enum CardImport {
                 default:
                     return false
                 }
+            }
+        }()
+        
+        // priority - check overrides first
+        let priorityValue: PriorityType = {
+            if let overrideSettings = typeOverrides {
+                return overrideSettings.priority
+            } else if let val = dict["priority"] as? String,
+                let priority = PriorityType(rawValue: val)
+            {
+                return priority
+            } else {
+                return .none
             }
         }()
 
@@ -276,7 +303,7 @@ enum CardImport {
         return Card(
             createdAt: createdAtValue,
             cardType: cardType,
-            priorityTypeRaw: .none,
+            priorityTypeRaw: priorityValue,
             content: contentValue,
             isRecurring: isRecurringValue,
             skipCount: dict["skipCount"] as? Int ?? 0,
@@ -300,7 +327,7 @@ enum CardImport {
         )
     }
     
-    static func parseCSV(_ csvString: String, context: ModelContext) throws -> [Card] {
+    static func parseCSV(_ csvString: String, context: ModelContext, overrides: CardImportOverrides? = nil) throws -> [Card] {
         var cards: [Card] = []
         let lines = csvString.components(separatedBy: "\n").filter { !$0.isEmpty }
         
@@ -323,17 +350,11 @@ enum CardImport {
             return f
         }
         
-        // Helper: Tag lookup or creation by name
+        // Helper: Tag lookup or creation by name (using centralized TagManager)
         func tagsForNames(_ names: [String]) -> [CardTag] {
             names.compactMap { tagName in
                 guard !tagName.isEmpty else { return nil }
-                let req = FetchDescriptor<CardTag>(
-                    predicate: #Predicate { $0.name == tagName }
-                )
-                if let found = try? context.fetch(req).first { return found }
-                let t = CardTag(name: tagName)
-                context.insert(t)
-                return t
+                return TagManager.getOrCreateTag(name: tagName, context: context)
             }
         }
         
@@ -355,32 +376,38 @@ enum CardImport {
             let createdAt = ISO8601DateFormatter().date(from: dict["createdAt"] ?? "") ?? Date()
             let nextTimeInQueue = ISO8601DateFormatter().date(from: dict["nextTimeInQueue"] ?? "") ?? Date()
             
-            let isRecurring = Bool(dict["isRecurring"] ?? "true") ?? true
-            let repeatInterval = Int(dict["repeatInterval"] ?? "") ?? 720
+            // Get card type-specific overrides if provided
+            let typeOverrides = overrides?.settings(for: cardType)
+            
+            // Apply overrides or use file values
+            let isRecurring = typeOverrides?.isRecurring ?? (Bool(dict["isRecurring"] ?? "true") ?? true)
+            let repeatInterval = typeOverrides?.repeatInterval ?? (Int(dict["repeatInterval"] ?? "") ?? 720)
             let initialRepeatInterval = Int(dict["initialRepeatInterval"] ?? "") ?? repeatInterval
             
-            let folderName = dict["folder"] ?? ""
-            let folder = folderForName(folderName)
+            // Folder: use override if provided, otherwise use file value
+            let folder: Folder? = overrides?.folder ?? folderForName(dict["folder"] ?? "")
             
             let tagNames = (dict["tags"] ?? "").components(separatedBy: ";").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
             let tags = tagsForNames(tagNames)
             
             let isArchived = Bool(dict["isArchived"] ?? "false") ?? false
             
-            let skipPolicy = RepeatPolicy(rawValue: dict["skipPolicy"] ?? "") ?? (cardType == .flashcard ? .none : cardType == .todo ? .aggressive : .mild)
-            let ratingEasyPolicy = RepeatPolicy(rawValue: dict["ratingEasyPolicy"] ?? "") ?? .mild
-            let ratingMedPolicy = RepeatPolicy(rawValue: dict["ratingMedPolicy"] ?? "") ?? .none
-            let ratingHardPolicy = RepeatPolicy(rawValue: dict["ratingHardPolicy"] ?? "") ?? .aggressive
+            // Apply overrides for policies
+            let skipPolicy = typeOverrides?.skipPolicy ?? (RepeatPolicy(rawValue: dict["skipPolicy"] ?? "") ?? (cardType == .flashcard ? .none : cardType == .todo ? .aggressive : .mild))
+            let ratingEasyPolicy = typeOverrides?.ratingEasyPolicy ?? (RepeatPolicy(rawValue: dict["ratingEasyPolicy"] ?? "") ?? .mild)
+            let ratingMedPolicy = typeOverrides?.ratingMedPolicy ?? (RepeatPolicy(rawValue: dict["ratingMedPolicy"] ?? "") ?? .none)
+            let ratingHardPolicy = typeOverrides?.ratingHardPolicy ?? (RepeatPolicy(rawValue: dict["ratingHardPolicy"] ?? "") ?? .aggressive)
             
             let isComplete = Bool(dict["isComplete"] ?? "false") ?? false
             let answerRevealed = cardType == .flashcard ? false : (Bool(dict["answerRevealed"] ?? "false") ?? false)
-            let resetRepeatIntervalOnComplete = Bool(dict["resetRepeatIntervalOnComplete"] ?? "") ?? (cardType == .todo)
-            let skipEnabled = Bool(dict["skipEnabled"] ?? "") ?? (cardType != .flashcard)
+            let resetRepeatIntervalOnComplete = typeOverrides?.resetRepeatIntervalOnComplete ?? (Bool(dict["resetRepeatIntervalOnComplete"] ?? "") ?? (cardType == .todo))
+            let skipEnabled = typeOverrides?.skipEnabled ?? (Bool(dict["skipEnabled"] ?? "") ?? (cardType != .flashcard))
+            let priority = typeOverrides?.priority ?? (PriorityType(rawValue: dict["priority"] ?? "") ?? .none)
             
             let card = Card(
                 createdAt: createdAt,
                 cardType: cardType,
-                priorityTypeRaw: .none,
+                priorityTypeRaw: priority,
                 content: content,
                 isRecurring: isRecurring,
                 skipCount: Int(dict["skipCount"] ?? "0") ?? 0,

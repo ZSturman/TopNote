@@ -61,15 +61,14 @@ struct CardRowContextMenu: View {
                         .tint(.orange)
                     }
                     
-                    if card.cardType != .todo {
-                        Button {
-                            card.next(at: Date())
-                            try? context.save()
-                        } label: {
-                            Label("Next", systemImage: "arrow.right.circle")
-                        }
-                        .tint(.cyan)
+                    // Remove from queue (works for all card types)
+                    Button {
+                        card.next(at: Date())
+                        try? context.save()
+                    } label: {
+                        Label("Remove", systemImage: "minus.circle")
                     }
+                    .tint(.purple)
                     
                     Button {
                         card.archive(at: Date())
@@ -191,6 +190,7 @@ struct CardRowContextMenu: View {
             QuickActionButtons(card: card, context: context)
                 .padding(.horizontal, 4)
         }
+        .menuActionDismissBehavior(.disabled)
         Button { showDetails() } label: {
             Label("Details", systemImage: "info.circle")
         }
@@ -258,13 +258,34 @@ struct CardRowContextMenu: View {
             Label("Duplicate", systemImage: "doc.on.doc")
         }
         Divider()
-        Button(role: .destructive) {
-            context.delete(card)
-            try? context.save() // Save context to refresh UI after delete
-        } label: {
-            Label("Delete", systemImage: "trash")
+        
+        // Show different options based on deletion state
+        if card.isDeleted {
+            // Card is soft-deleted: show Restore and Permanently Delete
+            Button {
+                card.restore(at: Date())
+                try? context.save()
+            } label: {
+                Label("Restore", systemImage: "arrow.uturn.backward")
+            }
+            .tint(.green)
+            
+            Button(role: .destructive) {
+                context.delete(card)
+                try? context.save()
+            } label: {
+                Label("Permanently Delete", systemImage: "trash.fill")
+            }
+            .foregroundColor(.red)
+        } else {
+            // Card is not deleted: show soft delete option
+            Button(role: .destructive) {
+                card.softDelete(at: Date())
+                try? context.save()
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+            .foregroundColor(.red)
         }
-        .foregroundColor(.red)
     }
 }
-

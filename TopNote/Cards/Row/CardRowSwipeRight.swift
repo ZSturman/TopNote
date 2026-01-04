@@ -51,17 +51,14 @@ struct CardRowSwipeRight: View {
                     .tint(.orange)
                 }
                 
-                if card.cardType != .todo {
-                    
-                    
-                    Button {
-                        selectedCardModel.clearSelection()
-                        card.next(at: Date())
-                    } label: {
-                        Label("Next", systemImage: "arrow.right.circle")
-                    }
-                    .tint(.cyan)
+                // Remove from queue (works for all card types)
+                Button {
+                    selectedCardModel.clearSelection()
+                    card.next(at: Date())
+                } label: {
+                    Label("Remove", systemImage: "minus.circle")
                 }
+                .tint(.purple)
                 
                 Button {
                     selectedCardModel.clearSelection()

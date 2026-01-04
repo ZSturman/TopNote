@@ -46,6 +46,9 @@ struct QueueManager {
         let includesNoFolder = configuration.showFolders.contains(where: { $0.isNoFolderSentinel })
 
         let filtered = fetched.filter { card in
+            // Exclude soft-deleted cards from widget queue
+            guard !card.isDeleted else { return false }
+            
             // Check if card is in queue first (most common filter)
             guard card.isEnqueue(currentDate: currentDate) else { return false }
 

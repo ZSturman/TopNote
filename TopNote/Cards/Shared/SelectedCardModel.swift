@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import SwiftData
+import os.log
 
 /// Snapshot of a Card's editable state used to support Cancel (revert) behavior.
 struct CardSnapshot {
@@ -94,13 +95,25 @@ final class SelectedCardModel: ObservableObject {
     ///   - modelContext: The ModelContext used to fetch the Card.
     ///   - isNew: Indicates if the Card is newly created. Defaults to `false`.
     func selectCard(with id: UUID, modelContext: ModelContext, isNew: Bool = false) {
+        TopNoteLogger.selection.debug("Selecting card with ID: \(id.uuidString), isNew: \(isNew)")
+        
         let descriptor = FetchDescriptor<Card>(predicate: #Predicate { $0.id == id })
-        if let card = try? modelContext.fetch(descriptor).first {
-            selectedCard = card
-            isNewlyCreated = isNew
-            clearDrafts()
-            captureSnapshot()
-        } else {
+        do {
+            if let card = try modelContext.fetch(descriptor).first {
+                TopNoteLogger.selection.info("Successfully selected card: \(id.uuidString)")
+                selectedCard = card
+                isNewlyCreated = isNew
+                clearDrafts()
+                captureSnapshot()
+            } else {
+                TopNoteLogger.selection.warning("Card not found for ID: \(id.uuidString)")
+                selectedCard = nil
+                isNewlyCreated = false
+                snapshot = nil
+                clearDrafts()
+            }
+        } catch {
+            TopNoteLogger.selection.error("Failed to fetch card \(id.uuidString): \(error.localizedDescription)")
             selectedCard = nil
             isNewlyCreated = false
             snapshot = nil
@@ -110,6 +123,9 @@ final class SelectedCardModel: ObservableObject {
     
     /// Clears the current selection and resets the `isNewlyCreated` flag and snapshot.
     func clearSelection() {
+        if let previousCard = selectedCard {
+            TopNoteLogger.selection.debug("Clearing selection for card: \(previousCard.id.uuidString)")
+        }
         selectedCard = nil
         isNewlyCreated = false
         snapshot = nil

@@ -8,6 +8,7 @@
 import Foundation
 import SwiftData
 import SQLite3
+import os.log
 
 // MARK: - External Storage Cleanup Migration
 // Removes legacy external storage blobs from when images were supported.
@@ -18,11 +19,11 @@ private func cleanupLegacyExternalStorage() {
     
     // Skip if already done
     if UserDefaults.standard.bool(forKey: migrationKey) {
-        print("[Migration] Already completed, skipping")
+        TopNoteLogger.migration.debug("External storage cleanup already completed, skipping")
         return
     }
     
-    print("[Migration] ====== Starting external storage cleanup ======")
+    TopNoteLogger.migration.info("Starting external storage cleanup")
     
     let fileManager = FileManager.default
     
@@ -32,25 +33,25 @@ private func cleanupLegacyExternalStorage() {
     // App Group container
     if let groupURL = fileManager.containerURL(forSecurityApplicationGroupIdentifier: "group.com.zacharysturman.topnote") {
         containerURLs.append(groupURL)
-        print("[Migration] App Group Container: \(groupURL.path)")
+        TopNoteLogger.migration.debug("App Group Container: \(groupURL.path)")
     }
     
     // Main app container (documents, library, etc.)
     let appSupportURLs = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)
     containerURLs.append(contentsOf: appSupportURLs)
-    print("[Migration] App Support URLs: \(appSupportURLs.map { $0.path })")
+    TopNoteLogger.migration.debug("App Support URLs: \(appSupportURLs.map { $0.path })")
     
     let documentsURLs = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
     containerURLs.append(contentsOf: documentsURLs)
     
     // Process each container
     for containerURL in containerURLs {
-        print("[Migration] --- Processing: \(containerURL.path) ---")
+        TopNoteLogger.migration.debug("Processing container: \(containerURL.path)")
         
         // List contents for debugging
         if let contents = try? fileManager.contentsOfDirectory(at: containerURL, includingPropertiesForKeys: nil) {
             for item in contents {
-                print("[Migration]   \(item.lastPathComponent)")
+                TopNoteLogger.migration.debug("  Found item: \(item.lastPathComponent)")
             }
         }
         
@@ -61,7 +62,7 @@ private func cleanupLegacyExternalStorage() {
                 
                 // Process SQLite databases
                 if name.hasSuffix(".store") || name.hasSuffix(".sqlite") {
-                    print("[Migration] Found database: \(fileURL.path)")
+                    TopNoteLogger.migration.info("Found database: \(fileURL.path)")
                     cleanupImageColumnsWithSQLite(at: fileURL)
                 }
                 
@@ -71,9 +72,9 @@ private func cleanupLegacyExternalStorage() {
                    name.contains(".store_Data") {
                     do {
                         try fileManager.removeItem(at: fileURL)
-                        print("[Migration] DELETED external storage: \(fileURL.path)")
+                        TopNoteLogger.migration.info("Deleted external storage: \(fileURL.path)")
                     } catch {
-                        print("[Migration] Failed to delete \(fileURL.path): \(error)")
+                        TopNoteLogger.migration.error("Failed to delete \(fileURL.path): \(error.localizedDescription)")
                     }
                     enumerator.skipDescendants()
                 }
@@ -83,29 +84,29 @@ private func cleanupLegacyExternalStorage() {
     
     // Mark migration as complete
     UserDefaults.standard.set(true, forKey: migrationKey)
-    print("[Migration] ====== Cleanup complete ======")
+    TopNoteLogger.migration.info("External storage cleanup complete")
 }
 
 private func cleanupImageColumnsWithSQLite(at dbURL: URL) {
     var db: OpaquePointer?
     
     guard sqlite3_open(dbURL.path, &db) == SQLITE_OK else {
-        print("[Migration] Failed to open database at \(dbURL.path)")
+        TopNoteLogger.migration.error("Failed to open database at \(dbURL.path)")
         return
     }
     
     defer { sqlite3_close(db) }
     
-    print("[Migration] Cleaning database: \(dbURL.lastPathComponent)")
+    TopNoteLogger.migration.debug("Cleaning database: \(dbURL.lastPathComponent)")
     
     // First, list all tables to understand the schema
     var stmt: OpaquePointer?
     let tableQuery = "SELECT name FROM sqlite_master WHERE type='table'"
     if sqlite3_prepare_v2(db, tableQuery, -1, &stmt, nil) == SQLITE_OK {
-        print("[Migration] Tables in database:")
+        TopNoteLogger.migration.debug("Scanning tables in database")
         while sqlite3_step(stmt) == SQLITE_ROW {
             if let tableName = sqlite3_column_text(stmt, 0) {
-                print("[Migration]   - \(String(cString: tableName))")
+                TopNoteLogger.migration.debug("  Found table: \(String(cString: tableName))")
             }
         }
     }
@@ -126,16 +127,16 @@ private func cleanupImageColumnsWithSQLite(at dbURL: URL) {
         var checkStmt: OpaquePointer?
         if sqlite3_prepare_v2(db, checkSQL, -1, &checkStmt, nil) == SQLITE_OK {
             if sqlite3_step(checkStmt) == SQLITE_ROW {
-                print("[Migration] Found table: \(table)")
+                TopNoteLogger.migration.debug("Found table: \(table)")
                 
                 // List columns in this table
                 let pragmaSQL = "PRAGMA table_info(\(table))"
                 var pragmaStmt: OpaquePointer?
                 if sqlite3_prepare_v2(db, pragmaSQL, -1, &pragmaStmt, nil) == SQLITE_OK {
-                    print("[Migration] Columns in \(table):")
+                    TopNoteLogger.migration.debug("Scanning columns in \(table)")
                     while sqlite3_step(pragmaStmt) == SQLITE_ROW {
                         if let colName = sqlite3_column_text(pragmaStmt, 1) {
-                            print("[Migration]     - \(String(cString: colName))")
+                            TopNoteLogger.migration.debug("    Column: \(String(cString: colName))")
                         }
                     }
                 }
@@ -150,7 +151,7 @@ private func cleanupImageColumnsWithSQLite(at dbURL: URL) {
                     if result == SQLITE_OK {
                         let changes = sqlite3_changes(db)
                         if changes > 0 {
-                            print("[Migration] Nulled \(changes) rows in \(table).\(column)")
+                            TopNoteLogger.migration.info("Nulled \(changes) rows in \(table).\(column)")
                         }
                     }
                     if let errMsg = errMsg {
@@ -163,34 +164,66 @@ private func cleanupImageColumnsWithSQLite(at dbURL: URL) {
     }
     
     // Vacuum to reclaim space
-    print("[Migration] Running VACUUM...")
+    TopNoteLogger.migration.debug("Running VACUUM...")
     sqlite3_exec(db, "VACUUM", nil, nil, nil)
-    print("[Migration] Database cleanup complete for \(dbURL.lastPathComponent)")
+    TopNoteLogger.migration.info("Database cleanup complete for \(dbURL.lastPathComponent)")
 }
 
-public let sharedModelContainer: ModelContainer = {
+// MARK: - Model Container Error Handling
+
+/// Errors that can occur during model container initialization
+public enum ModelContainerError: LocalizedError {
+    case creationFailed(underlying: Error)
+    case recoveryFailed(underlying: Error)
+    
+    public var errorDescription: String? {
+        switch self {
+        case .creationFailed(let error):
+            return "Unable to load your data: \(error.localizedDescription)"
+        case .recoveryFailed(let error):
+            return "Unable to recover data after cleanup: \(error.localizedDescription)"
+        }
+    }
+}
+
+/// Observable state for tracking model container initialization errors
+public class ModelContainerState: ObservableObject {
+    public static let shared = ModelContainerState()
+    
+    @Published public var error: ModelContainerError? = nil
+    @Published public var isRecovering: Bool = false
+    
+    private init() {}
+}
+
+/// Result of model container initialization
+public enum ModelContainerResult {
+    case success(ModelContainer)
+    case failure(ModelContainerError)
+}
+
+/// Attempts to create the shared model container with graceful error handling
+private func createModelContainer() -> ModelContainerResult {
     // Clean up legacy external storage BEFORE creating the container
     cleanupLegacyExternalStorage()
     
     let schema = Schema([Card.self, Folder.self, CardTag.self])
     
     // Use App Group container for shared access between app and widget
-    // IMPORTANT: Explicitly disable CloudKit syncing to prevent downloading old image data
-    // The CloudKit container may still have old external storage blobs that would cause OOM crashes
     let config = ModelConfiguration(
         schema: schema,
         isStoredInMemoryOnly: false,
         groupContainer: .identifier("group.com.zacharysturman.topnote"),
-        cloudKitDatabase: .automatic  // Re-enabled: image columns no longer exist in schema
+        cloudKitDatabase: .automatic
     )
     
     do {
         let container = try ModelContainer(for: schema, configurations: [config])
-        print("[ModelContainer] Successfully created container (CloudKit sync disabled)")
-        return container
+        TopNoteLogger.dataAccess.info("Successfully created model container")
+        return .success(container)
     } catch {
-        print("[ModelContainer] ⚠️ Creation failed: \(error)")
-        print("[ModelContainer] Attempting nuclear cleanup - deleting all data...")
+        TopNoteLogger.dataAccess.error("Model container creation failed: \(error.localizedDescription)")
+        TopNoteLogger.dataAccess.warning("Attempting recovery by deleting corrupted data...")
         
         // NUCLEAR OPTION: Delete the entire database and recreate
         if let containerURL = FileManager.default.containerURL(
@@ -208,7 +241,7 @@ public let sharedModelContainer: ModelContainer = {
                        name.contains("EXTERNAL") ||
                        name.contains("_SUPPORT") {
                         try? fileManager.removeItem(at: fileURL)
-                        print("[ModelContainer] Deleted: \(name)")
+                        TopNoteLogger.dataAccess.debug("Deleted during recovery: \(name)")
                     }
                 }
             }
@@ -225,7 +258,7 @@ public let sharedModelContainer: ModelContainer = {
                        name.contains("_Data") ||
                        name.contains("EXTERNAL") {
                         try? FileManager.default.removeItem(at: fileURL)
-                        print("[ModelContainer] Deleted from app support: \(name)")
+                        TopNoteLogger.dataAccess.debug("Deleted from app support during recovery: \(name)")
                     }
                 }
             }
@@ -234,11 +267,44 @@ public let sharedModelContainer: ModelContainer = {
         // Retry container creation
         do {
             let container = try ModelContainer(for: schema, configurations: [config])
-            print("[ModelContainer] Successfully created container after cleanup")
-            return container
+            TopNoteLogger.dataAccess.info("Successfully created container after recovery")
+            return .success(container)
+        } catch let recoveryError {
+            TopNoteLogger.dataAccess.critical("Failed to create container even after recovery: \(recoveryError.localizedDescription)")
+            return .failure(.recoveryFailed(underlying: recoveryError))
+        }
+    }
+}
+
+/// The shared model container. Access via `sharedModelContainerResult` to handle potential errors.
+public let sharedModelContainerResult: ModelContainerResult = createModelContainer()
+
+/// Convenience accessor for successful container initialization.
+/// Falls back to an in-memory container if initialization failed, allowing the app to show an error UI.
+public let sharedModelContainer: ModelContainer = {
+    switch sharedModelContainerResult {
+    case .success(let container):
+        return container
+    case .failure(let error):
+        // Store the error for UI display
+        DispatchQueue.main.async {
+            ModelContainerState.shared.error = error
+        }
+        TopNoteLogger.dataAccess.critical("Using fallback in-memory container due to initialization failure")
+        
+        // Return an in-memory container as fallback so the app can launch and show error UI
+        let schema = Schema([Card.self, Folder.self, CardTag.self])
+        let fallbackConfig = ModelConfiguration(
+            schema: schema,
+            isStoredInMemoryOnly: true
+        )
+        do {
+            return try ModelContainer(for: schema, configurations: [fallbackConfig])
         } catch {
-            fatalError("[ModelContainer] Failed to create container even after cleanup: \(error)")
+            // This should never happen with in-memory container, but handle gracefully
+            TopNoteLogger.dataAccess.critical("Even in-memory container failed: \(error.localizedDescription)")
+            // Last resort: return a minimal container
+            return try! ModelContainer(for: Card.self, Folder.self, CardTag.self)
         }
     }
 }()
-

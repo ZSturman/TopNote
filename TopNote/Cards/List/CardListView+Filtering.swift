@@ -53,15 +53,24 @@ extension CardListView {
             : cards.filter { selectedCardTypes.contains($0.cardType) }
 
         // Apply status filter if any status options selected
+        // Status filters now include: enqueue, upcoming, archived, deleted
+        // Each status is independent - a card matches if it belongs to ANY selected status
         let statusFiltered: [Card] =
             statusFilters.isEmpty
             ? typeFiltered
             : typeFiltered.filter { card in
+                // Deleted cards only match the .deleted status
+                if card.isDeleted {
+                    return statusFilters.contains(.deleted)
+                }
+                
+                // Non-deleted cards match their respective status
                 let isEnqueue =
                     card.isEnqueue(currentDate: .now) && !card.isArchived
                 let isUpcoming =
                     !card.isEnqueue(currentDate: .now) && !card.isArchived
                 let isArchived = card.isArchived
+                
                 var matched = false
                 if statusFilters.contains(.enqueue), isEnqueue {
                     matched = true
@@ -103,15 +112,17 @@ extension CardListView {
             }
         }()
 
-        // Tag selection filtering as before
+        // Tag selection filtering
+        // Selected tags use OR logic: card must have AT LEAST ONE of the selected tags
+        // Deselected tags use exclusion: card must have NONE of the deselected tags
         let selectedTagIDs = currentSelectedTagIDs()
         let deselectedTagIDs = currentDeselectedTagIDs()
 
         let tagFiltered = folderFiltered.filter { card in
             let tagIDs = Set(card.unwrappedTags.map { $0.id })
-            // Must contain all selected tag IDs
+            // Must contain at least one selected tag ID (OR logic)
             if !selectedTagIDs.isEmpty
-                && !selectedTagIDs.allSatisfy({ tagIDs.contains($0) })
+                && !selectedTagIDs.contains(where: { tagIDs.contains($0) })
             {
                 return false
             }
@@ -158,6 +169,11 @@ extension CardListView {
     var shouldShowArchivedSection: Bool {
         activeStatusFilters.contains(.archived)
     }
+    
+    /// Returns true when the deleted status filter is selected
+    var shouldShowDeletedSection: Bool {
+        activeStatusFilters.contains(.deleted)
+    }
 
     func groupCardsByDay(_ cards: [Card]) -> [Date: [Card]] {
         let calendar = Calendar.current
@@ -181,29 +197,43 @@ extension CardListView {
     }
 
     var queueCards: [Card] {
+        // Exclude deleted cards from queue
         let cards = filteredCards.filter {
-            $0.isEnqueue(currentDate: .now) && !$0.isArchived
+            !$0.isDeleted && $0.isEnqueue(currentDate: .now) && !$0.isArchived
         }
         // When any card is selected, don't apply priority sorting to prevent jarring reorder
         // The actual sorting by priority happens in CardStatusSection, this just returns the base list
         return cards
     }
     var upcomingCards: [Card] {
+        // Exclude deleted cards from upcoming
         let cards = filteredCards.filter {
-            !$0.isEnqueue(currentDate: .now) && !$0.isArchived
+            !$0.isDeleted && !$0.isEnqueue(currentDate: .now) && !$0.isArchived
         }
         // When any card is selected, don't apply priority sorting to prevent jarring reorder
         // The actual sorting by priority happens in CardStatusSection, this just returns the base list
         return cards
     }
     var archivedCards: [Card] {
-        let result = filteredCards.filter { $0.isArchived }.sorted { card1, card2 in
+        // Exclude deleted cards from archived
+        let result = filteredCards.filter { !$0.isDeleted && $0.isArchived }.sorted { card1, card2 in
             let date1 = card1.removals.last ?? card1.createdAt
             let date2 = card2.removals.last ?? card2.createdAt
             return date1 > date2 // Most recent first
         }
         return result
     }
+    
+    /// Returns soft-deleted cards, sorted by deletion date (most recent first)
+    var deletedCards: [Card] {
+        // Filter for deleted cards only, sorted by deletedAt date
+        filteredCards.filter { $0.isDeleted }.sorted { card1, card2 in
+            let date1 = card1.deletedAt ?? card1.createdAt
+            let date2 = card2.deletedAt ?? card2.createdAt
+            return date1 > date2 // Most recent first
+        }
+    }
+    
     var groupedByDay: [Date: [Card]] { groupCardsByDay(filteredCards) }
     var sortedKeys: [Date] {
         let keysArray: [Date] = Array(groupedByDay.keys)

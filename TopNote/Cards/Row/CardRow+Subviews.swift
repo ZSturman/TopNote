@@ -84,15 +84,39 @@ extension CardRow {
         let isSelected: Bool
 
         var body: some View {
-            HStack {
+            HStack(spacing: 6) {
+                // Card type icon with tint color (no text label)
                 Image(systemName: card.cardType.systemImage)
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                Text(card.cardType.rawValue)
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(card.cardType.tintColor)
+                
+                // Folder name if present, otherwise empty
+                if let folder = card.folder {
+                    Text(folder.name)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+                
+                // Tags - truncated to fit available space
+                if let tags = card.tags, !tags.isEmpty {
+                    HStack(spacing: 4) {
+                        ForEach(Array(tags.prefix(3)), id: \.id) { tag in
+                            Text("#\(tag.name)")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                        }
+                        if tags.count > 3 {
+                            Text("+\(tags.count - 3)")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .lineLimit(1)
+                }
 
-                Spacer()
+                Spacer(minLength: 8)
 
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(card.displayedDateForQueue)

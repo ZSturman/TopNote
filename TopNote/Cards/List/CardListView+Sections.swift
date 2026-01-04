@@ -61,7 +61,9 @@ extension CardListView {
                             priorityChangedForCardID = cardID
                         },
                         priorityChangedForCardID: priorityChangedForCardID,
-                        lastDeselectedCardID: lastDeselectedCardID
+                        lastDeselectedCardID: lastDeselectedCardID,
+                        selectionMode: selectionMode,
+                        selectedCards: $selectedCards
                     )
                     .environment(\.ascending, ascending)
                     .environment(\.sortCriteria, sortCriteria)
@@ -115,7 +117,9 @@ extension CardListView {
                         priorityChangedForCardID = cardID
                     },
                     priorityChangedForCardID: priorityChangedForCardID,
-                    lastDeselectedCardID: lastDeselectedCardID
+                    lastDeselectedCardID: lastDeselectedCardID,
+                    selectionMode: selectionMode,
+                    selectedCards: $selectedCards
                 )
                 .environment(\.ascending, ascending)
                 .environment(\.sortCriteria, sortCriteria)
@@ -157,13 +161,72 @@ extension CardListView {
                         priorityChangedForCardID = cardID
                     },
                     priorityChangedForCardID: priorityChangedForCardID,
-                    lastDeselectedCardID: lastDeselectedCardID
+                    lastDeselectedCardID: lastDeselectedCardID,
+                    selectionMode: selectionMode,
+                    selectedCards: $selectedCards
                 )
                 .environment(\.ascending, ascending)
                 .environment(\.sortCriteria, sortCriteria)
             }
         }
         .padding(.bottom, isArchivedExpanded ? 0 : 8)
+    }
+    
+    var deletedSection: some View {
+        Section(
+            header:
+                HStack {
+                    Text("Deleted")
+                    Text("(\(deletedCards.count))")
+                        .foregroundColor(.secondary)
+                        .font(.subheadline)
+                    Spacer()
+                    Image(
+                        systemName: isDeletedExpanded
+                            ? "chevron.down" : "chevron.right"
+                    )
+                }
+                .contentShape(Rectangle())
+                .onTapGesture { isDeletedExpanded.toggle() }
+                .accessibilityIdentifier("DeletedSectionHeader")
+        ) {
+            if isDeletedExpanded {
+                if deletedCards.isEmpty {
+                    VStack(spacing: 8) {
+                        Text("No deleted cards")
+                            .foregroundColor(.secondary)
+                        Text("Cards you delete will appear here for recovery.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.vertical, 16)
+                    .frame(maxWidth: .infinity)
+                } else {
+                    VStack(spacing: 4) {
+                        Text("Swipe or long-press to restore or permanently delete")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        ForEach(deletedCards, id: \.id) { card in
+                            DeletedCardRow(
+                                card: card,
+                                folders: folders,
+                                onRestore: {
+                                    card.restore(at: Date())
+                                    try? context.save()
+                                },
+                                onPermanentDelete: {
+                                    context.delete(card)
+                                    try? context.save()
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.bottom, isDeletedExpanded ? 0 : 8)
     }
 
     
@@ -461,6 +524,7 @@ extension CardListView {
             List {
                 if !selectedCardModel.isNewlyCreated { TipView(addWidgetTip) }
                 TipView(customizeWidgetTip)
+                
                 if activeStatusFilters.isEmpty {
                     emptyStatusFilterView
                 } else {
@@ -472,6 +536,10 @@ extension CardListView {
                     }
                     if shouldShowArchivedSection {
                         archivedSection
+                    }
+                    // Deleted section appears at the very bottom
+                    if shouldShowDeletedSection {
+                        deletedSection
                     }
                 }
             }

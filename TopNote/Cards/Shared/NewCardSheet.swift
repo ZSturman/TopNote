@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import os.log
 
 struct NewCardSheet: View {
     @Environment(\.modelContext) var modelContext
@@ -334,16 +335,10 @@ struct NewCardSheet: View {
         let trimmed = newTagText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         
-        // Check if tag already exists
-        if let existingTag = allTags.first(where: { $0.name.lowercased() == trimmed.lowercased() }) {
-            if !selectedTags.contains(where: { $0.id == existingTag.id }) {
-                selectedTags.append(existingTag)
-            }
-        } else {
-            // Create new tag
-            let newTag = CardTag(name: trimmed)
-            modelContext.insert(newTag)
-            selectedTags.append(newTag)
+        // Use centralized TagManager for consistent tag handling
+        let tag = TagManager.getOrCreateTag(name: trimmed, context: modelContext)
+        if !selectedTags.contains(where: { $0.id == tag.id }) {
+            selectedTags.append(tag)
         }
         newTagText = ""
     }
@@ -388,8 +383,9 @@ struct NewCardSheet: View {
         
         do {
             try modelContext.save()
+            TopNoteLogger.cardMutation.info("Successfully created new card: \(newCard.id.uuidString), type: \(self.cardType.rawValue)")
         } catch {
-            print("📝 [NEW CARD SHEET] ERROR saving card: \(error)")
+            TopNoteLogger.cardMutation.error("Failed to save new card: \(error.localizedDescription)")
         }
         
         onSave(newCard)

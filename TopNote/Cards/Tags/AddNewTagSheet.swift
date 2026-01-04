@@ -38,10 +38,12 @@ struct AddNewTagSheet: View {
                     let trimmed = newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
                     guard !trimmed.isEmpty,
                           !tags.contains(where: { $0.name.caseInsensitiveCompare(trimmed) == .orderedSame }) else { return }
-                    let newTag = CardTag(name: trimmed)
-                    context.insert(newTag)
+                    // Use centralized TagManager for consistent tag handling
+                    let newTag = TagManager.getOrCreateTag(name: trimmed, context: context)
                     if card.tags == nil { card.tags = [] }
-                    card.tags?.append(newTag)
+                    if !card.unwrappedTags.contains(where: { $0.id == newTag.id }) {
+                        card.tags?.append(newTag)
+                    }
                     try? context.save()
                     Card.throttledWidgetReload()
                     newTagName = ""

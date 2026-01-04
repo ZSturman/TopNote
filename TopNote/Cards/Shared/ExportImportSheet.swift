@@ -428,6 +428,9 @@ struct ExportImportSheet: View {
                 try context.save()
                 importResult = .success(count: importedCount)
                 
+                // Trigger tag deduplication after import (runs on background thread)
+                CloudKitSyncHandler.shared.triggerDeduplicationAfterUserAction(container: sharedModelContainer)
+                
             } catch {
                 importResult = .error(message: "Import failed: \(error.localizedDescription)")
             }

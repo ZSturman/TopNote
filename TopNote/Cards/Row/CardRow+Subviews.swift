@@ -54,7 +54,14 @@ extension CardRow {
                             moveAction: moveAction
                         )
                     } else {
-                        CardRowContentDisplay(card: card)
+                        HStack(spacing: 6) {
+                            // Card type icon with tint color (no text label)
+                            Image(systemName: card.cardType.systemImage)
+                                .font(.caption)
+                                .foregroundColor(card.cardType.tintColor)
+                            CardRowContentDisplay(card: card)
+                        }
+                        
                     }
                 }
             }
@@ -85,37 +92,41 @@ extension CardRow {
 
         var body: some View {
             HStack(spacing: 6) {
-                // Card type icon with tint color (no text label)
-                Image(systemName: card.cardType.systemImage)
-                    .font(.caption)
-                    .foregroundColor(card.cardType.tintColor)
-                
-                // Folder name if present, otherwise empty
-                if let folder = card.folder {
-                    Text(folder.name)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
-                }
-                
-                // Tags - truncated to fit available space
-                if let tags = card.tags, !tags.isEmpty {
-                    HStack(spacing: 4) {
-                        ForEach(Array(tags.prefix(3)), id: \.id) { tag in
-                            Text("#\(tag.name)")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                                .lineLimit(1)
-                        }
-                        if tags.count > 3 {
-                            Text("+\(tags.count - 3)")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                        }
+                if isSelected {
+                    Image(systemName: card.cardType.systemImage)
+                        .font(.caption2)
+                        .foregroundColor(card.cardType.tintColor)
+                    Text(card.cardTypeRaw)
+                        .font(.caption2)
+                } else {
+                    
+                    
+                    // Folder name if present, otherwise empty
+                    if let folder = card.folder {
+                        Text(folder.name)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
                     }
-                    .lineLimit(1)
+                    
+                    // Tags - truncated to fit available space
+                    if let tags = card.tags, !tags.isEmpty {
+                        HStack(spacing: 4) {
+                            ForEach(Array(tags.prefix(3)), id: \.id) { tag in
+                                Text("#\(tag.name)")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(1)
+                            }
+                            if tags.count > 3 {
+                                Text("+\(tags.count - 3)")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .lineLimit(1)
+                    }
                 }
-
                 Spacer(minLength: 8)
 
                 VStack(alignment: .trailing, spacing: 2) {
@@ -624,7 +635,7 @@ extension CardRow {
             }
             if let tags = card.tags, !tags.isEmpty {
                 HStack(spacing: 6) {
-                    ForEach(Array(tags), id: \.self) { tag in
+                    ForEach(Array(tags), id: \.id) { tag in
                         Label("#\(tag.name)", systemImage: "tag")
                             .labelStyle(.titleOnly)
                             .font(.caption2)
@@ -641,7 +652,7 @@ extension CardRow {
     
     @ViewBuilder fileprivate func readOnlyTagsView() -> some View {
         HStack(spacing: 6) {
-            ForEach(Array(card.tags ?? []), id: \.self) { tag in
+            ForEach(Array(card.tags ?? []), id: \.id) { tag in
                 Text("#\(tag.name)")
                     .font(.caption)
                     .padding(.horizontal, 8)

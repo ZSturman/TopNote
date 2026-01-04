@@ -11,18 +11,23 @@ import CoreData
 import os.log
 
 /// Handles CloudKit synchronization events and performs post-sync cleanup.
-/// Listens for remote change notifications and triggers tag deduplication.
+/// Tag deduplication is now limited to:
+/// - App launch (once)
+/// - User creates a new tag
+/// - User imports cards
+/// CloudKit sync no longer triggers automatic deduplication to reduce overhead.
 final class CloudKitSyncHandler: ObservableObject {
     static let shared = CloudKitSyncHandler()
     
     private var notificationObserver: NSObjectProtocol?
-    private let debounceInterval: TimeInterval = 2.0
-    private var pendingDeduplicationTask: Task<Void, Never>?
+    
+    /// Track whether initial deduplication has run this session
+    private var hasRunInitialDeduplication = false
     
     private init() {}
     
     /// Starts listening for CloudKit remote change notifications.
-    /// Call this once during app initialization.
+    /// Note: We no longer automatically deduplicate on every sync to reduce overhead.
     /// - Parameter container: The ModelContainer to use for deduplication operations
     func startListening(for container: ModelContainer) {
         // Remove any existing observer
@@ -31,12 +36,14 @@ final class CloudKitSyncHandler: ObservableObject {
         TopNoteLogger.cloudKit.info("Starting CloudKit sync listener")
         
         // Listen for persistent store remote change notifications
+        // We keep the listener for potential future use but don't trigger deduplication
         notificationObserver = NotificationCenter.default.addObserver(
             forName: .NSPersistentStoreRemoteChange,
             object: nil,
             queue: .main
-        ) { [weak self] notification in
-            self?.handleRemoteChange(notification: notification, container: container)
+        ) { _ in
+            // Sync received - no automatic deduplication to reduce overhead
+            // Tag deduplication now only runs on app launch and specific user actions
         }
     }
     
@@ -45,60 +52,40 @@ final class CloudKitSyncHandler: ObservableObject {
         if let observer = notificationObserver {
             NotificationCenter.default.removeObserver(observer)
             notificationObserver = nil
-            TopNoteLogger.cloudKit.debug("Stopped CloudKit sync listener")
         }
     }
     
-    /// Handles a remote change notification from CloudKit.
-    private func handleRemoteChange(notification: Notification, container: ModelContainer) {
-        TopNoteLogger.cloudKit.debug("Received remote change notification")
+    /// Runs initial tag deduplication on app launch.
+    /// This only runs once per app session to minimize overhead.
+    /// - Parameter container: The ModelContainer to use
+    func runInitialDeduplicationIfNeeded(container: ModelContainer) {
+        guard !hasRunInitialDeduplication else { return }
+        hasRunInitialDeduplication = true
         
-        // Cancel any pending deduplication task
-        pendingDeduplicationTask?.cancel()
-        
-        // Debounce: wait a short period for batch updates to complete
-        pendingDeduplicationTask = Task { @MainActor in
-            do {
-                try await Task.sleep(nanoseconds: UInt64(debounceInterval * 1_000_000_000))
-            } catch {
-                // Task was cancelled
-                return
-            }
-            
-            // Perform deduplication on a background context
-            await performPostSyncCleanup(container: container)
-        }
-    }
-    
-    /// Performs cleanup operations after CloudKit sync.
-    @MainActor
-    private func performPostSyncCleanup(container: ModelContainer) async {
-        TopNoteLogger.cloudKit.info("Performing post-sync cleanup")
-        
-        let context = ModelContext(container)
-        
-        // Run tag deduplication
-        let mergedCount = TagManager.deduplicateIfNeeded(context: context)
-        
-        if mergedCount > 0 {
-            TopNoteLogger.cloudKit.info("Post-sync cleanup: merged \(mergedCount) duplicate tags")
-        }
-        
-        // Optionally clean up orphan tags
-        let orphanCount = TagManager.cleanupOrphanTags(context: context)
-        
-        if orphanCount > 0 {
-            TopNoteLogger.cloudKit.info("Post-sync cleanup: removed \(orphanCount) orphan tags")
-        }
-    }
-    
-    /// Manually triggers tag deduplication.
-    /// Useful for running deduplication on app launch or user request.
-    func triggerDeduplication(container: ModelContainer) {
-        Task { @MainActor in
-            TopNoteLogger.cloudKit.info("Manual deduplication triggered")
+        Task.detached(priority: .utility) {
             let context = ModelContext(container)
-            TagManager.deduplicateIfNeeded(context: context)
+            let mergedCount = TagManager.deduplicateIfNeeded(context: context)
+            
+            if mergedCount > 0 {
+                TopNoteLogger.cloudKit.info("Initial cleanup: merged \(mergedCount) duplicate tags")
+            }
+        }
+    }
+    
+    /// Triggers tag deduplication after a user action that may create duplicates.
+    /// Call this after:
+    /// - Creating a new tag
+    /// - Importing cards with tags
+    /// Runs on a background thread to avoid blocking the UI.
+    /// - Parameter container: The ModelContainer to use
+    func triggerDeduplicationAfterUserAction(container: ModelContainer) {
+        Task.detached(priority: .utility) {
+            let context = ModelContext(container)
+            let mergedCount = TagManager.deduplicateIfNeeded(context: context)
+            
+            if mergedCount > 0 {
+                TopNoteLogger.cloudKit.info("Post-action cleanup: merged \(mergedCount) duplicate tags")
+            }
         }
     }
 }

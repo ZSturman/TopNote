@@ -25,7 +25,6 @@ struct TagManager {
     static func getOrCreateTag(name: String, context: ModelContext) -> CardTag {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else {
-            TopNoteLogger.tagMutation.warning("Attempted to create tag with empty name")
             // Return a placeholder that won't be used
             let placeholder = CardTag(name: "")
             return placeholder
@@ -43,7 +42,6 @@ struct TagManager {
             if let existingTag = allTags.first(where: {
                 $0.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == normalizedName
             }) {
-                TopNoteLogger.tagMutation.debug("Found existing tag: \(existingTag.name) (id: \(existingTag.id.uuidString))")
                 return existingTag
             }
         } catch {
@@ -53,7 +51,7 @@ struct TagManager {
         // Create new tag
         let newTag = CardTag(name: trimmedName)
         context.insert(newTag)
-        TopNoteLogger.tagMutation.info("Created new tag: \(trimmedName) (id: \(newTag.id.uuidString))")
+        TopNoteLogger.tagMutation.info("Created new tag: \(trimmedName)")
         
         return newTag
     }
@@ -61,13 +59,11 @@ struct TagManager {
     // MARK: - Tag Deduplication
     
     /// Checks for and merges duplicate tags (case-insensitive).
-    /// Should be called after CloudKit sync to handle potential conflicts.
+    /// Should be called on app launch and after importing cards.
     /// - Parameter context: The SwiftData ModelContext to use
     /// - Returns: The number of duplicate tags that were merged
     @discardableResult
     static func deduplicateIfNeeded(context: ModelContext) -> Int {
-        TopNoteLogger.tagMutation.debug("Starting tag deduplication check")
-        
         let descriptor = FetchDescriptor<CardTag>()
         
         guard let allTags = try? context.fetch(descriptor) else {
@@ -84,9 +80,7 @@ struct TagManager {
         
         var mergedCount = 0
         
-        for (normalizedName, duplicates) in tagsByName where duplicates.count > 1 {
-            TopNoteLogger.tagMutation.info("Found \(duplicates.count) duplicate tags for '\(normalizedName)'")
-            
+        for (_, duplicates) in tagsByName where duplicates.count > 1 {
             // Keep the oldest tag (first by UUID if no createdAt available)
             let sortedDuplicates = duplicates.sorted { $0.id.uuidString < $1.id.uuidString }
             guard let keepTag = sortedDuplicates.first else { continue }
@@ -105,8 +99,6 @@ struct TagManager {
             } catch {
                 TopNoteLogger.tagMutation.error("Failed to save after deduplication: \(error.localizedDescription)")
             }
-        } else {
-            TopNoteLogger.tagMutation.debug("No duplicate tags found")
         }
         
         return mergedCount
@@ -117,9 +109,7 @@ struct TagManager {
     ///   - source: The tag to merge from (will be deleted)
     ///   - destination: The tag to merge into (will be kept)
     ///   - context: The SwiftData ModelContext to use
-    static func mergeTag(source: CardTag, into destination: CardTag, context: ModelContext) {
-        TopNoteLogger.tagMutation.debug("Merging tag '\(source.name)' into '\(destination.name)'")
-        
+    private static func mergeTag(source: CardTag, into destination: CardTag, context: ModelContext) {
         let sourceCards = source.unwrappedCards
         
         for card in sourceCards {
@@ -138,7 +128,6 @@ struct TagManager {
         
         // Delete the source tag
         context.delete(source)
-        TopNoteLogger.tagMutation.debug("Deleted merged tag: \(source.name) (id: \(source.id.uuidString))")
     }
     
     // MARK: - Orphan Cleanup
@@ -151,7 +140,6 @@ struct TagManager {
         let descriptor = FetchDescriptor<CardTag>()
         
         guard let allTags = try? context.fetch(descriptor) else {
-            TopNoteLogger.tagMutation.error("Failed to fetch tags for orphan cleanup")
             return 0
         }
         
@@ -159,7 +147,6 @@ struct TagManager {
         
         for tag in orphanTags {
             context.delete(tag)
-            TopNoteLogger.tagMutation.debug("Deleted orphan tag: \(tag.name)")
         }
         
         if !orphanTags.isEmpty {

@@ -292,7 +292,7 @@ extension CardDetailView {
         @ViewBuilder
         func readOnlyTagsView() -> some View {
             HStack(spacing: 6) {
-                ForEach(Array(card.tags ?? []), id: \.self) { tag in
+                ForEach(Array(card.tags ?? []), id: \.id) { tag in
                     Text("#\(tag.name)")
                         .font(.caption)
                         .padding(.horizontal, 8)

@@ -40,11 +40,11 @@ struct TopNoteApp: App {
                             }
                     }
                     .task {
-                        // Start CloudKit sync handler for tag deduplication
+                        // Start CloudKit sync handler
                         CloudKitSyncHandler.shared.startListening(for: modelContainer)
                         
-                        // Run initial tag deduplication on launch to clean up any existing duplicates
-                        CloudKitSyncHandler.shared.triggerDeduplication(container: modelContainer)
+                        // Run initial tag deduplication once on launch (runs on background thread)
+                        CloudKitSyncHandler.shared.runInitialDeduplicationIfNeeded(container: modelContainer)
                     }
                     #if DEBUG
                     .task {

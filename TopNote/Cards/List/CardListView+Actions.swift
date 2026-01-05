@@ -155,25 +155,33 @@ extension CardListView {
                 filterOptions.append(cardTypeFilter)
             }
             
-            // Update status filter based on card's current state
-            let isEnqueued = card.isEnqueue(currentDate: .now) && !card.isArchived
-            let isArchived = card.isArchived
-            
-            if isEnqueued && !filterOptions.contains(.enqueue) {
-                filterOptions.append(.enqueue)
-            } else if isArchived && !filterOptions.contains(.archived) {
-                filterOptions.append(.archived)
-            } else if !isEnqueued && !isArchived && !filterOptions.contains(.upcoming) {
-                filterOptions.append(.upcoming)
-            }
-            
-            // Expand the appropriate section
-            if isEnqueued {
-                isQueueExpanded = true
-            } else if isArchived {
-                isArchivedExpanded = true
+            // If card is soft-deleted, add deleted filter and expand that section
+            if card.isDeleted {
+                if !filterOptions.contains(.deleted) {
+                    filterOptions.append(.deleted)
+                }
+                isDeletedExpanded = true
             } else {
-                isUpcomingExpanded = true
+                // Update status filter based on card's current state
+                let isEnqueued = card.isEnqueue(currentDate: .now) && !card.isArchived
+                let isArchived = card.isArchived
+                
+                if isEnqueued && !filterOptions.contains(.enqueue) {
+                    filterOptions.append(.enqueue)
+                } else if isArchived && !filterOptions.contains(.archived) {
+                    filterOptions.append(.archived)
+                } else if !isEnqueued && !isArchived && !filterOptions.contains(.upcoming) {
+                    filterOptions.append(.upcoming)
+                }
+                
+                // Expand the appropriate section
+                if isEnqueued {
+                    isQueueExpanded = true
+                } else if isArchived {
+                    isArchivedExpanded = true
+                } else {
+                    isUpcomingExpanded = true
+                }
             }
         }
         
@@ -288,5 +296,73 @@ extension CardListView {
                 }
             )
         }
+    }
+    
+    // MARK: - Multi-Select Batch Actions
+    
+    /// Exits selection mode and clears selected cards
+    func exitSelectionMode() {
+        selectionMode = false
+        selectedCards.removeAll()
+    }
+    
+    /// Moves all selected cards to a folder (or no folder if nil)
+    func batchMoveToFolder(_ folder: Folder?) {
+        for card in selectedCards {
+            card.folder = folder
+        }
+        try? context.save()
+        exitSelectionMode()
+    }
+    
+    /// Adds a tag to all selected cards
+    func batchAddTag(_ tag: CardTag) {
+        for card in selectedCards {
+            if !(card.unwrappedTags.contains(where: { $0.id == tag.id })) {
+                if card.tags == nil { card.tags = [] }
+                card.tags?.append(tag)
+            }
+        }
+        try? context.save()
+        exitSelectionMode()
+    }
+    
+    /// Sets priority for all selected cards
+    func batchSetPriority(_ priority: PriorityType) {
+        for card in selectedCards {
+            card.priority = priority
+        }
+        try? context.save()
+        exitSelectionMode()
+    }
+    
+    /// Adds all selected cards to the queue
+    func batchEnqueue() {
+        let now = Date()
+        for card in selectedCards {
+            card.enqueue(at: now)
+        }
+        try? context.save()
+        exitSelectionMode()
+    }
+    
+    /// Archives all selected cards
+    func batchArchive() {
+        let now = Date()
+        for card in selectedCards {
+            card.archive(at: now)
+        }
+        try? context.save()
+        exitSelectionMode()
+    }
+    
+    /// Soft deletes all selected cards
+    func batchSoftDelete() {
+        let now = Date()
+        for card in selectedCards {
+            card.softDelete(at: now)
+        }
+        try? context.save()
+        exitSelectionMode()
     }
 }

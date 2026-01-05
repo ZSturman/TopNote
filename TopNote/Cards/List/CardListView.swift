@@ -34,9 +34,13 @@ struct CardListView: View {
     @State var isQueueExpanded = true
     @State var isUpcomingExpanded = true
     @State var isArchivedExpanded = false
+    @State var isDeletedExpanded = true
     
-    // Export/Import sheet
+    // Export/Import/Share sheets
     @State var showExportImportSheet = false
+    @State var showExportSheet = false
+    @State var showImportSheet = false
+    @State var showShareConfigSheet = false
 
     @State var importMode: ImportMode = .json
     @State var showImportPicker = false
@@ -154,6 +158,21 @@ struct CardListView: View {
             }
             .sheet(isPresented: $showExportImportSheet) {
                 ExportImportSheet(
+                    filteredCards: filteredCards,
+                    allCards: cards
+                )
+            }
+            .sheet(isPresented: $showExportSheet) {
+                ExportSheet(
+                    filteredCards: filteredCards,
+                    allCards: cards
+                )
+            }
+            .sheet(isPresented: $showImportSheet) {
+                ImportSheet()
+            }
+            .sheet(isPresented: $showShareConfigSheet) {
+                ShareConfigSheet(
                     filteredCards: filteredCards,
                     allCards: cards
                 )

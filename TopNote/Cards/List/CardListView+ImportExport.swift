@@ -114,6 +114,9 @@ extension CardListView {
                     context.insert(card)
                 }
                 showImportSuccessAlert = true
+                
+                // Trigger tag deduplication after import (runs on background thread)
+                CloudKitSyncHandler.shared.triggerDeduplicationAfterUserAction(container: sharedModelContainer)
             } catch {
                 importErrorMessage = "Failed to import CSV: \(error.localizedDescription)"
             }

@@ -28,6 +28,19 @@ final class CardTag {
     }
 }
 
+// MARK: - CardTag Equatable & Hashable Conformance
+extension CardTag: Equatable {
+    static func == (lhs: CardTag, rhs: CardTag) -> Bool {
+        lhs.id == rhs.id
+    }
+}
+
+extension CardTag: Hashable {
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+}
+
 
 @Model
 final class Card {
@@ -84,6 +97,16 @@ final class Card {
     var isComplete: Bool = false
     var resetRepeatIntervalOnComplete: Bool = true
     var skipEnabled: Bool = true
+    
+    // MARK: - Soft Delete
+    /// When non-nil, the card is considered "soft deleted" and hidden from normal views.
+    /// The card can be restored or permanently deleted from the "Deleted" section.
+    var deletedAt: Date? = nil
+    
+    /// Returns true if the card has been soft deleted.
+    var isDeleted: Bool {
+        deletedAt != nil
+    }
 
     // MARK: - Widget Presentation
     /// When true, widgets should hide card text overlays (content + answer).
@@ -201,7 +224,8 @@ final class Card {
     
     // MARK: - Relationships
     /// Many-to-many relationship with tags.
-    @Relationship var tags: [CardTag]?
+    /// Using nullify delete rule to ensure tags are not deleted when a card is deleted.
+    @Relationship(deleteRule: .nullify) var tags: [CardTag]?
     
     /// Unwraps the tags, providing an empty array if nil.
     var unwrappedTags: [CardTag] {
@@ -460,7 +484,40 @@ final class Card {
         Card.throttledWidgetReload()
     }
     
-
+    // MARK: - Soft Delete Operations
+    
+    /// Soft deletes the card by setting deletedAt to the current date.
+    /// The card will be hidden from normal views but can be restored.
+    /// - Parameter currentDate: The date when the card was deleted.
+    func softDelete(at currentDate: Date) {
+        guard deletedAt == nil else { return }
+        self.deletedAt = currentDate
+        // Remove from queue if currently enqueued
+        if isEnqueue(currentDate: currentDate) {
+            self.removals.append(currentDate)
+        }
+        self.nextTimeInQueue = .distantFuture
+        Card.throttledWidgetReload()
+    }
+    
+    /// Restores a soft-deleted card back to normal state.
+    /// - Parameter currentDate: The date when the card was restored.
+    func restore(at currentDate: Date) {
+        guard deletedAt != nil else { return }
+        self.deletedAt = nil
+        // Re-schedule the card if it was recurring
+        if isRecurring {
+            scheduleNext(
+                baseInterval: repeatInterval,
+                from: currentDate,
+                as: .unarchive
+            )
+        } else {
+            // For non-recurring, put it in upcoming
+            self.nextTimeInQueue = currentDate.addingTimeInterval(TimeInterval(repeatInterval * 3600))
+        }
+        Card.throttledWidgetReload()
+    }
         
     /// Add card to the queue.
     /// - Parameter currentDate: The current date to set as the next time in queue.
@@ -884,6 +941,21 @@ extension Card {
             return "\"\(string.replacingOccurrences(of: "\"", with: "\"\""))\""
         }
         return string
+    }
+}
+
+// MARK: - Equatable & Hashable Conformance
+// Explicit conformance ensures consistent identity across different contexts.
+// This prevents stale reference issues when cards are fetched from different queries.
+extension Card: Equatable {
+    static func == (lhs: Card, rhs: Card) -> Bool {
+        lhs.id == rhs.id
+    }
+}
+
+extension Card: Hashable {
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
     }
 }
 

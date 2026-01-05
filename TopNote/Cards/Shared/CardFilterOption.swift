@@ -17,6 +17,7 @@ enum CardFilterOption: String, CaseIterable, Identifiable {
     case enqueue
     case upcoming
     case archived
+    case deleted
     
     // MARK: - IMAGE DISABLED
     // CARD ATTRIBUTES
@@ -28,8 +29,9 @@ enum CardFilterOption: String, CaseIterable, Identifiable {
            [.todo, .flashcard, .note]
        }
        static var statusFilters: [CardFilterOption] {
-           [.enqueue, .upcoming, .archived]
+           [.enqueue, .upcoming, .archived, .deleted]
        }
+       
        // MARK: - IMAGE DISABLED
        static var attributeFilters: [CardFilterOption] {
            // [.hasAttachment]
@@ -44,6 +46,7 @@ enum CardFilterOption: String, CaseIterable, Identifiable {
         case .enqueue:   return "Queue"
         case .upcoming:  return "Upcoming"
         case .archived:  return "Archived"
+        case .deleted:   return "Deleted"
         // MARK: - IMAGE DISABLED
         // case .hasAttachment: return "Has Attachment"
         }

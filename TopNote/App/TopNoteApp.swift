@@ -9,6 +9,7 @@ import SwiftData
 import UserNotifications
 import UIKit
 import TipKit
+import os.log
 
 @main
 struct TopNoteApp: App {
@@ -16,40 +17,53 @@ struct TopNoteApp: App {
     private let modelContainer = sharedModelContainer
     
     @Environment(\.scenePhase) private var scenePhase
+    @StateObject private var containerState = ModelContainerState.shared
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
-            // 3) Inject both the SwiftData container and your manager
-                .modelContainer(modelContainer)
-                .task {
-                        do {
-                            try Tips.configure([
-                                .displayFrequency(.immediate),
-                                .datastoreLocation(.applicationDefault)
-                            ])
-                        } catch {
-                            // Configuration failures shouldn't crash the app
-                            print("Tips.configure failed: \(error)")
-                        }
-                }
-                #if DEBUG
-                .task {
-                    seedDemoDataIfNeeded(into: modelContainer)
-                }
-                #endif
-                .task {
-                    // Request permission for badges once on first launch
-                    await requestBadgeAuthorizationIfNeeded()
-                    await updateAppBadge()
-                }
-                .onChange(of: scenePhase) { _, newPhase in
-                    if newPhase == .active {
-                        Task {
-                            await updateAppBadge()
+            // Show error view if model container initialization failed
+            if containerState.error != nil {
+                MigrationErrorView()
+            } else {
+                ContentView()
+                // 3) Inject both the SwiftData container and your manager
+                    .modelContainer(modelContainer)
+                    .task {
+                            do {
+                                try Tips.configure([
+                                    .displayFrequency(.immediate),
+                                    .datastoreLocation(.applicationDefault)
+                                ])
+                            } catch {
+                                // Configuration failures shouldn't crash the app
+                                TopNoteLogger.dataAccess.warning("Tips.configure failed: \(error.localizedDescription)")
+                            }
+                    }
+                    .task {
+                        // Start CloudKit sync handler
+                        CloudKitSyncHandler.shared.startListening(for: modelContainer)
+                        
+                        // Run initial tag deduplication once on launch (runs on background thread)
+                        CloudKitSyncHandler.shared.runInitialDeduplicationIfNeeded(container: modelContainer)
+                    }
+                    #if DEBUG
+                    .task {
+                        seedDemoDataIfNeeded(into: modelContainer)
+                    }
+                    #endif
+                    .task {
+                        // Request permission for badges once on first launch
+                        await requestBadgeAuthorizationIfNeeded()
+                        await updateAppBadge()
+                    }
+                    .onChange(of: scenePhase) { _, newPhase in
+                        if newPhase == .active {
+                            Task {
+                                await updateAppBadge()
+                            }
                         }
                     }
-                }
+            }
         }
     }
     
@@ -65,7 +79,7 @@ struct TopNoteApp: App {
                 try await center.requestAuthorization(options: [.badge])
             } catch {
                 // Ignore errors; user may deny
-                print("Badge authorization request failed: \(error)")
+                TopNoteLogger.dataAccess.debug("Badge authorization request failed: \(error.localizedDescription)")
             }
         }
     }
@@ -82,7 +96,7 @@ struct TopNoteApp: App {
             UNUserNotificationCenter.current().setBadgeCount(count) { error in
                 if let error = error {
                     // On iOS 17+, do not fallback to deprecated UIApplication API
-                    print("Failed to set badge via UNUserNotificationCenter: \(error)")
+                    TopNoteLogger.dataAccess.error("Failed to set badge via UNUserNotificationCenter: \(error.localizedDescription)")
                 }
             }
         } else {
@@ -103,7 +117,7 @@ struct TopNoteApp: App {
             let count = try context.fetchCount(fetch)
             return count
         } catch {
-            print("[TopNoteApp] Failed to count queued cards: \(error)")
+            TopNoteLogger.dataAccess.error("Failed to count queued cards: \(error.localizedDescription)")
             return 0
         }
     }

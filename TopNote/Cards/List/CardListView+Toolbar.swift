@@ -38,17 +38,87 @@ extension CardListView {
     var trailingToolbarItems: some ToolbarContent {
         ToolbarItemGroup(placement: .navigationBarTrailing) {
             if selectionMode {
-                Menu("Export") {
-                    Button("as JSON") {
-                        exportCardsAsJSON(Array(selectedCards))
-                        selectionMode = false
-                        selectedCards.removeAll()
+                // Batch actions menu when cards are selected
+                Menu {
+                    // Move to folder
+                    Menu {
+                        Button("No Folder") {
+                            batchMoveToFolder(nil)
+                        }
+                        Divider()
+                        ForEach(folders.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }) { folder in
+                            Button(folder.name) {
+                                batchMoveToFolder(folder)
+                            }
+                        }
+                    } label: {
+                        Label("Move to Folder", systemImage: "folder")
                     }
-                    Button("as CSV") {
-                        exportCardsAsCSV(Array(selectedCards))
-                        selectionMode = false
-                        selectedCards.removeAll()
+                    
+                    // Add tags
+                    Menu {
+                        ForEach(tags.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }) { tag in
+                            Button(tag.name) {
+                                batchAddTag(tag)
+                            }
+                        }
+                    } label: {
+                        Label("Add Tag", systemImage: "tag")
                     }
+                    
+                    Divider()
+                    
+                    // Priority
+                    Menu {
+                        ForEach(PriorityType.allCases, id: \.self) { priority in
+                            Button {
+                                batchSetPriority(priority)
+                            } label: {
+                                Label(priority.displayName, systemImage: priority.iconName)
+                            }
+                        }
+                    } label: {
+                        Label("Set Priority", systemImage: "flag")
+                    }
+                    
+                    Divider()
+                    
+                    // Status actions
+                    Button {
+                        batchEnqueue()
+                    } label: {
+                        Label("Add to Queue", systemImage: "clock")
+                    }
+                    
+                    Button {
+                        batchArchive()
+                    } label: {
+                        Label("Archive", systemImage: "archivebox")
+                    }
+                    
+                    Button(role: .destructive) {
+                        batchSoftDelete()
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                    
+                    Divider()
+                    
+                    // Export submenu
+                    Menu {
+                        Button("as JSON") {
+                            exportCardsAsJSON(Array(selectedCards))
+                            exitSelectionMode()
+                        }
+                        Button("as CSV") {
+                            exportCardsAsCSV(Array(selectedCards))
+                            exitSelectionMode()
+                        }
+                    } label: {
+                        Label("Export", systemImage: "square.and.arrow.up")
+                    }
+                } label: {
+                    Text("Actions")
                 }
                 .disabled(selectedCards.isEmpty)
             } else if selectedCardModel.selectedCard != nil {
@@ -57,41 +127,117 @@ extension CardListView {
                     finishEdits()
                 }
             } else {
-                // Export/Import button - opens dedicated sheet
-                Button {
-                    showExportImportSheet = true
-                } label: {
-                    Image(systemName: "square.and.arrow.up.on.square")
-                }
-                .accessibilityLabel("Export & Import")
-                
+                // Share/Export/Import menu with submenus
                 Menu {
-                    ForEach(CardSortCriteria.allCases) { opt in
+                    // Share submenu
+                    Button {
+                        showShareConfigSheet = true
+                    } label: {
+                        Label("Share...", systemImage: "square.and.arrow.up")
+                    }
+                    
+                    Divider()
+                    
+                    // Export submenu
+                    Menu {
                         Button {
-                            sortCriteria = opt
+                            showExportSheet = true
                         } label: {
-                            if sortCriteria == opt {
-                                Label(opt.localizedName, systemImage: "checkmark")
-                            } else {
-                                Text(opt.localizedName)
+                            Label("Export Cards...", systemImage: "square.and.arrow.up.on.square")
+                        }
+                    } label: {
+                        Label("Export", systemImage: "arrow.up.doc")
+                    }
+                    
+                    // Import submenu
+                    Menu {
+                        Button {
+                            showImportSheet = true
+                        } label: {
+                            Label("Import Cards...", systemImage: "square.and.arrow.down")
+                        }
+                    } label: {
+                        Label("Import", systemImage: "arrow.down.doc")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+                .accessibilityLabel("Share, Export & Import")
+                
+                // Combined Sort & Filter menu
+                Menu {
+                    // Sort submenu
+                    Menu {
+                        ForEach(CardSortCriteria.allCases) { opt in
+                            Button {
+                                sortCriteria = opt
+                            } label: {
+                                if sortCriteria == opt {
+                                    Label(opt.localizedName, systemImage: "checkmark")
+                                } else {
+                                    Text(opt.localizedName)
+                                }
                             }
                         }
-                    }
-                    Divider()
-                    Button {
-                        ascending.toggle()
+                        Divider()
+                        Button {
+                            ascending.toggle()
+                        } label: {
+                            Label(ascending ? "Ascending" : "Descending", systemImage: ascending ? "arrow.up" : "arrow.down")
+                        }
                     } label: {
-                        Label(ascending ? "Ascending" : "Descending", systemImage: ascending ? "arrow.up" : "arrow.down")
+                        Label("Sort", systemImage: "arrow.up.arrow.down")
+                    }
+                    
+                    // Filter submenu (inline for quick access)
+                    Menu {
+                        // Type filters
+                        Section {
+                            ForEach([CardFilterOption.todo, .flashcard, .note], id: \.self) { option in
+                                Button {
+                                    toggleFilterOption(option)
+                                } label: {
+                                    if filterOptions.contains(option) {
+                                        Label(option.rawValue, systemImage: "checkmark")
+                                    } else {
+                                        Text(option.rawValue)
+                                    }
+                                }
+                            }
+                        }
+                        
+                        Divider()
+                        
+                        // Status filters
+                        Section {
+                            ForEach([CardFilterOption.enqueue, .upcoming, .archived, .deleted], id: \.self) { option in
+                                Button {
+                                    toggleFilterOption(option)
+                                } label: {
+                                    if filterOptions.contains(option) {
+                                        Label(option.rawValue, systemImage: "checkmark")
+                                    } else {
+                                        Text(option.rawValue)
+                                    }
+                                }
+                            }
+                        }
+                    } label: {
+                        Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
                     }
                 } label: {
-                    Label("Sort", systemImage: "arrow.up.arrow.down")
+                    Label("Sort & Filter", systemImage: "arrow.up.arrow.down.circle")
                 }
                 .menuActionDismissBehavior(.disabled)
-                .accessibilityIdentifier("Sort")
-                // Show filter menu only for enqueuedAt and createdAt
-                if sortCriteria == .enqueuedAt || sortCriteria == .createdAt || sortCriteria == .content {
-                    CardFilterMenu(selectedOptions: $filterOptions)
+                .accessibilityIdentifier("SortAndFilter")
+                
+                // Edit mode toggle (renamed from checkmark.circle)
+                Button {
+                    selectionMode = true
+                } label: {
+                    Text("Edit")
                 }
+                .accessibilityLabel("Edit Cards")
             }
         }
     }
@@ -145,5 +291,13 @@ extension CardListView {
         }
         selectedCardModel.clearDrafts()
         selectedCardModel.clearSelection()
+    }
+    
+    func toggleFilterOption(_ option: CardFilterOption) {
+        if filterOptions.contains(option) {
+            filterOptions.removeAll { $0 == option }
+        } else {
+            filterOptions.append(option)
+        }
     }
 }

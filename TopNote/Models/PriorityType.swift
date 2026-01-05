@@ -15,6 +15,17 @@ enum PriorityType: String, CaseIterable, Identifiable {
     
     var id: String { self.rawValue }
     
+    var displayName: String { rawValue }
+    
+    var iconName: String {
+        switch self {
+        case .high: return "flag.fill"
+        case .med: return "flag"
+        case .low: return "flag.slash"
+        case .none: return "minus"
+        }
+    }
+    
     var sortValue: Int {
         switch self {
         case .high: return 1

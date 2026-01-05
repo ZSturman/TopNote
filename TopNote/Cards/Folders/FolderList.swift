@@ -111,19 +111,19 @@ public struct FolderList: View {
         let now = Date()
         
         // Use FetchDescriptor with predicates to count without loading all data
-        // Archived count
-        let archivedDescriptor = FetchDescriptor<Card>(predicate: #Predicate { $0.isArchived == true })
+        // Archived count - exclude soft-deleted cards
+        let archivedDescriptor = FetchDescriptor<Card>(predicate: #Predicate { $0.isArchived == true && $0.deletedAt == nil })
         archivedCount = (try? modelContext.fetchCount(archivedDescriptor)) ?? 0
         
-        // Queued count - cards that are not archived and nextTimeInQueue <= now
+        // Queued count - cards that are not archived, not deleted, and nextTimeInQueue <= now
         let queuedDescriptor = FetchDescriptor<Card>(predicate: #Predicate { card in
-            card.isArchived == false && card.nextTimeInQueue <= now
+            card.isArchived == false && card.deletedAt == nil && card.nextTimeInQueue <= now
         })
         queuedCount = (try? modelContext.fetchCount(queuedDescriptor)) ?? 0
         
-        // Upcoming count - cards that are not archived and nextTimeInQueue > now
+        // Upcoming count - cards that are not archived, not deleted, and nextTimeInQueue > now
         let upcomingDescriptor = FetchDescriptor<Card>(predicate: #Predicate { card in
-            card.isArchived == false && card.nextTimeInQueue > now
+            card.isArchived == false && card.deletedAt == nil && card.nextTimeInQueue > now
         })
         upcomingCount = (try? modelContext.fetchCount(upcomingDescriptor)) ?? 0
     }
@@ -140,6 +140,9 @@ private struct FolderRowView: View {
         var archived = 0
         
         for card in folder.unwrappedCards {
+            // Skip soft-deleted cards
+            guard !card.isDeleted else { continue }
+            
             if card.isArchived {
                 archived += 1
             } else if card.isEnqueue(currentDate: now) {

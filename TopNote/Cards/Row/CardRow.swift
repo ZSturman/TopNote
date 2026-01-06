@@ -85,8 +85,9 @@ struct CardRow: View {
                     isSelected ? card.cardType.tintColor.opacity(0.12) : 
                     (lastDeselectedCardID == card.id ? card.cardType.tintColor.opacity(0.12) : Color.clear)
                 )
-                .animation(.easeOut(duration: 0.5), value: isSelected)
-                .animation(.easeOut(duration: 0.5), value: lastDeselectedCardID)
+                .animation(.easeOut(duration: 0.15), value: isSelected)
+                // Extended highlight duration for deselected card (2.5s) to help user track it
+                .animation(.easeOut(duration: 2.5), value: lastDeselectedCardID)
         )
         .accessibilityIdentifier("CardRow-\(card.id.uuidString)")
         .sheet(item: $activeSheet) { sheet in
@@ -137,27 +138,47 @@ struct CardRow: View {
     private func handleSelectionChange(newValue: Bool) {
         if !newValue {
             saveTask?.cancel()
-            // Commit drafts on deselect
-            let latestContent = selectedCardModel.draftContent ?? draftContent
-            if card.content != latestContent {
-                card.content = latestContent
-            }
-            if card.cardType == .flashcard {
-                let currentAnswer = card.answer ?? ""
-                let latestAnswer = selectedCardModel.draftAnswer ?? draftAnswer
-                if currentAnswer != latestAnswer { 
-                    card.answer = latestAnswer 
+            // Commit drafts on deselect - but only if drafts belong to THIS card
+            // This prevents race condition where old card reads new card's drafts
+            if let drafts = selectedCardModel.getDraftsForCard(card.id) {
+                let latestContent = drafts.content ?? draftContent
+                if card.content != latestContent {
+                    card.content = latestContent
                 }
+                if card.cardType == .flashcard {
+                    let currentAnswer = card.answer ?? ""
+                    let latestAnswer = drafts.answer ?? draftAnswer
+                    if currentAnswer != latestAnswer { 
+                        card.answer = latestAnswer 
+                    }
+                }
+                try? modelContext.save()
+            } else {
+                // Drafts don't belong to this card - just use local state
+                // This can happen during rapid selection changes
+                if card.content != draftContent {
+                    card.content = draftContent
+                }
+                if card.cardType == .flashcard {
+                    let currentAnswer = card.answer ?? ""
+                    if currentAnswer != draftAnswer {
+                        card.answer = draftAnswer
+                    }
+                }
+                try? modelContext.save()
             }
-            try? modelContext.save()
-            selectedCardModel.clearDrafts()
+            // Only clear drafts if they belong to this card
+            if selectedCardModel.draftCardID == card.id {
+                selectedCardModel.clearDrafts()
+            }
         } else {
             // Initialize drafts on select
             selectedCardModel.clearDrafts()
             draftContent = card.content
+            draftAnswer = card.answer ?? ""
+            selectedCardModel.setDraftCardID(card.id)
             selectedCardModel.updateDraft(content: draftContent)
             if card.cardType == .flashcard {
-                draftAnswer = card.answer ?? ""
                 selectedCardModel.updateDraft(answer: draftAnswer)
             }
         }

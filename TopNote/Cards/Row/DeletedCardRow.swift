@@ -8,7 +8,8 @@
 import Foundation
 import SwiftUI
 
-/// A specialized row view for displaying soft-deleted cards with restore/delete actions.
+/// A row view for displaying soft-deleted cards, matching regular card row styling.
+/// Swipe right to restore, swipe left to permanently delete.
 struct DeletedCardRow: View {
     let card: Card
     let folders: [Folder]
@@ -24,52 +25,67 @@ struct DeletedCardRow: View {
         return "Deleted \(formatter.localizedString(for: deletedAt, relativeTo: Date()))"
     }
     
+    private var daysUntilPermanentDeletion: Int? {
+        guard let deletedAt = card.deletedAt else { return nil }
+        let thirtyDaysLater = Calendar.current.date(byAdding: .day, value: 30, to: deletedAt) ?? deletedAt
+        let daysRemaining = Calendar.current.dateComponents([.day], from: Date(), to: thirtyDaysLater).day ?? 0
+        return max(0, daysRemaining)
+    }
+    
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
-                    Image(systemName: card.cardType.systemImage)
-                        .foregroundColor(card.cardType.tintColor)
-                        .font(.caption)
-                    
-                    Text(card.content.isEmpty ? "Untitled" : card.content)
-                        .lineLimit(1)
-                        .foregroundColor(.secondary)
+        VStack(alignment: .leading, spacing: 6) {
+            // Header with folder and deletion info
+            HStack(spacing: 6) {
+                if let folder = card.folder {
+                    HStack(spacing: 3) {
+                        Image(systemName: "folder.fill")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                        Text(folder.name)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
                 }
                 
-                Text(deletionDateText)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                Spacer()
+                
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(deletionDateText)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    if let days = daysUntilPermanentDeletion {
+                        Text("\(days) day\(days == 1 ? "" : "s") left")
+                            .font(.caption2)
+                            .foregroundColor(.orange)
+                    }
+                }
             }
             
-            Spacer()
-            
-            // Quick action buttons
-            HStack(spacing: 12) {
-                Button {
-                    onRestore()
-                } label: {
-                    Image(systemName: "arrow.uturn.backward.circle.fill")
-                        .foregroundColor(.green)
-                        .font(.title2)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Restore card")
+            // Content
+            HStack(spacing: 6) {
+                Image(systemName: card.cardType.systemImage)
+                    .font(.caption)
+                    .foregroundColor(card.cardType.tintColor)
                 
-                Button {
-                    showDeleteConfirmation = true
-                } label: {
-                    Image(systemName: "trash.circle.fill")
-                        .foregroundColor(.red)
-                        .font(.title2)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Permanently delete card")
+                Text(card.content.isEmpty ? "Untitled" : card.content)
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .lineLimit(2)
+                    .foregroundColor(.secondary)
             }
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 4)
-        .swipeActions(edge: .leading) {
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color.clear)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .contentShape(Rectangle())
+        // Swipe right to restore
+        .swipeActions(edge: .leading, allowsFullSwipe: true) {
             Button {
                 onRestore()
             } label: {
@@ -77,7 +93,8 @@ struct DeletedCardRow: View {
             }
             .tint(.green)
         }
-        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+        // Swipe left to permanently delete
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button(role: .destructive) {
                 showDeleteConfirmation = true
             } label: {

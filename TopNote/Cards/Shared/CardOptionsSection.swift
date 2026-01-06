@@ -72,10 +72,12 @@ struct CardOptionsSection: View {
                     }
                 }
                 
-                Picker("On Good", selection: $ratingMedPolicy) {
-                    ForEach(RepeatPolicy.allCases, id: \.self) { policy in
-                        Text(policy.rawValue).tag(policy)
-                    }
+                // Note: "Good" rating maintains current interval (no policy adjustment)
+                HStack {
+                    Text("On Good")
+                    Spacer()
+                    Text("Keeps current schedule")
+                        .foregroundStyle(.secondary)
                 }
                 
                 Picker("On Hard", selection: $ratingHardPolicy) {

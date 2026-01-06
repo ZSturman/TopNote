@@ -17,64 +17,14 @@ extension CardDetailView {
         @State private var showImageSourceMenu = false
         
         var body: some View {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Content")
-                    .font(.headline)
-                
-                /* MARK: - IMAGE DISABLED
-                // Display existing content image
-                if let imageData = card.contentImageData, let uiImage = UIImage(data: imageData) {
-                    ZStack(alignment: .topTrailing) {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(maxHeight: 200)
-                            .cornerRadius(8)
-                        
-                        Button(action: {
-                            card.setContentImage(nil)
-                        }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.white)
-                                .background(Circle().fill(Color.black.opacity(0.6)))
-                                .padding(8)
-                        }
-                    }
-                    .padding(.bottom, 4)
-                }
-                */
-                
+            Section(header: Text("Content")) {
                 TextEditor(text: Binding(
                     get: { card.content },
                     set: { card.content = $0 }
                 ))
                 .frame(minHeight: 120)
-                .padding(8)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.secondary.opacity(0.3))
-                )
                 .accessibilityIdentifier("DetailContentEditor")
-                
-                /* MARK: - IMAGE DISABLED
-                // Image picker button
-                PhotosPicker(selection: $selectedContentPhoto, matching: .images) {
-                    Label(card.contentImageData == nil ? "Add Image" : "Change Image", systemImage: "photo")
-                        .font(.caption)
-                        .foregroundColor(.blue)
-                }
-                .onChange(of: selectedContentPhoto) { oldValue, newValue in
-                    Task {
-                        if let data = try? await newValue?.loadTransferable(type: Data.self),
-                           let uiImage = UIImage(data: data) {
-                            // Compress for storage and pre-generate widget thumbnails
-                            card.setContentImage(uiImage.compressedJPEGData(quality: 0.8))
-                        }
-                    }
-                }
-                */
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
     
@@ -85,64 +35,14 @@ extension CardDetailView {
         
         var body: some View {
             if card.cardType == .flashcard {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Answer")
-                        .font(.headline)
-                    
-                    /* MARK: - IMAGE DISABLED
-                    // Display existing answer image
-                    if let imageData = card.answerImageData, let uiImage = UIImage(data: imageData) {
-                        ZStack(alignment: .topTrailing) {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(maxHeight: 200)
-                                .cornerRadius(8)
-                            
-                            Button(action: {
-                                card.setAnswerImage(nil)
-                            }) {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundColor(.white)
-                                    .background(Circle().fill(Color.black.opacity(0.6)))
-                                    .padding(8)
-                            }
-                        }
-                        .padding(.bottom, 4)
-                    }
-                    */
-                    
+                Section(header: Text("Answer")) {
                     TextEditor(text: Binding(
                         get: { card.answer ?? "" },
                         set: { card.answer = $0 }
                     ))
                     .frame(minHeight: 100)
-                    .padding(8)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.secondary.opacity(0.3))
-                    )
                     .accessibilityIdentifier("DetailAnswerEditor")
-                    
-                    /* MARK: - IMAGE DISABLED
-                    // Image picker button
-                    PhotosPicker(selection: $selectedAnswerPhoto, matching: .images) {
-                        Label(card.answerImageData == nil ? "Add Image" : "Change Image", systemImage: "photo")
-                            .font(.caption)
-                            .foregroundColor(.blue)
-                    }
-                    .onChange(of: selectedAnswerPhoto) { oldValue, newValue in
-                        Task {
-                            if let data = try? await newValue?.loadTransferable(type: Data.self),
-                               let uiImage = UIImage(data: data) {
-                                // Compress for storage and pre-generate widget thumbnails
-                                card.setAnswerImage(uiImage.compressedJPEGData(quality: 0.8))
-                            }
-                        }
-                    }
-                    */
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
@@ -157,262 +57,172 @@ extension CardDetailView {
         @Binding var showTagFullScreen: Bool
         
         var body: some View {
-            DisclosureGroup(isExpanded: $isExpanded) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Menu {
-                        Button("New Folder...") { showMoveFullScreen = true }
-                        Divider()
-                        ScrollView {
-                            ForEach(folders.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }) { folder in
-                                Button(action: {
-                                    card.folder = folder
-                                }) {
-                                    HStack {
-                                        Text(folder.name)
-                                        if card.folder == folder {
-                                            Spacer()
-                                            Image(systemName: "checkmark")
-                                                .foregroundColor(.blue)
-                                        }
-                                    }
+            Section(header: Text("Organize")) {
+                // Folder picker
+                Menu {
+                    Button("New Folder...") { showMoveFullScreen = true }
+                    Divider()
+                    Button(action: {
+                        card.folder = nil
+                    }) {
+                        HStack {
+                            Text("No Folder")
+                            if card.folder == nil {
+                                Spacer()
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                    ForEach(folders.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }) { folder in
+                        Button(action: {
+                            card.folder = folder
+                        }) {
+                            HStack {
+                                Text(folder.name)
+                                if card.folder == folder {
+                                    Spacer()
+                                    Image(systemName: "checkmark")
                                 }
                             }
-                            .frame(maxHeight: 200)
                         }
-                    } label: {
-                        folderMenuLabel()
+                    }
+                } label: {
+                    HStack {
+                        Text("Folder")
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        Text(card.folder?.name ?? "No Folder")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                
+                // Tags display and picker
+                VStack(alignment: .leading, spacing: 8) {
+                    if !card.unwrappedTags.isEmpty {
+                        FlowLayout(spacing: 6) {
+                            ForEach(card.unwrappedTags.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }) { tag in
+                                Text(tag.name)
+                                    .font(.caption)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 4)
+                                    .background(Color.blue.opacity(0.15))
+                                    .foregroundColor(.blue)
+                                    .cornerRadius(8)
+                                    .onTapGesture {
+                                        card.tags?.removeAll(where: { $0.id == tag.id })
+                                    }
+                            }
+                        }
                     }
                     
-                    Divider()
-                        .padding(.vertical, 4)
-                    
-                    readOnlyTagsView()
                     Menu {
                         Button("Add Tag...") { showTagFullScreen = true }
                         Divider()
-                        ScrollView {
-                            ForEach(tags.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }) { tag in
-                                Button(action: {
+                        ForEach(tags.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }) { tag in
+                            Button(action: {
+                                if card.unwrappedTags.contains(where: { $0.id == tag.id }) {
+                                    card.tags?.removeAll(where: { $0.id == tag.id })
+                                } else {
+                                    if card.tags == nil { card.tags = [] }
+                                    card.tags?.append(tag)
+                                }
+                            }) {
+                                HStack {
+                                    Text(tag.name)
                                     if card.unwrappedTags.contains(where: { $0.id == tag.id }) {
-                                        card.tags?.removeAll(where: { $0.id == tag.id })
-                                    } else {
-                                        if card.tags == nil { card.tags = [] }
-                                        card.tags?.append(tag)
-                                    }
-                                    
-                                }) {
-                                    HStack {
-                                        Text(tag.name)
-                                        if card.unwrappedTags.contains(where: { $0.id == tag.id }) {
-                                            Spacer()
-                                            Image(systemName: "checkmark")
-                                                .foregroundColor(.blue)
-                                        }
+                                        Spacer()
+                                        Image(systemName: "checkmark")
                                     }
                                 }
                             }
-                            .frame(maxHeight: 200)
                         }
                     } label: {
-                        tagMenuLabel()
-                    }
-                    .menuActionDismissBehavior(.disabled)
-                    
-                    Divider()
-                        .padding(.vertical, 4)
-                    
-                    HStack {
-                        Text("Card Type:")
-                            .font(.body)
-                        Spacer()
-                        Picker("Card Type", selection: Binding(get: { card.cardType }, set: {
-                            card.cardType = $0
-                        })) {
-                            ForEach(CardType.allCases, id: \.self) { type in
-                                Label(type.rawValue.capitalized, systemImage: type.systemImage)
-                                    .tag(type)
-                            }
+                        HStack {
+                            Text("Tags")
+                                .foregroundStyle(.primary)
+                            Spacer()
+                            Image(systemName: "plus.circle.fill")
+                                .foregroundStyle(.blue)
                         }
-                        .pickerStyle(.menu)
-                        .accessibilityLabel("Card Type Picker")
-                        .frame(maxWidth: .infinity)
                     }
-                    
-                    // Priority Picker
-                    HStack {
-                        Text("Priority:")
-                            .font(.body)
-                        Spacer()
-                        Picker("Priority", selection: Binding(get: { card.priority }, set: {
-                            card.priority = $0
-                        })) {
-                            ForEach(PriorityType.allCases, id: \.self) { priority in
-                                Text(priority.rawValue)
-                                    .tag(priority)
-                            }
+                }
+                
+                // Priority picker
+                Picker("Priority", selection: Binding(
+                    get: { card.priority },
+                    set: { card.priority = $0 }
+                )) {
+                    ForEach(PriorityType.allCases, id: \.self) { priority in
+                        HStack {
+                            Image(systemName: priority.iconName)
+                            Text(priority.displayName)
                         }
-                        .pickerStyle(.segmented)
-                        .accessibilityLabel("Priority Picker")
-                        .frame(maxWidth: .infinity)
+                        .tag(priority)
                     }
-                    
-                }
-                .padding(.vertical, 6)
-            } label: {
-                Label("Organize", systemImage: "rectangle.3.group")
-                    .font(.subheadline.bold())
-                    .textCase(.uppercase)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        
-        @ViewBuilder
-        func folderMenuLabel() -> some View {
-            GroupBox {
-                HStack(spacing: 6) {
-                    Image(systemName: "folder")
-                    Text(card.folder?.name ?? "No Folder")
-                        .bold()
-                        .font(.body)
-                    Spacer()
-                    Image(systemName: "chevron.down")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                }
-                .contentShape(Rectangle())
-            }
-            .clipShape(Capsule())
-            .overlay(
-                Capsule()
-                    .stroke(Color.accentColor.opacity(0.6), lineWidth: 1)
-            )
-            .padding(.vertical, 2)
-        }
-        
-        @ViewBuilder
-        func readOnlyTagsView() -> some View {
-            HStack(spacing: 6) {
-                ForEach(Array(card.tags ?? []), id: \.id) { tag in
-                    Text("#\(tag.name)")
-                        .font(.caption)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(
-                            Capsule().fill(Color.secondary.opacity(0.2))
-                        )
                 }
             }
-        }
-        
-        
-        @ViewBuilder
-        func tagMenuLabel() -> some View {
-            GroupBox {
-                HStack(spacing: 6) {
-                    Image(systemName: "tag")
-                    Text("Tags")
-                        .bold()
-                        .font(.body)
-                    Spacer()
-                    Image(systemName: "chevron.down")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                }
-                .contentShape(Rectangle())
-            }
-            .clipShape(Capsule())
-            .overlay(
-                Capsule()
-                    .stroke(Color.accentColor.opacity(0.6), lineWidth: 1)
-            )
-            .padding(.vertical, 2)
         }
     }
     
-    // Similarly:
     struct CardDetailTimingSection: View {
         var card: Card
         @Binding var isExpanded: Bool
         
         var body: some View {
-            DisclosureGroup(isExpanded: $isExpanded) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Toggle("Recurring", isOn: Binding(get: { card.isRecurring }, set: {
-                        let wasRecurring = card.isRecurring
-                        card.isRecurring = $0
-                        if wasRecurring && !$0 {
-                            Task {
-                                await RecurringOffTip.toggledRecurringOffEvent.donate()
-                            }
-                        }
-                    }))
-                    .accessibilityIdentifier("RecurringToggle")
-                    .accessibilityHint("Toggle whether card repeats")
-                    
-                    HStack {
-                        Text("Base Schedule:")
-                            .font(.body)
-                        Spacer()
-                        Picker("Base Schedule", selection: Binding(get: { RepeatInterval(hours: card.initialRepeatInterval) }, set: {
-                            card.initialRepeatInterval = $0.hours ?? 24
-                            card.repeatInterval = $0.hours ?? 24
-                        })) {
-                            ForEach(RepeatInterval.allCases.filter { $0.hours != nil }, id: \.self) { interval in
-                                Text(interval.rawValue).tag(interval)
-                            }
-                        }
-                        .pickerStyle(.menu)
-                        .frame(maxWidth: 150)
-                        .accessibilityLabel("Base Schedule Picker")
-                    }
-                    
-                    // Show current interval if it differs from base
-                    if card.isRecurring {
-                        let scheduleDetails = card.displayedScheduleDetails
-                        if scheduleDetails.isAdjusted {
-                            VStack(alignment: .leading, spacing: 4) {
-                                HStack {
-                                    Text("Current Interval:")
-                                        .font(.body)
-                                    Spacer()
-                                    Text(scheduleDetails.current)
-                                        .font(.body)
-                                        .foregroundColor(.orange)
-                                }
-                                Text("Adjusted by spaced repetition")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                            .padding(.vertical, 4)
-                            .padding(.horizontal, 8)
-                            .background(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill(Color.orange.opacity(0.1))
-                            )
+            Section(header: Text("Timing")) {
+                Toggle("Recurring", isOn: Binding(get: { card.isRecurring }, set: {
+                    let wasRecurring = card.isRecurring
+                    card.isRecurring = $0
+                    if wasRecurring && !$0 {
+                        Task {
+                            await RecurringOffTip.toggledRecurringOffEvent.donate()
                         }
                     }
-                    
-                    if card.cardType == .todo {
-                        Toggle("Reset Interval on Complete", isOn: Binding(get: { card.resetRepeatIntervalOnComplete }, set: {
-                            card.resetRepeatIntervalOnComplete = $0
-                        }))
-                        .accessibilityLabel("Reset Repeat Interval on Complete")
-                    }
-                    
-                    Toggle("Enable Skip", isOn: Binding(get: { card.skipEnabled }, set: {
-                        card.skipEnabled = $0
-                    }))
-                    .accessibilityHint("Toggle whether card is skipped")
-                }
-                .padding(4)
+                }))
+                .accessibilityIdentifier("RecurringToggle")
+                .accessibilityHint("Toggle whether card repeats")
                 
-            } label: {
-                Label("Timing", systemImage: "clock")
-                    .font(.subheadline).bold()
-                    .textCase(.uppercase)
-                    .foregroundColor(.primary)
+                Picker("Base Schedule", selection: Binding(get: { RepeatInterval(hours: card.initialRepeatInterval) }, set: {
+                    card.initialRepeatInterval = $0.hours ?? 24
+                    card.repeatInterval = $0.hours ?? 24
+                })) {
+                    ForEach(RepeatInterval.allCases.filter { $0.hours != nil }, id: \.self) { interval in
+                        Text(interval.rawValue).tag(interval)
+                    }
+                }
+                .accessibilityLabel("Base Schedule Picker")
+                
+                if card.isRecurring {
+                    let scheduleDetails = card.displayedScheduleDetails
+                    if scheduleDetails.isAdjusted {
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text("Current Interval:")
+                                    .font(.body)
+                                Spacer()
+                                Text(scheduleDetails.current)
+                                    .font(.body)
+                                    .foregroundColor(.orange)
+                            }
+                            Text("Adjusted by spaced repetition")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+                
+                if card.cardType == .todo {
+                    Toggle("Reset Interval on Complete", isOn: Binding(get: { card.resetRepeatIntervalOnComplete }, set: {
+                        card.resetRepeatIntervalOnComplete = $0
+                    }))
+                    .accessibilityLabel("Reset Repeat Interval on Complete")
+                }
+                
+                Toggle("Enable Skip", isOn: Binding(get: { card.skipEnabled }, set: {
+                    card.skipEnabled = $0
+                }))
+                .accessibilityHint("Toggle whether card is skipped")
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
     
@@ -421,11 +231,11 @@ extension CardDetailView {
         @Binding var isExpanded: Bool
         
         var body: some View {
-            DisclosureGroup(isExpanded: $isExpanded) {
+            Section(header: Text("Policies")) {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Skip Policy")
                         .font(.subheadline)
-                        .bold()
+                        .foregroundColor(.secondary)
                     Picker("Skip Policy", selection: Binding(get: { card.skipPolicy }, set: {
                         card.skipPolicy = $0
                     })) {
@@ -437,56 +247,44 @@ extension CardDetailView {
                     .accessibilityLabel("Skip Policy Picker")
                     
                     if card.cardType == .flashcard {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("On Easy Rating")
-                                .font(.subheadline)
-                                .bold()
-                            Picker("On Easy Rating", selection: Binding(get: { card.ratingEasyPolicy }, set: {
-                                card.ratingEasyPolicy = $0
-                            })) {
-                                ForEach(RepeatPolicy.allCases, id: \.self) { policy in
-                                    Text(policy.rawValue).tag(policy)
-                                }
+                        Text("On Easy Rating")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .padding(.top, 8)
+                        Picker("On Easy Rating", selection: Binding(get: { card.ratingEasyPolicy }, set: {
+                            card.ratingEasyPolicy = $0
+                        })) {
+                            ForEach(RepeatPolicy.allCases, id: \.self) { policy in
+                                Text(policy.rawValue).tag(policy)
                             }
-                            .pickerStyle(.segmented)
-                            .accessibilityLabel("On Easy Rating Picker")
-                            
-                            Text("On Good Rating")
-                                .font(.subheadline)
-                                .bold()
-                            Picker("On Good Rating", selection: Binding(get: { card.ratingMedPolicy }, set: {
-                                card.ratingMedPolicy = $0
-                            })) {
-                                ForEach(RepeatPolicy.allCases, id: \.self) { policy in
-                                    Text(policy.rawValue).tag(policy)
-                                }
-                            }
-                            .pickerStyle(.segmented)
-                            .accessibilityLabel("On Good Rating Picker")
-                            
-                            Text("On Hard Rating")
-                                .font(.subheadline)
-                                .bold()
-                            Picker("On Hard Rating", selection: Binding(get: { card.ratingHardPolicy }, set: {
-                                card.ratingHardPolicy = $0
-                            })) {
-                                ForEach(RepeatPolicy.allCases, id: \.self) { policy in
-                                    Text(policy.rawValue).tag(policy)
-                                }
-                            }
-                            .pickerStyle(.segmented)
-                            .accessibilityLabel("On Hard Rating Picker")
                         }
+                        .pickerStyle(.segmented)
+                        .accessibilityLabel("On Easy Rating Picker")
+                        
+                        Text("On Good Rating")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .padding(.top, 8)
+                        Text("Maintains current schedule")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Text("On Hard Rating")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .padding(.top, 8)
+                        Picker("On Hard Rating", selection: Binding(get: { card.ratingHardPolicy }, set: {
+                            card.ratingHardPolicy = $0
+                        })) {
+                            ForEach(RepeatPolicy.allCases, id: \.self) { policy in
+                                Text(policy.rawValue).tag(policy)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .accessibilityLabel("On Hard Rating Picker")
                     }
                 }
-                .padding(.vertical, 6)
-            } label: {
-                Label("Policies", systemImage: "slider.horizontal.3")
-                    .font(.subheadline).bold()
-                    .textCase(.uppercase)
-                    .foregroundColor(.primary)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
     
@@ -626,11 +424,7 @@ extension CardDetailView {
                 .padding(.vertical, 6)
             } label: {
                 Label("History", systemImage: "clock.arrow.circlepath")
-                    .font(.subheadline).bold()
-                    .textCase(.uppercase)
-                    .foregroundColor(.primary)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
         
     }
@@ -640,30 +434,30 @@ extension CardDetailView {
         @Binding var showDeleteConfirm: Bool
         
         var body: some View {
-            VStack(spacing: 12) {
-                Button(action: {
-                    card.isArchived.toggle()
-                }) {
+            Button(action: {
+                card.isArchived.toggle()
+            }) {
+                HStack {
+                    Spacer()
                     Text(card.isArchived ? "Unarchive Card" : "Archive Card")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.secondary.opacity(0.2))
-                        .foregroundColor(.primary)
-                        .cornerRadius(8)
+                        .foregroundColor(card.isArchived ? .blue : .secondary)
+                    Spacer()
                 }
-                .accessibilityIdentifier(card.isArchived ? "UnarchiveButton" : "ArchiveButton")
-                .accessibilityLabel(card.isArchived ? "Unarchive card" : "Archive card")
-                
-                Button(role: .destructive) {
-                    showDeleteConfirm = true
-                } label: {
-                    Text("Delete Card")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                }
-                .accessibilityIdentifier("DeleteCardButton")
-                .accessibilityLabel("Delete card")
             }
+            .accessibilityIdentifier(card.isArchived ? "UnarchiveButton" : "ArchiveButton")
+            .accessibilityLabel(card.isArchived ? "Unarchive card" : "Archive card")
+            
+            Button(role: .destructive) {
+                showDeleteConfirm = true
+            } label: {
+                HStack {
+                    Spacer()
+                    Text("Delete Card")
+                    Spacer()
+                }
+            }
+            .accessibilityIdentifier("DeleteCardButton")
+            .accessibilityLabel("Delete card")
         }
     }
 }

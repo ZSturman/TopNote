@@ -11,6 +11,7 @@ import TipKit
 
 struct CardListView: View {
     @Environment(\.modelContext) var context
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @EnvironmentObject var selectedCardModel: SelectedCardModel
     
     @Query var cards: [Card]
@@ -18,7 +19,7 @@ struct CardListView: View {
     @Query var folders: [Folder]
     
     @Binding var selectedFolder: FolderSelection?
-    var tagSelectionStates: [UUID: TagSelectionState]
+    @Binding var tagSelectionStates: [UUID: TagSelectionState]
     @Binding var deepLinkedCardID: UUID?
     
     // Sorting & filtering
@@ -34,7 +35,7 @@ struct CardListView: View {
     @State var isQueueExpanded = true
     @State var isUpcomingExpanded = true
     @State var isArchivedExpanded = false
-    @State var isDeletedExpanded = true
+    @State var isDeletedExpanded = false  // Collapsed by default
     
     // Export/Import/Share sheets
     @State var showExportImportSheet = false
@@ -59,6 +60,15 @@ struct CardListView: View {
     @State var showNewCardSheet = false
     @State var newCardType: CardType = .note
     @State var showAIGeneratorFromDialog = false
+    
+    // Batch action sheets
+    @State var showNewFolderForBatch = false
+    @State var showNewTagForBatch = false
+    @State var newBatchFolderName = ""
+    @State var newBatchTagName = ""
+    
+    // Edit tags sheet (iPhone compact view)
+    @State var showEditTagsSheet = false
     
     // Tip tracking
     @State var appOpenCount = 0
@@ -89,11 +99,11 @@ struct CardListView: View {
     
     init(
         selectedFolder: Binding<FolderSelection?>,
-        tagSelectionStates: [UUID: TagSelectionState],
+        tagSelectionStates: Binding<[UUID: TagSelectionState]>,
         deepLinkedCardID: Binding<UUID?> = .constant(nil)
     ) {
         _selectedFolder = selectedFolder
-        self.tagSelectionStates = tagSelectionStates
+        _tagSelectionStates = tagSelectionStates
         _deepLinkedCardID = deepLinkedCardID
         
     }
@@ -114,7 +124,7 @@ struct CardListView: View {
                 contentListView
             }
             .listStyle(.plain)
-            .navigationTitle(selectedFolder?.name ?? "All Cards")
+            .navigationTitle(navigationTitleWithIcons)
             .searchable(text: $searchText, prompt: "Search cards")
             .accessibilityIdentifier("CardListView")
             .onAppear(perform: handleOnAppear)
@@ -176,6 +186,27 @@ struct CardListView: View {
                     filteredCards: filteredCards,
                     allCards: cards
                 )
+            }
+            .sheet(isPresented: $showNewFolderForBatch) {
+                NewFolderSheetForCard(
+                    folderName: $newBatchFolderName,
+                    onSave: { newFolder in
+                        batchMoveToFolder(newFolder)
+                        newBatchFolderName = ""
+                    }
+                )
+            }
+            .sheet(isPresented: $showNewTagForBatch) {
+                NewTagSheetForBatch(
+                    tagName: $newBatchTagName,
+                    onSave: { newTag in
+                        batchAddTag(newTag)
+                        newBatchTagName = ""
+                    }
+                )
+            }
+            .sheet(isPresented: $showEditTagsSheet) {
+                EditTagsSheet()
             }
 
             .fileImporter(

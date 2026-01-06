@@ -17,66 +17,93 @@ struct NewFolderForm: View {
     @Query private var existingFolders: [Folder]
     
     @State private var newFolderName: String = ""
-    @FocusState private var isTextFieldFocused: Bool  // Add focus state
+    @FocusState private var isTextFieldFocused: Bool
+    
+    private var trimmedName: String {
+        newFolderName.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
     
     private var isFolderNameValid: Bool {
-        let trimmedName = newFolderName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return !trimmedName.isEmpty && !existingFolders.contains { $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame }
+        !trimmedName.isEmpty && !existingFolders.contains { $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame }
+    }
+    
+    private var errorMessage: String? {
+        if trimmedName.isEmpty {
+            return nil
+        }
+        if existingFolders.contains(where: { $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame }) {
+            return "A folder with this name already exists"
+        }
+        return nil
     }
     
     var body: some View {
-        Form {
-            Section(header: Text("New Folder")) {
-                TextField("Folder name", text: $newFolderName)
-                    .focused($isTextFieldFocused)  // Bind focus state
-                    .overlay(RoundedRectangle(cornerRadius: 4).stroke(!isFolderNameValid ? Color.red : Color.clear, lineWidth: 1))
-                    .submitLabel(.done)
-                    .onSubmit {
-                        if isFolderNameValid {
-                            addFolder()
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("Folder name", text: $newFolderName)
+                        .focused($isTextFieldFocused)
+                        .submitLabel(.done)
+                        .onSubmit {
+                            if isFolderNameValid {
+                                addFolder()
+                            }
                         }
+                } header: {
+                    Text("Name")
+                } footer: {
+                    if let error = errorMessage {
+                        Text(error)
+                            .foregroundStyle(.red)
                     }
-                if !isFolderNameValid {
-                    let trimmedName = newFolderName.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if trimmedName.isEmpty {
-                        Text("Please enter a folder name.")
-                            .font(.caption)
-                            .foregroundColor(.red)
-                            .accessibilityLabel("Folder name required")
-                    } else if existingFolders.contains(where: { $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame }) {
-                        Text("A folder with this name already exists.")
-                            .font(.caption)
-                            .foregroundColor(.red)
-                            .accessibilityLabel("Folder name exists")
+                }
+                
+                if !existingFolders.isEmpty {
+                    Section {
+                        ForEach(existingFolders.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }) { folder in
+                            HStack {
+                                Image(systemName: "folder.fill")
+                                    .foregroundStyle(.secondary)
+                                Text(folder.name)
+                                Spacer()
+                                Text("\(folder.unwrappedCards.count)")
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    } header: {
+                        Text("Existing Folders")
                     }
                 }
             }
-            
-            HStack {
-                Button("Cancel") {
-                    dismiss()
+            .navigationTitle("New Folder")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
                 }
-                .foregroundColor(.red)
-                
-                Spacer()
-                
-                Button("Done") {
-                    addFolder()
-                    dismiss()
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Create") {
+                        addFolder()
+                    }
+                    .fontWeight(.semibold)
+                    .disabled(!isFolderNameValid)
                 }
-                .disabled(!isFolderNameValid)
             }
-            .padding()
+            .onAppear {
+                isTextFieldFocused = true
+            }
         }
-        .onAppear {
-            isTextFieldFocused = true  // Focus text field when view appears
-        }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
     }
     
     private func addFolder() {
-        let newFolder = Folder(name: newFolderName.trimmingCharacters(in: .whitespacesAndNewlines))
+        let newFolder = Folder(name: trimmedName)
         modelContext.insert(newFolder)
         selectedFolder = .folder(newFolder)
         Card.throttledWidgetReload()
+        dismiss()
     }
 }

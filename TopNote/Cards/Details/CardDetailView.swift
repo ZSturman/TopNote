@@ -35,43 +35,41 @@ struct CardDetailView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    CardDetailContentSection(card: card)
-                    CardDetailAnswerSection(card: card)
+            Form {
+                CardDetailContentSection(card: card)
+                
+                CardDetailAnswerSection(card: card)
 
-                    CardDetailOrganizeSection(
-                        card: card,
-                        folders: folders,
-                        tags: tags,
-                        isExpanded: $showOrganize,
-                        showMoveFullScreen: $showMoveFullScreen,
-                        showTagFullScreen: $showTagFullScreen
-                    )
+                CardDetailOrganizeSection(
+                    card: card,
+                    folders: folders,
+                    tags: tags,
+                    isExpanded: $showOrganize,
+                    showMoveFullScreen: $showMoveFullScreen,
+                    showTagFullScreen: $showTagFullScreen
+                )
 
-                    CardDetailTimingSection(
-                        card: card,
-                        isExpanded: $showTiming
-                    )
+                CardDetailTimingSection(
+                    card: card,
+                    isExpanded: $showTiming
+                )
 
-                    CardDetailPoliciesSection(
-                        card: card,
-                        isExpanded: $showPolicies
-                    )
+                CardDetailPoliciesSection(
+                    card: card,
+                    isExpanded: $showPolicies
+                )
 
-                    CardDetailHistorySection(
-                        card: card,
-                        isExpanded: $showHistory
-                    )
-                    
-                    Spacer()
-
+                CardDetailHistorySection(
+                    card: card,
+                    isExpanded: $showHistory
+                )
+                
+                Section {
                     CardDetailBottomActions(
                         card: card,
                         showDeleteConfirm: $showDeleteConfirm
                     )
                 }
-                .padding()
             }
             .navigationTitle("Details")
             .navigationBarTitleDisplayMode(.inline)

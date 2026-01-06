@@ -14,16 +14,13 @@ extension CardListView {
     var leadingToolbarItems: some ToolbarContent {
         ToolbarItemGroup(placement: .navigationBarLeading) {
             if selectionMode {
+                // Select All always visible
                 Button(allCardsSelected ? "Deselect All" : "Select All") {
                     if allCardsSelected {
                         deselectAllCards()
                     } else {
                         selectAllCards()
                     }
-                }
-                Button("Cancel", role: .cancel) {
-                    selectionMode = false
-                    selectedCards.removeAll()
                 }
             } else if selectedCardModel.selectedCard != nil {
                 // When a single card is selected, show Cancel on the leading side
@@ -38,10 +35,22 @@ extension CardListView {
     var trailingToolbarItems: some ToolbarContent {
         ToolbarItemGroup(placement: .navigationBarTrailing) {
             if selectionMode {
-                // Batch actions menu when cards are selected
+                // Cancel button in edit mode
+                Button("Cancel", role: .cancel) {
+                    selectionMode = false
+                    selectedCards.removeAll()
+                }
+                
+                // Batch actions menu - icon only
                 Menu {
-                    // Move to folder
+                    // Move to folder (with New Folder option)
                     Menu {
+                        Button {
+                            showNewFolderForBatch = true
+                        } label: {
+                            Label("New Folder...", systemImage: "folder.badge.plus")
+                        }
+                        Divider()
                         Button("No Folder") {
                             batchMoveToFolder(nil)
                         }
@@ -55,8 +64,14 @@ extension CardListView {
                         Label("Move to Folder", systemImage: "folder")
                     }
                     
-                    // Add tags
+                    // Add tags (with New Tag option)
                     Menu {
+                        Button {
+                            showNewTagForBatch = true
+                        } label: {
+                            Label("New Tag...", systemImage: "tag.fill")
+                        }
+                        Divider()
                         ForEach(tags.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }) { tag in
                             Button(tag.name) {
                                 batchAddTag(tag)
@@ -79,6 +94,77 @@ extension CardListView {
                         }
                     } label: {
                         Label("Set Priority", systemImage: "flag")
+                    }
+                    
+                    // Repeat Interval
+                    Menu {
+                        ForEach(RepeatInterval.allCases.filter { $0.hours != nil }, id: \.self) { interval in
+                            Button(interval.rawValue) {
+                                batchSetRepeatInterval(interval)
+                            }
+                        }
+                    } label: {
+                        Label("Set Interval", systemImage: "calendar")
+                    }
+                    
+                    // Policies submenu
+                    Menu {
+                        // Skip policy
+                        Menu {
+                            ForEach(RepeatPolicy.allCases, id: \.self) { policy in
+                                Button(policy.rawValue) {
+                                    batchSetSkipPolicy(policy)
+                                }
+                            }
+                        } label: {
+                            Label("On Skip", systemImage: "forward")
+                        }
+                        
+                        // Rating policies (only if flashcards selected)
+                        let hasFlashcards = selectedCards.contains { $0.cardType == .flashcard }
+                        
+                        Menu {
+                            ForEach(RepeatPolicy.allCases, id: \.self) { policy in
+                                Button(policy.rawValue) {
+                                    batchSetEasyPolicy(policy)
+                                }
+                            }
+                        } label: {
+                            Label("On Easy", systemImage: "hand.thumbsup")
+                        }
+                        .disabled(!hasFlashcards)
+                        
+                        Menu {
+                            ForEach(RepeatPolicy.allCases, id: \.self) { policy in
+                                Button(policy.rawValue) {
+                                    batchSetHardPolicy(policy)
+                                }
+                            }
+                        } label: {
+                            Label("On Hard", systemImage: "hand.thumbsdown")
+                        }
+                        .disabled(!hasFlashcards)
+                        
+                        Divider()
+                        
+                        // Reset on complete (only if todos selected)
+                        let hasTodos = selectedCards.contains { $0.cardType == .todo }
+                        
+                        Button {
+                            batchSetResetOnComplete(true)
+                        } label: {
+                            Label("Reset Interval On Complete: On", systemImage: "checkmark.circle")
+                        }
+                        .disabled(!hasTodos)
+                        
+                        Button {
+                            batchSetResetOnComplete(false)
+                        } label: {
+                            Label("Reset Interval On Complete: Off", systemImage: "xmark.circle")
+                        }
+                        .disabled(!hasTodos)
+                    } label: {
+                        Label("Policies", systemImage: "slider.horizontal.3")
                     }
                     
                     Divider()
@@ -117,10 +203,11 @@ extension CardListView {
                     } label: {
                         Label("Export", systemImage: "square.and.arrow.up")
                     }
+                    .disabled(selectedCards.isEmpty)
                 } label: {
-                    Text("Actions")
+                    Image(systemName: "ellipsis.circle")
                 }
-                .disabled(selectedCards.isEmpty)
+                .accessibilityLabel("Actions")
             } else if selectedCardModel.selectedCard != nil {
                 // Only show Done when a card is selected; hide sort/filter/settings
                 Button("Done") {
@@ -204,6 +291,15 @@ extension CardListView {
                                     }
                                 }
                             }
+                        }
+                        
+                        Divider()
+                        
+                        // Tags option - opens tag edit sheet
+                        Button {
+                            showEditTagsSheet = true
+                        } label: {
+                            Label("Tags", systemImage: "tag")
                         }
                         
                         Divider()

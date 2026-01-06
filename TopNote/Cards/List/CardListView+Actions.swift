@@ -365,4 +365,77 @@ extension CardListView {
         try? context.save()
         exitSelectionMode()
     }
+    
+    /// Sets repeat interval for all selected cards
+    func batchSetRepeatInterval(_ interval: RepeatInterval) {
+        // Safely unwrap optional hours; ignore if nil or zero
+        guard let hours = interval.hours, hours != 0 else { return }
+        for card in selectedCards {
+            card.repeatInterval = hours
+        }
+        try? context.save()
+        exitSelectionMode()
+    }
+    
+    /// Sets skip policy for all selected cards
+    func batchSetSkipPolicy(_ policy: RepeatPolicy) {
+        for card in selectedCards {
+            card.skipPolicy = policy
+        }
+        try? context.save()
+        exitSelectionMode()
+    }
+    
+    /// Sets easy policy for all selected cards (flashcards only)
+    func batchSetEasyPolicy(_ policy: RepeatPolicy) {
+        for card in selectedCards where card.cardType == .flashcard {
+            card.ratingEasyPolicy = policy
+        }
+        try? context.save()
+        exitSelectionMode()
+    }
+    
+    /// Sets hard policy for all selected cards (flashcards only)
+    func batchSetHardPolicy(_ policy: RepeatPolicy) {
+        for card in selectedCards where card.cardType == .flashcard {
+            card.ratingHardPolicy = policy
+        }
+        try? context.save()
+        exitSelectionMode()
+    }
+    
+    /// Sets reset on complete for all selected cards (todos only)
+    func batchSetResetOnComplete(_ value: Bool) {
+        for card in selectedCards where card.cardType == .todo {
+            card.resetRepeatIntervalOnComplete = value
+        }
+        try? context.save()
+        exitSelectionMode()
+    }
+    
+    /// Creates a new folder and moves all selected cards to it
+    func batchMoveToNewFolder(named name: String) {
+        guard !name.isEmpty else { return }
+        let newFolder = Folder(name: name)
+        context.insert(newFolder)
+        for card in selectedCards {
+            card.folder = newFolder
+        }
+        try? context.save()
+        exitSelectionMode()
+    }
+    
+    /// Creates a new tag and adds it to all selected cards
+    func batchAddNewTag(named name: String) {
+        guard !name.isEmpty else { return }
+        let newTag = CardTag(name: name)
+        context.insert(newTag)
+        for card in selectedCards {
+            if card.tags == nil { card.tags = [] }
+            card.tags?.append(newTag)
+        }
+        try? context.save()
+        exitSelectionMode()
+    }
 }
+

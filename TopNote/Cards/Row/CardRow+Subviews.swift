@@ -101,12 +101,17 @@ extension CardRow {
                 } else {
                     
                     
-                    // Folder name if present, otherwise empty
+                    // Folder name with icon if present
                     if let folder = card.folder {
-                        Text(folder.name)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
+                        HStack(spacing: 3) {
+                            Image(systemName: "folder.fill")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                            Text(folder.name)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                        }
                     }
                     
                     // Tags - truncated to fit available space

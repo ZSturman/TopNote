@@ -196,45 +196,12 @@ struct CardPoliciesMenu: View {
                         .font(.caption)
                     }
                     .menuActionDismissBehavior(.disabled)
-
-                    Menu {
-                        Text("Good keeps the normal schedule.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        Divider()
-                        
-                        ForEach(RepeatPolicy.allCases, id: \.self) { policy in
-                            Button(action: {
-                                card.ratingMedPolicy = policy
-                            }) {
-                                HStack {
-                                    Text(policy.rawValue)
-                                    if card.ratingMedPolicy == policy {
-                                        Spacer()
-                                        Image(systemName: "checkmark")
-                                    }
-                                }
-                            }
-                        }
-                        
-                        Divider()
-                        
-                        VStack(alignment: .leading, spacing: 4) {
-                            ForEach(RepeatPolicy.allCases, id: \.self) { policy in
-                                Text("• \(policy.rawValue): \(policy.shortDescription(for: .good))")
-                                    .font(.caption)
-                            }
-                        }
-                    } label: {
-                        HStack(spacing: 4) {
-                            Text("On Good:")
-                            Text(card.ratingMedPolicy.rawValue)
-                                .fontWeight(.semibold)
-                        }
+                    
+                    // Note: "Good" rating maintains the current interval (no policy adjustment)
+                    Text("Good: Keeps current schedule")
                         .font(.caption)
-                    }
-                    .menuActionDismissBehavior(.disabled)
+                        .foregroundColor(.secondary)
+                        .padding(.vertical, 4)
 
                     Menu {
                         Text("Hard brings it back sooner for review.")

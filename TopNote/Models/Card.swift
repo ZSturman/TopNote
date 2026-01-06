@@ -586,8 +586,9 @@ final class Card {
             // multiply the repeatInterval by the ratingEasyPolicy multiplier
             nextInterval = Int(Double(baseInterval) * ratingEasyPolicy.easyMultiplier)
         case .good:
-            // multiply the repeatInterval by the ratingMedPolicy multiplier
-            nextInterval = Int(Double(baseInterval) * ratingMedPolicy.goodMultiplier)
+            // "Good" rating maintains the current interval without any multiplier
+            // The rating is still logged but doesn't affect the repeat interval
+            nextInterval = baseInterval
         case .hard:
             // multiply the repeatInterval by the ratingHardPolicy multiplier
             nextInterval = Int(Double(baseInterval) * ratingHardPolicy.hardMultiplier)

@@ -85,6 +85,10 @@ final class SelectedCardModel: ObservableObject {
     /// Latest in-memory drafts for the selected card. Not published to avoid UI invalidations per keystroke.
     private(set) var draftContent: String? = nil
     private(set) var draftAnswer: String? = nil
+    
+    /// The ID of the card that the current drafts belong to.
+    /// Used to prevent race conditions when switching selections.
+    private(set) var draftCardID: UUID? = nil
 
     /// Snapshot captured at the moment selection begins, used for Cancel.
     private(set) var snapshot: CardSnapshot? = nil
@@ -162,10 +166,26 @@ final class SelectedCardModel: ObservableObject {
     func updateDraft(answer: String) {
         draftAnswer = answer
     }
+    
+    /// Sets the draft card ID to associate drafts with a specific card.
+    func setDraftCardID(_ id: UUID?) {
+        draftCardID = id
+    }
 
     func clearDrafts() {
         draftContent = nil
         draftAnswer = nil
+        draftCardID = nil
+    }
+    
+    /// Safely retrieves drafts only if they belong to the specified card.
+    /// Returns nil if drafts belong to a different card (race condition prevention).
+    func getDraftsForCard(_ cardID: UUID) -> (content: String?, answer: String?)? {
+        guard draftCardID == cardID else {
+            TopNoteLogger.selection.warning("Draft card ID mismatch: expected \(cardID.uuidString), got \(self.draftCardID?.uuidString ?? "nil")")
+            return nil
+        }
+        return (draftContent, draftAnswer)
     }
 }
 

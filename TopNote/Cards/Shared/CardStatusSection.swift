@@ -133,7 +133,11 @@ struct CardStatusSection: View {
                     .contentShape(Rectangle())
                     .onTapGesture { select(card) }
                     .accessibilityAddTraits(.isButton)
-                    .animation(.easeInOut(duration: 0.2), value: selectedCardModel.selectedCard?.id)
+                    // Use transaction to control animation - only animate the row expansion/collapse
+                    .transaction { transaction in
+                        // Keep animations light to prevent choppiness
+                        transaction.animation = .easeInOut(duration: 0.15)
+                    }
                 }
             }
             .onDelete { offsets in

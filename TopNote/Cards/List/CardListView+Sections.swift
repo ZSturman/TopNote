@@ -11,6 +11,28 @@ import SwiftUI
 
 extension CardListView {
     
+    /// Navigation title with card type icons based on active filters
+    var navigationTitleWithIcons: String {
+        let baseName = selectedFolder?.name ?? "All Cards"
+        var icons: [String] = []
+        
+        if filterOptions.contains(.todo) {
+            icons.append("✓")  // Checkmark for todos
+        }
+        if filterOptions.contains(.note) {
+            icons.append("📝")  // Note icon
+        }
+        if filterOptions.contains(.flashcard) {
+            icons.append("🎴")  // Card icon for flashcards
+        }
+        
+        if icons.isEmpty {
+            return baseName
+        }
+        
+        return "\(baseName) \(icons.joined(separator: " "))"
+    }
+    
     var emptyStatusFilterView: some View {
         VStack(spacing: 8) {
             Text("No statuses selected")
@@ -204,7 +226,7 @@ extension CardListView {
                     .frame(maxWidth: .infinity)
                 } else {
                     VStack(spacing: 4) {
-                        Text("Swipe or long-press to restore or permanently delete")
+                        Text("Cards will be permanently deleted after 30 days")
                             .font(.caption)
                             .foregroundColor(.secondary)
                         
@@ -525,6 +547,7 @@ extension CardListView {
                 if !selectedCardModel.isNewlyCreated { TipView(addWidgetTip) }
                 TipView(customizeWidgetTip)
                 
+
                 if activeStatusFilters.isEmpty {
                     emptyStatusFilterView
                 } else {

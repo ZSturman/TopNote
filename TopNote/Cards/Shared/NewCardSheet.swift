@@ -40,6 +40,8 @@ struct NewCardSheet: View {
     @State private var showingFlashcardAnswer: Bool = false
     @State private var newTagText: String = ""
     @State private var showAIGenerator: Bool = false
+    @State private var showNewFolderSheet: Bool = false
+    @State private var newFolderName: String = ""
     @FocusState private var isContentFocused: Bool
     @FocusState private var isAnswerFocused: Bool
     
@@ -187,12 +189,51 @@ struct NewCardSheet: View {
                 
                 // MARK: - Organization Section
                 Section {
-                    // Folder picker
-                    Picker("Folder", selection: $selectedFolder) {
-                        Text("No folder").tag(nil as Folder?)
-                        ForEach(folders.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }) { folder in
-                            Text(folder.name).tag(folder as Folder?)
+                    // Folder picker with New Folder option
+                    VStack(alignment: .leading, spacing: 8) {
+                        Menu {
+                            Button(action: {
+                                showNewFolderSheet = true
+                            }) {
+                                Label("New Folder...", systemImage: "folder.badge.plus")
+                            }
+                            Divider()
+                            Button(action: {
+                                selectedFolder = nil
+                            }) {
+                                HStack {
+                                    Text("No Folder")
+                                    if selectedFolder == nil {
+                                        Spacer()
+                                        Image(systemName: "checkmark")
+                                    }
+                                }
+                            }
+                            ForEach(folders.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }) { folder in
+                                Button(action: {
+                                    selectedFolder = folder
+                                }) {
+                                    HStack {
+                                        Text(folder.name)
+                                        if selectedFolder?.id == folder.id {
+                                            Spacer()
+                                            Image(systemName: "checkmark")
+                                        }
+                                    }
+                                }
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: "folder")
+                                    .foregroundStyle(.secondary)
+                                Text(selectedFolder?.name ?? "No Folder")
+                                Spacer()
+                                Image(systemName: "chevron.up.chevron.down")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
+                        .foregroundStyle(.primary)
                     }
                     
                     // Tags
@@ -328,6 +369,15 @@ struct NewCardSheet: View {
                     }
                 )
             }
+            .sheet(isPresented: $showNewFolderSheet) {
+                NewFolderSheetForCard(
+                    folderName: $newFolderName,
+                    onSave: { newFolder in
+                        selectedFolder = newFolder
+                        newFolderName = ""
+                    }
+                )
+            }
         }
     }
     
@@ -389,6 +439,186 @@ struct NewCardSheet: View {
         }
         
         onSave(newCard)
+        dismiss()
+    }
+}
+
+// MARK: - New Folder Sheet for Card Creation
+/// A compact sheet for creating a new folder during card creation
+struct NewFolderSheetForCard: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+    @Query private var existingFolders: [Folder]
+    
+    @Binding var folderName: String
+    let onSave: (Folder) -> Void
+    
+    @FocusState private var isFocused: Bool
+    
+    private var trimmedName: String {
+        folderName.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    
+    private var isValid: Bool {
+        !trimmedName.isEmpty && !existingFolders.contains { $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame }
+    }
+    
+    private var errorMessage: String? {
+        if trimmedName.isEmpty {
+            return nil
+        }
+        if existingFolders.contains(where: { $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame }) {
+            return "A folder with this name already exists"
+        }
+        return nil
+    }
+    
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("Folder name", text: $folderName)
+                        .focused($isFocused)
+                        .submitLabel(.done)
+                        .onSubmit {
+                            if isValid {
+                                createFolder()
+                            }
+                        }
+                } header: {
+                    Text("Name")
+                } footer: {
+                    if let error = errorMessage {
+                        Text(error)
+                            .foregroundStyle(.red)
+                    }
+                }
+            }
+            .navigationTitle("New Folder")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        folderName = ""
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Create") {
+                        createFolder()
+                    }
+                    .fontWeight(.semibold)
+                    .disabled(!isValid)
+                }
+            }
+            .onAppear {
+                isFocused = true
+            }
+        }
+        .presentationDetents([.height(200)])
+        .presentationDragIndicator(.visible)
+    }
+    
+    private func createFolder() {
+        let newFolder = Folder(name: trimmedName)
+        modelContext.insert(newFolder)
+        do {
+            try modelContext.save()
+        } catch {
+            // Handle error silently
+        }
+        onSave(newFolder)
+        folderName = ""
+        dismiss()
+    }
+}
+
+// MARK: - New Tag Sheet for Batch Actions
+
+struct NewTagSheetForBatch: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+    @Query private var existingTags: [CardTag]
+    
+    @Binding var tagName: String
+    let onSave: (CardTag) -> Void
+    
+    @FocusState private var isFocused: Bool
+    
+    private var trimmedName: String {
+        tagName.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    
+    private var isValid: Bool {
+        !trimmedName.isEmpty && !existingTags.contains { $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame }
+    }
+    
+    private var errorMessage: String? {
+        if trimmedName.isEmpty {
+            return nil
+        }
+        if existingTags.contains(where: { $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame }) {
+            return "A tag with this name already exists"
+        }
+        return nil
+    }
+    
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("Tag name", text: $tagName)
+                        .focused($isFocused)
+                        .submitLabel(.done)
+                        .onSubmit {
+                            if isValid {
+                                createTag()
+                            }
+                        }
+                } header: {
+                    Text("Name")
+                } footer: {
+                    if let error = errorMessage {
+                        Text(error)
+                            .foregroundStyle(.red)
+                    }
+                }
+            }
+            .navigationTitle("New Tag")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        tagName = ""
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Create") {
+                        createTag()
+                    }
+                    .fontWeight(.semibold)
+                    .disabled(!isValid)
+                }
+            }
+            .onAppear {
+                isFocused = true
+            }
+        }
+        .presentationDetents([.height(200)])
+        .presentationDragIndicator(.visible)
+    }
+    
+    private func createTag() {
+        let newTag = CardTag(name: trimmedName)
+        modelContext.insert(newTag)
+        do {
+            try modelContext.save()
+        } catch {
+            // Handle error silently
+        }
+        onSave(newTag)
+        tagName = ""
         dismiss()
     }
 }

@@ -20,7 +20,7 @@ struct ContentView: View {
             
             CardListView(
                 selectedFolder: $selectedFolder, 
-                tagSelectionStates: tagSelectionStates,
+                tagSelectionStates: $tagSelectionStates,
                 deepLinkedCardID: $deepLinkedCardID
             )
                 .environmentObject(selectedCardModel)

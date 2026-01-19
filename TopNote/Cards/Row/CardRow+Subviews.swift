@@ -12,6 +12,9 @@ import PhotosUI
 
 extension CardRow {
     struct CardRowMainContent: View {
+        @Environment(\.modelContext) private var modelContext
+        @EnvironmentObject var selectedCardModel: SelectedCardModel
+        
         let card: Card
         let isSelected: Bool
 
@@ -37,34 +40,178 @@ extension CardRow {
                 VStack(alignment: .leading, spacing: 6) {
                     CardRowHeader(card: card, isSelected: isSelected)
                     if isSelected {
-                        CardRowEditor(
-                            card: card,
-                            draftContent: $draftContent,
-                            draftAnswer: $draftAnswer,
-                            showingFlashcardAnswer: $showingFlashcardAnswer,
-                            isContentEditorFocused: _isContentEditorFocused
-                            // MARK: - IMAGE DISABLED
-                            // selectedContentPhoto: $selectedContentPhoto,
-                            // selectedAnswerPhoto: $selectedAnswerPhoto
-                        )
-                        CardRowInlineControls(
-                            card: card,
-                            folders: folders,
-                            onPriorityChanged: onPriorityChanged,
-                            moveAction: moveAction
-                        )
+                        if card.isDeleted {
+                            // Show read-only content for deleted cards
+                            DeletedCardReadOnlyContent(card: card)
+                            // Show restore/delete controls instead of normal inline controls
+                            DeletedCardInlineControls(card: card)
+                        } else {
+                            CardRowEditor(
+                                card: card,
+                                draftContent: $draftContent,
+                                draftAnswer: $draftAnswer,
+                                showingFlashcardAnswer: $showingFlashcardAnswer,
+                                isContentEditorFocused: _isContentEditorFocused
+                                // MARK: - IMAGE DISABLED
+                                // selectedContentPhoto: $selectedContentPhoto,
+                                // selectedAnswerPhoto: $selectedAnswerPhoto
+                            )
+                            CardRowInlineControls(
+                                card: card,
+                                folders: folders,
+                                onPriorityChanged: onPriorityChanged,
+                                moveAction: moveAction
+                            )
+                        }
                     } else {
                         HStack(spacing: 6) {
                             // Card type icon with tint color (no text label)
                             Image(systemName: card.cardType.systemImage)
                                 .font(.caption)
-                                .foregroundColor(card.cardType.tintColor)
+                                .foregroundColor(card.isDeleted ? .secondary : card.cardType.tintColor)
                             CardRowContentDisplay(card: card)
                         }
                         
                     }
                 }
             }
+        }
+    }
+    
+    /// Read-only content display for deleted cards when selected
+    struct DeletedCardReadOnlyContent: View {
+        let card: Card
+        @State private var showingAnswer = false
+        
+        var body: some View {
+            VStack(alignment: .leading, spacing: 8) {
+                // Content display (read-only)
+                Text(card.content.isEmpty ? "Untitled" : card.content)
+                    .font(.headline.weight(.semibold))
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.secondary.opacity(0.08))
+                    )
+                
+                // Show tags if present
+                if let tags = card.tags, !tags.isEmpty {
+                    HStack(spacing: 4) {
+                        ForEach(Array(tags), id: \.id) { tag in
+                            Text("#\(tag.name)")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+                
+                // Flashcard answer (read-only)
+                if card.cardType == .flashcard {
+                    if showingAnswer {
+                        Text(card.answer ?? "No answer")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.secondary.opacity(0.06))
+                            )
+                        
+                        Button {
+                            withAnimation { showingAnswer = false }
+                        } label: {
+                            Text("Hide Answer")
+                                .font(.subheadline)
+                                .foregroundColor(.blue)
+                        }
+                        .buttonStyle(BorderlessButtonStyle())
+                    } else {
+                        Button {
+                            withAnimation { showingAnswer = true }
+                        } label: {
+                            Text("Show Answer")
+                                .font(.subheadline)
+                                .foregroundColor(.blue)
+                        }
+                        .buttonStyle(BorderlessButtonStyle())
+                    }
+                }
+            }
+        }
+    }
+    
+    /// Inline controls for deleted cards - restore and delete forever buttons
+    struct DeletedCardInlineControls: View {
+        @Environment(\.modelContext) private var modelContext
+        @EnvironmentObject var selectedCardModel: SelectedCardModel
+        let card: Card
+        @State private var showDeleteConfirmation = false
+        
+        var body: some View {
+            VStack(alignment: .leading, spacing: 10) {
+                // Info message
+                Text("This card is in the trash")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                
+                HStack {
+                    Spacer()
+                    
+                    // Restore button
+                    Button {
+                        card.restore(at: Date())
+                        try? modelContext.save()
+                    } label: {
+                        VStack(spacing: 2) {
+                            Image(systemName: "arrow.uturn.backward")
+                            Text("Restore")
+                                .font(.caption2)
+                        }
+                        .foregroundColor(.green)
+                    }
+                    .buttonStyle(.plain)
+                    
+                    Spacer()
+                    
+                    // Delete forever button
+                    Button {
+                        showDeleteConfirmation = true
+                    } label: {
+                        VStack(spacing: 2) {
+                            Image(systemName: "trash.fill")
+                            Text("Delete Forever")
+                                .font(.caption2)
+                        }
+                        .foregroundColor(.red)
+                    }
+                    .buttonStyle(.plain)
+                    .confirmationDialog(
+                        "Permanently Delete?",
+                        isPresented: $showDeleteConfirmation,
+                        titleVisibility: .visible
+                    ) {
+                        Button("Delete Forever", role: .destructive) {
+                            // Clear selection first to prevent state issues
+                            selectedCardModel.clearSelection()
+                            // Use async to let the UI update before deleting
+                            DispatchQueue.main.async {
+                                modelContext.delete(card)
+                                try? modelContext.save()
+                            }
+                        }
+                        Button("Cancel", role: .cancel) {}
+                    } message: {
+                        Text("This action cannot be undone. The card will be permanently removed.")
+                    }
+                    
+                    Spacer()
+                }
+            }
+            .padding(.vertical, 8)
         }
     }
 
@@ -74,12 +221,34 @@ extension CardRow {
         @Binding var showingRatingsPolicyInfo: Bool
         @Binding var showingSkipInfo: Bool
         
+        private var daysUntilPermanentDeletion: Int? {
+            guard let deletedAt = card.deletedAt else { return nil }
+            let thirtyDaysLater = Calendar.current.date(byAdding: .day, value: 30, to: deletedAt) ?? deletedAt
+            let daysRemaining = Calendar.current.dateComponents([.day], from: Date(), to: thirtyDaysLater).day ?? 0
+            return max(0, daysRemaining)
+        }
+        
+        private var daysLeftText: String {
+            guard let days = daysUntilPermanentDeletion else { return "" }
+            return days == 1 ? "1 day left" : "\(days) days left"
+        }
 
         var body: some View {
             VStack(alignment: .trailing) {
-                CardSeenAndSkipCount(card: card)
-                if !card.isRecurring, !card.displayedRecurringMessageShort.isEmpty {
-                    CardRecurringMessage(card: card, showingLongInfo: $showingLongInfo, showingRatingsPolicyInfo: $showingRatingsPolicyInfo, showingSkipInfo: $showingSkipInfo)
+                if card.isDeleted {
+                    // Show days until permanent deletion for deleted cards
+                    HStack {
+                        Spacer()
+                        if daysUntilPermanentDeletion != nil {
+                            Text(daysLeftText)
+                                .font(.caption2)
+                                .foregroundColor(.orange)
+                        }
+                    }
+                } else {
+                    if !card.isRecurring, !card.displayedRecurringMessageShort.isEmpty {
+                        CardRecurringMessage(card: card, showingLongInfo: $showingLongInfo, showingRatingsPolicyInfo: $showingRatingsPolicyInfo, showingSkipInfo: $showingSkipInfo)
+                    }
                 }
             }
             .padding(2)
@@ -89,13 +258,20 @@ extension CardRow {
     struct CardRowHeader: View {
         let card: Card
         let isSelected: Bool
+        
+        private var deletionDateText: String {
+            guard let deletedAt = card.deletedAt else { return "" }
+            let formatter = RelativeDateTimeFormatter()
+            formatter.unitsStyle = .abbreviated
+            return "Deleted \(formatter.localizedString(for: deletedAt, relativeTo: Date()))"
+        }
 
         var body: some View {
             HStack(spacing: 6) {
                 if isSelected {
                     Image(systemName: card.cardType.systemImage)
                         .font(.caption2)
-                        .foregroundColor(card.cardType.tintColor)
+                        .foregroundColor(card.isDeleted ? .secondary : card.cardType.tintColor)
                     Text(card.cardTypeRaw)
                         .font(.caption2)
                 } else {
@@ -104,7 +280,7 @@ extension CardRow {
                     // Folder name with icon if present
                     if let folder = card.folder {
                         HStack(spacing: 3) {
-                            Image(systemName: "folder.fill")
+                            Image(systemName: "folder")
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
                             Text(folder.name)
@@ -114,8 +290,8 @@ extension CardRow {
                         }
                     }
                     
-                    // Tags - truncated to fit available space
-                    if let tags = card.tags, !tags.isEmpty {
+                    // Tags - truncated to fit available space (hide for deleted cards to save space)
+                    if !card.isDeleted, let tags = card.tags, !tags.isEmpty {
                         HStack(spacing: 4) {
                             ForEach(Array(tags.prefix(3)), id: \.id) { tag in
                                 Text("#\(tag.name)")
@@ -135,11 +311,49 @@ extension CardRow {
                 Spacer(minLength: 8)
 
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text(card.displayedDateForQueue)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    // Show deletion date for deleted cards, otherwise show timing
+                    if card.isDeleted {
+                        Text(deletionDateText)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    } else                 if card.isArchived {
+                        if let archivedDate = card.removals.last {
+                            let daysAgo = Calendar.current.dateComponents([.day], from: archivedDate, to: Date()).day ?? 0
+                            if daysAgo == 0 {
+                                Text("Archived today")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            } else if daysAgo == 1 {
+                                Text("Archived yesterday")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            } else {
+                                Text("Archived \(daysAgo) days ago")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    } else {
+                        HStack(spacing: 3) {
+                            if !card.isArchived {
+                                Image(systemName: card.isEnqueue(currentDate: Date()) ? "clock.arrow.circlepath" : "calendar")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                            Text(card.displayedDateForQueue)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            
+                            if !card.isDeleted && !card.isArchived && card.priority != .none {
+                                    Image(systemName: card.priority.iconName)
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary)
+                                
+                            }
+                        }
+                    }
 
-                    if isSelected && card.isRecurring && !card.displayedScheduleForRow.isEmpty {
+                    if isSelected && !card.isDeleted && card.isRecurring && !card.displayedScheduleForRow.isEmpty {
                         Text(card.displayedScheduleForRow)
                             .font(.caption2)
                             .foregroundColor(.secondary)
@@ -155,26 +369,20 @@ extension CardRow {
         private var isArchived: Bool {
             card.isArchived
         }
+        
+        private var isDeleted: Bool {
+            card.isDeleted
+        }
 
         var body: some View {
             HStack(alignment: .top, spacing: 8) {
-                /* MARK: - IMAGE DISABLED
-                // Show thumbnail if content has an image
-                if let imageData = card.contentImageData, let uiImage = UIImage(data: imageData) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 50, height: 50)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                }
-                */
                 
                 Text(card.displayContent)
                     .font(.headline)
                     .fontWeight(.semibold)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
-                    .foregroundColor(isArchived ? .gray : .primary)
+                    .foregroundColor(isArchived || isDeleted ? .secondary : .primary)
                     .strikethrough(card.cardType == .todo && card.isComplete, color: .gray)
             }
         }
@@ -192,9 +400,6 @@ extension CardRow {
         @EnvironmentObject var selectedCardModel: SelectedCardModel
         @Environment(\.modelContext) var modelContext
         
-        // MARK: - IMAGE DISABLED
-        // @Binding var selectedContentPhoto: PhotosPickerItem?
-        // @Binding var selectedAnswerPhoto: PhotosPickerItem?
 
         var body: some View {
             VStack(alignment: .leading, spacing: 8) {
@@ -225,56 +430,6 @@ extension CardRow {
                         selectedCardModel.updateDraft(content: newValue)
                     }
                 
-                /* MARK: - IMAGE DISABLED - Content image picker and display
-                ZStack(alignment: .bottomTrailing) {
-                    // TextEditor was inside this ZStack
-                    
-                    // Content image picker - only show when no image exists
-                    if card.contentImageData == nil {
-                        PhotosPicker(selection: $selectedContentPhoto, matching: .images) {
-                            Image(systemName: "photo.badge.plus")
-                                .font(.system(size: 18))
-                                .foregroundColor(.accentColor)
-                                .padding(8)
-                                .background(.ultraThinMaterial)
-                                .clipShape(Circle())
-                        }
-                        .padding(8)
-                        .buttonStyle(.borderless)
-                        .onChange(of: selectedContentPhoto) { _, newValue in
-                            Task {
-                                if let data = try? await newValue?.loadTransferable(type: Data.self),
-                                   let uiImage = UIImage(data: data) {
-                                    card.setContentImage(uiImage.compressedJPEGData(quality: 0.8))
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                // Display content image if present
-                if let imageData = card.contentImageData, let uiImage = UIImage(data: imageData) {
-                    ZStack(alignment: .topTrailing) {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(maxHeight: 200)
-                            .cornerRadius(8)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                        
-                        Button(action: {
-                            card.setContentImage(nil)
-                        }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.white)
-                                .background(Circle().fill(Color.black.opacity(0.6)))
-                                .padding(4)
-                        }
-                        .buttonStyle(.borderless)
-                        .padding(4)
-                    }
-                }
-                */
 
                 if card.cardType != .flashcard {
                     TagInputView(card: card)
@@ -409,48 +564,6 @@ extension CardRow {
                         .padding(.vertical, 2)
                         .accessibilityIdentifier("Card Answer Editor")
                     
-                    /* MARK: - IMAGE DISABLED - Answer image picker and display
-                    ZStack(alignment: .bottomTrailing) {
-                        // TextEditor was inside this ZStack
-                        
-                        // Answer image picker - only show when no image exists
-                        if card.answerImageData == nil {
-                            PhotosPicker(selection: $selectedAnswerPhoto, matching: .images) {
-                                Image(systemName: "photo.badge.plus")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.accentColor)
-                                    .padding(6)
-                                    .background(.ultraThinMaterial)
-                                    .clipShape(Circle())
-                            }
-                            .padding(6)
-                            .buttonStyle(.borderless)
-                        }
-                    }
-                    
-                    // Display answer image if present
-                    if let imageData = card.answerImageData, let uiImage = UIImage(data: imageData) {
-                        ZStack(alignment: .topTrailing) {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(maxHeight: 150)
-                                .cornerRadius(8)
-                                .frame(maxWidth: .infinity, alignment: .center)
-                            
-                            Button(action: {
-                                card.setAnswerImage(nil)
-                            }) {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundColor(.white)
-                                    .background(Circle().fill(Color.black.opacity(0.6)))
-                                    .padding(4)
-                            }
-                            .buttonStyle(.borderless)
-                            .padding(4)
-                        }
-                    }
-                    */
 
                     Button {
                         withAnimation {
@@ -545,40 +658,7 @@ extension CardRow {
             }
         }
     }
-    
-    struct CardSeenAndSkipCount: View {
-        var card: Card
-        
-        var body: some View {
-            HStack(spacing: 12) {
-                Spacer()
-                if card.isArchived {
-                    if let archivedDate = card.removals.last {
-                        let daysAgo = Calendar.current.dateComponents([.day], from: archivedDate, to: Date()).day ?? 0
-                        if daysAgo == 0 {
-                            Text("Archived today")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                        } else if daysAgo == 1 {
-                            Text("Archived yesterday")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                        } else {
-                            Text("Archived \(daysAgo) days ago")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                }
-                
-                if card.priority != .none {
-                    Text("Priority: \(card.priorityRaw)")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-            }
-        }
-    }
+
     
     
     @ViewBuilder fileprivate func flashcardAnswerView() -> some View {

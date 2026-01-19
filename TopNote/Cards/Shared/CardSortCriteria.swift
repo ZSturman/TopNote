@@ -36,11 +36,22 @@ enum CardSortCriteria: String, CaseIterable, Identifiable {
     /// User‐friendly label
     var localizedName: String {
         switch self {
-        case .enqueuedAt: return "Enqueued"
+        case .enqueuedAt: return "Queued"
         case .createdAt:  return "Created"
         case .skipCount:  return "Skips"
         case .seenCount:  return "Seen"
-        case .content:    return "Content (A-Z)"
+        case .content:    return "Content"
+        }
+    }
+    
+    /// SF Symbol for the sort criteria
+    var systemImage: String {
+        switch self {
+        case .enqueuedAt: return "clock.arrow.circlepath"
+        case .createdAt:  return "clock"
+        case .skipCount:  return "forward.fill"
+        case .seenCount:  return "eye"
+        case .content:    return "doc.text"
         }
     }
 }

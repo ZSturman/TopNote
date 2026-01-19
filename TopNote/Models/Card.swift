@@ -660,8 +660,8 @@ final class Card {
     
     
     var displayedDateForQueue: String {
-        if isArchived {
-            return "Removed from queue"
+        if isArchived || isDeleted {
+            return ""
         }
         let formatter = DateFormatter()
         formatter.dateStyle = .short
@@ -669,14 +669,17 @@ final class Card {
         if isEnqueue(currentDate: Date()) {
             let nextTimeInQueue = self.nextTimeInQueue.timeIntervalSinceNow
             let hours = Int(nextTimeInQueue / 3600)
-            if nextTimeInQueue < 0 && abs(hours) < 24 {
-                return "Queued \(abs(hours)) hours ago"
+            if nextTimeInQueue < 0 && abs(hours) < 1 {
+                return "Less than an hour"
+            } else if nextTimeInQueue < 0 && abs(hours) < 24 {
+                let absHours = abs(hours)
+                return absHours == 1 ? "1 hour" : "\(absHours) hours"
             } else if nextTimeInQueue < 0 && abs(hours) >= 24 && abs(hours) < 168 {
                 let days = abs(hours) / 24
-                return "Queued \(days) days ago"
+                return days == 1 ? "1 day" : "\(days) days"
             } else  {
                 let weeks = abs(hours) / 168
-                return "Queued \(weeks) weeks ago"
+                return weeks == 1 ? "1 week" : "\(weeks) weeks"
             }
         } else {
             // Show interval until next in queue
@@ -684,16 +687,16 @@ final class Card {
             let interval = self.nextTimeInQueue.timeIntervalSince(now)
             if interval < 3600 {
                 let minutes = max(1, Int(interval / 60))
-                return "Next: in \(minutes) min"
+                return minutes == 1 ? "1 min" : "\(minutes) min"
             } else if interval < 86400 {
                 let hours = Int(interval / 3600)
-                return "Next: in \(hours) hours"
+                return hours == 1 ? "1 hour" : "\(hours) hours"
             } else if interval < 604800 {
                 let days = Int(interval / 86400)
-                return "Next: in \(days) days"
+                return days == 1 ? "1 day" : "\(days) days"
             } else {
                 let weeks = Int(interval / 604800)
-                return "Next: in \(weeks) weeks"
+                return weeks == 1 ? "1 week" : "\(weeks) weeks"
             }
         }
     }
@@ -752,10 +755,10 @@ final class Card {
         
         // If intervals match, just show base schedule
         if repeatInterval == initialRepeatInterval {
-            return "Repeats: \(displayedBaseSchedule)"
+            return displayedBaseSchedule
         } else {
             // Show that it's been adjusted
-            return "Repeats: \(displayedBaseSchedule) → \(displayedCurrentInterval)"
+            return "\(displayedBaseSchedule) → \(displayedCurrentInterval)"
         }
     }
     
@@ -770,7 +773,7 @@ final class Card {
 
     
     var displayedRecurringMessageShort: String {
-        if !isRecurring, !isArchived {
+        if !isRecurring, !isArchived, !isDeleted {
             switch cardType {
             case .todo:
                 return skipEnabled ? "Completing this todo will archive it." : "Completing this todo will archive it."
@@ -784,7 +787,7 @@ final class Card {
     }
 
     var displayedRecurringMessageLong: String {
-        if !isRecurring, !isArchived {
+        if !isRecurring, !isArchived, !isDeleted {
             switch cardType {
             case .todo:
                 if skipEnabled {

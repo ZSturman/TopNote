@@ -44,7 +44,19 @@ struct FlashcardButtonGroup: View {
 
                 Spacer()
 
-                skipOrNextButton()
+                if skipEnabled {
+                    Button(intent: SkipCardIntent(card: card)) {
+                        SkipButtonUI()
+                    }
+                    .frame(width: buttonSize, height: buttonSize)
+                    .buttonStyle(WidgetButtonStyle(color: .orange))
+                } else {
+                    Button(intent: NextCardIntent(card: card)) {
+                        NextButtonUI()
+                    }
+                    .frame(width: buttonSize, height: buttonSize)
+                    .buttonStyle(WidgetButtonStyle(color: .blue))
+                }
             }
             .padding(6)
             .transition(.opacity.combined(with: .scale))
@@ -71,27 +83,13 @@ struct FlashcardButtonGroup: View {
 
                 if skipEnabled {
                     Button(intent: SkipCardIntent(card: card)) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.orange.opacity(0.85))
-                                .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
-                            Image(systemName: "arrow.trianglehead.counterclockwise.rotate.90")
-                                .font(.caption)
-                                .foregroundColor(.white)
-                        }
+                        SkipButtonUI()
                     }
                     .frame(width: buttonSize, height: buttonSize)
                     .buttonStyle(WidgetButtonStyle(color: .orange))
                 } else {
                     Button(intent: NextCardIntent(card: card)) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.blue.opacity(0.85))
-                                .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
-                            Image(systemName: "checkmark.rectangle.stack")
-                                .font(.caption)
-                                .foregroundColor(.white)
-                        }
+                        NextButtonUI()
                     }
                     .frame(width: buttonSize, height: buttonSize)
                     .buttonStyle(WidgetButtonStyle(color: .blue))
@@ -133,33 +131,4 @@ struct FlashcardButtonGroup: View {
         }
     }
 
-    private func skipOrNextButton() -> some View {
-        if skipEnabled {
-            return Button(intent: SkipCardIntent(card: card)) {
-                ZStack {
-                    Circle()
-                        .fill(Color.orange.opacity(0.85))
-                        .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
-                    Image(systemName: "forward.frame")
-                        .font(.caption)
-                        .foregroundColor(.white)
-                }
-            }
-            .frame(width: buttonSize, height: buttonSize)
-            .buttonStyle(WidgetButtonStyle(color: .orange))
-        } else {
-            return Button(intent: NextCardIntent(card: card)) {
-                ZStack {
-                    Circle()
-                        .fill(Color.blue.opacity(0.85))
-                        .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
-                    Image(systemName: "checkmark.rectangle.stack")
-                        .font(.caption)
-                        .foregroundColor(.white)
-                }
-            }
-            .frame(width: buttonSize, height: buttonSize)
-            .buttonStyle(WidgetButtonStyle(color: .blue))
-        }
-    }
 }

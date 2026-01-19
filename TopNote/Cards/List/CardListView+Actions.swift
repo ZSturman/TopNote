@@ -119,24 +119,69 @@ extension CardListView {
             selectedCardModel.clearSelection()
         }
     }
-    func select(_ card: Card) {
-        if selectedCardModel.selectedCard?.id == card.id {
-            // Deselecting by tapping selected card: treat as Done behavior
-            finishEdits()
-        } else {
-            selectedCardModel.selectedCard = card
-            selectedCardModel.setIsNewlyCreated(false)
-            selectedCardModel.captureSnapshot()
+    
+    /// Permanently deletes cards from the trash (no soft-delete, actual removal)
+    func permanentlyDeleteCards(cards sectionCards: [Card], at offsets: IndexSet) {
+        let toDelete = offsets.map { sectionCards[$0] }
+        toDelete.forEach { card in
+            context.delete(card)
+        }
+        do {
+            try context.save()
+        } catch {
+            print("📝 [PERMANENT DELETE] ERROR saving context: \(error)")
+        }
+        // After deleting cards, clean up orphan tags
+        do {
+            let fetchDescriptor = FetchDescriptor<CardTag>()
+            let allTags = try context.fetch(fetchDescriptor)
+            let orphanTags = allTags.filter { $0.unwrappedCards.isEmpty }
+            orphanTags.forEach { context.delete($0) }
+            if !orphanTags.isEmpty {
+                try context.save()
+            }
+        } catch {
+            print("📝 [PERMANENT DELETE] Failed to delete orphaned tags: \(error)")
+        }
+        // If the deleted card was selected, clear selection
+        if let selectedCard = selectedCardModel.selectedCard,
+           toDelete.contains(where: { $0.id == selectedCard.id })
+        {
+            selectedCardModel.clearSelection()
         }
     }
     
-    func handleSearchChange(oldValue: String, newValue: String) {                 if !newValue.isEmpty && selectedCardModel.selectedCard != nil {
-        selectedCardModel.clearSelection()
-    }}
-    func handleFolderChange(oldValue: FolderSelection?, newValue: FolderSelection?) {
-        if oldValue != newValue && selectedCardModel.selectedCard != nil {
+    func select(_ card: Card) {
+        print("👆 [CARDLISTVIEW SELECT] Selecting card: \(card.id)")
+        // Use unified selection method with finishEdits as the deselect callback
+        selectedCardModel.select(
+            card: card,
+            in: context,
+            isNew: false,
+            willSelect: nil,  // No frozen order capture needed here - CardStatusSection handles it
+            willDeselect: { [self] in
+                print("👆 [CARDLISTVIEW SELECT] willDeselect - calling finishEdits")
+                // Deselecting by tapping selected card: treat as Done behavior
+                finishEdits()
+            },
+            saveBeforeDeselect: false  // finishEdits handles saving
+        )
+    }
+    
+    func handleSearchChange(oldValue: String, newValue: String) {
+        print("🔎 [SEARCHCHANGE] Old: '\(oldValue)', New: '\(newValue)'")
+        if !newValue.isEmpty && selectedCardModel.selectedCard != nil {
+            print("🔎 [SEARCHCHANGE] Clearing selection due to search")
             selectedCardModel.clearSelection()
-        }}
+        }
+    }
+    func handleFolderChange(oldValue: FolderSelection?, newValue: FolderSelection?) {
+        print("📁 [FOLDERCHANGE] Old: \(oldValue?.name ?? "nil"), New: \(newValue?.name ?? "nil")")
+        if oldValue != newValue && selectedCardModel.selectedCard != nil {
+            print("📁 [FOLDERCHANGE] Clearing selection due to folder change")
+            selectedCardModel.clearSelection()
+        }
+    }
     func handleDeepLink(oldValue: UUID?, newValue: UUID?) { // When a card is deep linked from widget, update filters to ensure it's visible
         guard let cardID = newValue else { return }
         
@@ -206,8 +251,10 @@ extension CardListView {
     }
     
     func handleSelectionChange(oldID: UUID?, newID: UUID?) {
+        print("🔄 [SELECTIONCHANGE] Old: \(oldID?.uuidString ?? "nil"), New: \(newID?.uuidString ?? "nil")")
         // Track the last deselected card for fade-out animation
         if let oldID = oldID, newID != oldID {
+            print("🔄 [SELECTIONCHANGE] Setting lastDeselectedCardID to \(oldID)")
             lastDeselectedCardID = oldID
             // Clear after animation completes
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
@@ -336,31 +383,58 @@ extension CardListView {
         exitSelectionMode()
     }
     
-    /// Adds all selected cards to the queue
+    /// Adds all selected cards to the queue (also restores deleted cards)
     func batchEnqueue() {
         let now = Date()
         for card in selectedCards {
+            // Restore deleted cards first
+            if card.isDeleted {
+                card.restore(at: now)
+            }
             card.enqueue(at: now)
         }
         try? context.save()
         exitSelectionMode()
     }
     
-    /// Archives all selected cards
+    /// Archives all selected cards (also restores deleted cards)
     func batchArchive() {
         let now = Date()
         for card in selectedCards {
+            // Restore deleted cards first
+            if card.isDeleted {
+                card.restore(at: now)
+            }
             card.archive(at: now)
         }
         try? context.save()
         exitSelectionMode()
     }
     
-    /// Soft deletes all selected cards
+    /// Soft deletes non-deleted cards, permanently deletes already-deleted cards
     func batchSoftDelete() {
         let now = Date()
-        for card in selectedCards {
+        let alreadyDeleted = selectedCards.filter { $0.isDeleted }
+        let notDeleted = selectedCards.filter { !$0.isDeleted }
+        
+        // Soft delete cards that aren't already deleted
+        for card in notDeleted {
             card.softDelete(at: now)
+        }
+        
+        // Permanently delete cards that are already in trash
+        for card in alreadyDeleted {
+            context.delete(card)
+        }
+        
+        try? context.save()
+        exitSelectionMode()
+    }
+    
+    /// Permanently deletes all selected cards (for use when only deleted cards are selected)
+    func batchPermanentlyDelete() {
+        for card in selectedCards {
+            context.delete(card)
         }
         try? context.save()
         exitSelectionMode()

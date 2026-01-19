@@ -11,7 +11,7 @@ import TipKit
 
 struct CardListView: View {
     @Environment(\.modelContext) var context
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    //@Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @EnvironmentObject var selectedCardModel: SelectedCardModel
     
     @Query var cards: [Card]
@@ -69,6 +69,65 @@ struct CardListView: View {
     
     // Edit tags sheet (iPhone compact view)
     @State var showEditTagsSheet = false
+    // Tag filter sheet (for filter menu)
+    @State var showTagFilterSheet = false
+    
+    // MARK: - Cached Card Lists (Performance Optimization)
+    // These cached lists prevent redundant filtering operations that were causing crashes
+    @State var cachedFilteredCards: [Card] = []
+    @State var cachedQueueCards: [Card] = []
+    @State var cachedUpcomingCards: [Card] = []
+    @State var cachedArchivedCards: [Card] = []
+    @State var cachedDeletedCards: [Card] = []
+    @State var cachedCardCounts: (todo: Int, note: Int, flashcard: Int) = (0, 0, 0)
+    @State var lastCacheKey: CacheKey? = nil
+    @State var pendingSectionRefreshTask: Task<Void, Never>? = nil
+    @State var lastSectionHash: Int = 0  // Tracks section-affecting properties only
+    
+    // Cache key to detect when we need to recompute
+    struct CacheKey: Equatable {
+        let cardCount: Int
+        let cardStateHash: Int  // Hash of card IDs and relevant state properties
+        let filterOptions: [CardFilterOption]
+        let selectedFolder: FolderSelection?
+        let tagStates: [UUID: TagSelectionState]
+        let searchText: String
+    }
+    
+    var currentCacheKey: CacheKey {
+        // Create a hash from card IDs AND relevant state properties
+        // This ensures cache invalidates when cards move between sections
+        let cardStateHash = cards.reduce(0) { hash, card in
+            var cardHash = card.id.hashValue
+            cardHash ^= card.isDeleted.hashValue
+            cardHash ^= card.isArchived.hashValue
+            cardHash ^= card.nextTimeInQueue.hashValue
+            cardHash ^= (card.folder?.id.hashValue ?? 0)
+            cardHash ^= card.cardType.hashValue
+            return hash ^ cardHash
+        }
+        return CacheKey(
+            cardCount: cards.count,
+            cardStateHash: cardStateHash,
+            filterOptions: filterOptions,
+            selectedFolder: selectedFolder,
+            tagStates: tagSelectionStates,
+            searchText: searchText
+        )
+    }
+    
+    /// Hash for section-affecting properties only: isDeleted, isArchived, queue eligibility
+    /// Called explicitly only when cards array changes to avoid repeated computation
+    func computeSectionHash() -> Int {
+        cards.reduce(0) { hash, card in
+            var cardHash = card.id.hashValue
+            cardHash ^= card.isDeleted.hashValue
+            cardHash ^= card.isArchived.hashValue
+            // Only include whether card is in queue (not exact time)
+            cardHash ^= (card.nextTimeInQueue <= Date.now).hashValue
+            return hash ^ cardHash
+        }
+    }
     
     // Tip tracking
     @State var appOpenCount = 0
@@ -120,19 +179,42 @@ struct CardListView: View {
     
     var body: some View {
         ScrollViewReader { proxy in
-            Group {
-                contentListView
-            }
-            .listStyle(.plain)
-            .navigationTitle(navigationTitleWithIcons)
+                    contentListView
+                .listStyle(.plain)
+            
+            .navigationTitle(selectedFolder?.name ?? "All Cards")
+           
             .searchable(text: $searchText, prompt: "Search cards")
             .accessibilityIdentifier("CardListView")
-            .onAppear(perform: handleOnAppear)
-            .onChange(of: searchText) { oldValue, newValue in
-                handleSearchChange(oldValue: oldValue, newValue: newValue)
+            .onAppear {
+                handleOnAppear()
+                lastSectionHash = computeSectionHash()
+                refreshCacheIfNeeded()
+            }
+            .onChange(of: cards) { _, _ in
+                // Check if section-affecting properties changed
+                let newSectionHash = computeSectionHash()
+                if lastSectionHash != newSectionHash {
+                    // Section membership may have changed - use debounced refresh
+                    scheduleDebouncedSectionRefresh()
+                } else {
+                    // Only non-section-affecting properties changed - immediate cache check
+                    refreshCacheIfNeeded()
+                }
+            }
+            .onChange(of: filterOptions) { _, _ in
+                refreshCacheIfNeeded()
             }
             .onChange(of: selectedFolder) { oldValue, newValue in
                 handleFolderChange(oldValue: oldValue, newValue: newValue)
+                refreshCacheIfNeeded()
+            }
+            .onChange(of: tagSelectionStates) { _, _ in
+                refreshCacheIfNeeded()
+            }
+            .onChange(of: searchText) { oldValue, newValue in
+                handleSearchChange(oldValue: oldValue, newValue: newValue)
+                refreshCacheIfNeeded()
             }
             .onChange(of: deepLinkedCardID) { oldValue, newValue in
                 handleDeepLink(oldValue: oldValue, newValue: newValue)
@@ -207,6 +289,9 @@ struct CardListView: View {
             }
             .sheet(isPresented: $showEditTagsSheet) {
                 EditTagsSheet()
+            }
+            .sheet(isPresented: $showTagFilterSheet) {
+                TagFilterSheet(tags: tags, tagSelectionStates: $tagSelectionStates)
             }
 
             .fileImporter(

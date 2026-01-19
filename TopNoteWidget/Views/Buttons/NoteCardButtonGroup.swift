@@ -24,14 +24,7 @@ struct NoteCardButtonGroup: View {
 
         HStack {
             Button(intent: NextCardIntent(card: card)) {
-                ZStack {
-                    Circle()
-                        .fill(Color.blue.opacity(0.85))
-                        .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
-                    Image(systemName: "checkmark.rectangle.stack")
-                        .font(.caption)
-                        .foregroundColor(.white)
-                }
+                NextButtonUI()
             }
             .frame(width: buttonSize, height: buttonSize)
             .buttonStyle(WidgetButtonStyle(color: .blue))
@@ -45,14 +38,7 @@ struct NoteCardButtonGroup: View {
 
             if skipEnabled {
                 Button(intent: SkipCardIntent(card: card)) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.orange.opacity(0.85))
-                            .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
-                        Image(systemName: "arrow.trianglehead.counterclockwise.rotate.90")
-                            .font(.caption)
-                            .foregroundColor(.white)
-                    }
+                    SkipButtonUI()
                 }
                 .frame(width: buttonSize, height: buttonSize)
                 .buttonStyle(WidgetButtonStyle(color: .orange))

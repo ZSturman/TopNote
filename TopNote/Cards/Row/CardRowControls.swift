@@ -77,15 +77,16 @@ struct CardPoliciesMenu: View {
                 }
                 
             }
+            
+            // Enable Skip toggle moved outside of On Skip submenu
+            Toggle(isOn: Binding(
+                get: { card.skipEnabled },
+                set: { card.skipEnabled = $0 }
+            )) {
+                Label("Enable Skip", systemImage: "arrow.trianglehead.counterclockwise.rotate.90")
+            }
                 
             Menu {
-                Toggle(isOn: Binding(
-                    get: { card.skipEnabled },
-                    set: { card.skipEnabled = $0 }
-                )) {
-                    Label("Enable Skip", systemImage: "arrow.trianglehead.counterclockwise.rotate.90")
-                }
-                
                 if !card.skipEnabled {
                     Text("Skipping disabled")
                         .font(.footnote)
@@ -122,6 +123,7 @@ struct CardPoliciesMenu: View {
                         .fontWeight(.semibold)
                 }
             }
+            .disabled(!card.skipEnabled)
             .overlay {
                 if card.cardType == .note {
                     Color.clear.popoverTip(firstNoteTip, arrowEdge: .top)
@@ -381,36 +383,10 @@ struct PriorityMenu: View {
             selected = next(after: selected)
         } label: {
             HStack(spacing: 4) {
-                switch selected {
-                case .none:
-                    Image(systemName: "flag" )
-                        .foregroundColor(.primary)
-                    Image(systemName: "flag" )
-                        .foregroundColor(.primary)
-                    Image(systemName: "flag" )
-                        .foregroundColor(.primary)
-                case .low:
-                    Image(systemName: "flag.fill")
-                        .foregroundColor(.primary)
-                    Image(systemName: "flag" )
-                        .foregroundColor(.primary)
-                    Image(systemName: "flag" )
-                        .foregroundColor(.primary)
-                case .med:
-                    Image(systemName: "flag.fill")
-                        .foregroundColor(.primary)
-                    Image(systemName: "flag.fill" )
-                        .foregroundColor(.primary)
-                    Image(systemName: "flag" )
-                        .foregroundColor(.primary)
-                case .high:
-                    Image(systemName: "flag.fill")
-                        .foregroundColor(.primary)
-                    Image(systemName: "flag.fill" )
-                        .foregroundColor(.primary)
-                    Image(systemName: "flag.fill" )
-                        .foregroundColor(.primary)
-                }
+                Image(systemName: selected.iconName)
+                    .foregroundColor(.primary)
+                Text(selected.displayName)
+                    .foregroundColor(.primary)
             }
             .font(.caption)
             .padding(.horizontal, 8)

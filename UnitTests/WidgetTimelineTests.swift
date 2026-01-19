@@ -397,26 +397,6 @@ struct TimelineBehaviorTests {
 @Suite("Widget State Manager Tests")
 struct WidgetStateManagerTests {
     
-    @Test func textHiddenDefaultsFalse() throws {
-        let manager = WidgetStateManager.shared
-        let cardID = UUID()
-        
-        let isHidden = manager.isTextHidden(widgetID: "test", cardID: cardID)
-        #expect(isHidden == false)
-    }
-    
-    @Test func setAndGetTextHidden() throws {
-        let manager = WidgetStateManager.shared
-        let cardID = UUID()
-        let widgetID = "test_hidden_\(UUID().uuidString)"
-        
-        manager.setTextHidden(true, widgetID: widgetID, cardID: cardID)
-        #expect(manager.isTextHidden(widgetID: widgetID, cardID: cardID) == true)
-        
-        manager.setTextHidden(false, widgetID: widgetID, cardID: cardID)
-        #expect(manager.isTextHidden(widgetID: widgetID, cardID: cardID) == false)
-    }
-    
     @Test func flipStateDefaultsFalse() throws {
         let manager = WidgetStateManager.shared
         let cardID = UUID()

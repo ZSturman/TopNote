@@ -43,6 +43,8 @@ extension CardListView {
                 
                 // Batch actions menu - icon only
                 Menu {
+                    let noneSelected = selectedCards.isEmpty
+                    
                     // Move to folder (with New Folder option)
                     Menu {
                         Button {
@@ -63,6 +65,7 @@ extension CardListView {
                     } label: {
                         Label("Move to Folder", systemImage: "folder")
                     }
+                    .disabled(noneSelected)
                     
                     // Add tags (with New Tag option)
                     Menu {
@@ -80,6 +83,7 @@ extension CardListView {
                     } label: {
                         Label("Add Tag", systemImage: "tag")
                     }
+                    .disabled(noneSelected)
                     
                     Divider()
                     
@@ -95,6 +99,7 @@ extension CardListView {
                     } label: {
                         Label("Set Priority", systemImage: "flag")
                     }
+                    .disabled(noneSelected)
                     
                     // Repeat Interval
                     Menu {
@@ -106,6 +111,7 @@ extension CardListView {
                     } label: {
                         Label("Set Interval", systemImage: "calendar")
                     }
+                    .disabled(noneSelected)
                     
                     // Policies submenu
                     Menu {
@@ -166,26 +172,44 @@ extension CardListView {
                     } label: {
                         Label("Policies", systemImage: "slider.horizontal.3")
                     }
+                    .disabled(noneSelected)
                     
                     Divider()
                     
                     // Status actions
+                    let allDeleted = !selectedCards.isEmpty && selectedCards.allSatisfy { $0.isDeleted }
+                    let someDeleted = selectedCards.contains { $0.isDeleted }
+                    
                     Button {
                         batchEnqueue()
                     } label: {
                         Label("Add to Queue", systemImage: "clock")
                     }
+                    .disabled(noneSelected)
                     
                     Button {
                         batchArchive()
                     } label: {
                         Label("Archive", systemImage: "archivebox")
                     }
+                    .disabled(noneSelected)
                     
-                    Button(role: .destructive) {
-                        batchSoftDelete()
-                    } label: {
-                        Label("Delete", systemImage: "trash")
+                    if allDeleted {
+                        // All selected cards are deleted - show permanent delete
+                        Button(role: .destructive) {
+                            batchPermanentlyDelete()
+                        } label: {
+                            Label("Permanently Delete", systemImage: "trash.fill")
+                        }
+                        .disabled(noneSelected)
+                    } else {
+                        // Mixed or no deleted cards - show regular delete
+                        Button(role: .destructive) {
+                            batchSoftDelete()
+                        } label: {
+                            Label(someDeleted ? "Delete (skip already deleted)" : "Delete", systemImage: "trash")
+                        }
+                        .disabled(noneSelected)
                     }
                     
                     Divider()
@@ -262,7 +286,7 @@ extension CardListView {
                                 if sortCriteria == opt {
                                     Label(opt.localizedName, systemImage: "checkmark")
                                 } else {
-                                    Text(opt.localizedName)
+                                    Label(opt.localizedName, systemImage: opt.systemImage)
                                 }
                             }
                         }
@@ -281,23 +305,28 @@ extension CardListView {
                         // Type filters
                         Section {
                             ForEach([CardFilterOption.todo, .flashcard, .note], id: \.self) { option in
-                                Button {
-                                    toggleFilterOption(option)
-                                } label: {
-                                    if filterOptions.contains(option) {
-                                        Label(option.rawValue, systemImage: "checkmark")
-                                    } else {
-                                        Text(option.rawValue)
+                                Toggle(isOn: Binding(
+                                    get: { filterOptions.contains(option) },
+                                    set: { isOn in
+                                        if isOn {
+                                            if !filterOptions.contains(option) {
+                                                filterOptions.append(option)
+                                            }
+                                        } else {
+                                            filterOptions.removeAll { $0 == option }
+                                        }
                                     }
+                                )) {
+                                    Label(option.localizedName, systemImage: option.systemImage)
                                 }
                             }
                         }
                         
                         Divider()
                         
-                        // Tags option - opens tag edit sheet
+                        // Tags option - opens tag filter sheet
                         Button {
-                            showEditTagsSheet = true
+                            showTagFilterSheet = true
                         } label: {
                             Label("Tags", systemImage: "tag")
                         }
@@ -307,14 +336,19 @@ extension CardListView {
                         // Status filters
                         Section {
                             ForEach([CardFilterOption.enqueue, .upcoming, .archived, .deleted], id: \.self) { option in
-                                Button {
-                                    toggleFilterOption(option)
-                                } label: {
-                                    if filterOptions.contains(option) {
-                                        Label(option.rawValue, systemImage: "checkmark")
-                                    } else {
-                                        Text(option.rawValue)
+                                Toggle(isOn: Binding(
+                                    get: { filterOptions.contains(option) },
+                                    set: { isOn in
+                                        if isOn {
+                                            if !filterOptions.contains(option) {
+                                                filterOptions.append(option)
+                                            }
+                                        } else {
+                                            filterOptions.removeAll { $0 == option }
+                                        }
                                     }
+                                )) {
+                                    Label(option.localizedName, systemImage: option.systemImage)
                                 }
                             }
                         }
@@ -364,7 +398,7 @@ extension CardListView {
                 
                 // DEBUG: Print card count after save
                 let fetchDescriptor = FetchDescriptor<Card>()
-                let count = (try? context.fetch(fetchDescriptor).count) ?? 0
+                _ = (try? context.fetch(fetchDescriptor).count) ?? 0
              
             } catch {
                 print("📝 [FINISH EDITS] ERROR saving context: \(error)")

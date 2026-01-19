@@ -62,6 +62,7 @@ struct CardOptionsSection: View {
             // Todo-specific: reset interval on complete
             if cardType == .todo {
                 Toggle("Reset Interval On Complete", isOn: $resetRepeatIntervalOnComplete)
+                    .disabled(!isRecurring)
             }
             
             // Flashcard-specific: rating policies

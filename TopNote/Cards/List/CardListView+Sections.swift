@@ -11,26 +11,48 @@ import SwiftUI
 
 extension CardListView {
     
-    /// Navigation title with card type icons based on active filters
-    var navigationTitleWithIcons: String {
-        let baseName = selectedFolder?.name ?? "All Cards"
-        var icons: [String] = []
-        
-        if filterOptions.contains(.todo) {
-            icons.append("✓")  // Checkmark for todos
+    /// Navigation title view with card type SF Symbol toggle buttons based on active filters
+    var cardTypeSelectedFilteredOption: some View {
+        HStack(spacing: 12) {
+            Button {
+                toggleFilterOption(.todo)
+            } label: {
+                HStack(spacing: 2) {
+                    Image(systemName: CardType.todo.systemImage)
+                    Text("\(toDoCardCount)")
+                }
+            }
+    
+            .buttonStyle(.plain)
+            .foregroundColor(filterOptions.contains(.todo) ? CardType.todo.tintColor : .gray)
+            
+            Button {
+                toggleFilterOption(.note)
+            } label: {
+                HStack(spacing: 2) {
+                    Image(systemName: CardType.note.systemImage)
+                    Text("\(noteCardCount)")
+                }
+            
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(filterOptions.contains(.note) ? CardType.note.tintColor : .gray)
+            
+            Button {
+                toggleFilterOption(.flashcard)
+            } label: {
+                HStack(spacing: 2) {
+                    Image(systemName: CardType.flashcard.systemImage)
+                    Text("\(flashcardCount)")
+                }
+            }
+         
+            .buttonStyle(.plain)
+            .foregroundColor(filterOptions.contains(.flashcard) ? CardType.flashcard.tintColor : .gray)
+           
         }
-        if filterOptions.contains(.note) {
-            icons.append("📝")  // Note icon
-        }
-        if filterOptions.contains(.flashcard) {
-            icons.append("🎴")  // Card icon for flashcards
-        }
-        
-        if icons.isEmpty {
-            return baseName
-        }
-        
-        return "\(baseName) \(icons.joined(separator: " "))"
+        .font(.caption)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
     
     var emptyStatusFilterView: some View {
@@ -46,11 +68,27 @@ extension CardListView {
         .padding(.vertical, 16)
     }
     
+    var emptyTypeFilterView: some View {
+        VStack(spacing: 8) {
+            Text("No card types selected")
+                .font(.headline)
+            Text("Tap the icons above or use Filters to select card types.")
+                .multilineTextAlignment(.center)
+                .foregroundColor(.secondary)
+                .font(.subheadline)
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.vertical, 16)
+    }
+    
     
     var queueSection: some View {
         Section(
             header:
                 HStack {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
                     Text("Queue")
                     Text("(\(queueCards.count))")
                         .foregroundColor(.secondary)
@@ -107,6 +145,9 @@ extension CardListView {
         Section(
             header:
                 HStack {
+                    Image(systemName: "calendar")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
                     Text("Upcoming")
                     Text("(\(upcomingCards.count))")
                         .foregroundColor(.secondary)
@@ -153,6 +194,9 @@ extension CardListView {
         Section(
             header:
                 HStack {
+                    Image(systemName: "archivebox")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
                     Text("Archived")
                     Text("(\(archivedCards.count))")
                         .foregroundColor(.secondary)
@@ -198,6 +242,9 @@ extension CardListView {
         Section(
             header:
                 HStack {
+                    Image(systemName: "trash")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
                     Text("Deleted")
                     Text("(\(deletedCards.count))")
                         .foregroundColor(.secondary)
@@ -229,22 +276,21 @@ extension CardListView {
                         Text("Cards will be permanently deleted after 30 days")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        
-                        ForEach(deletedCards, id: \.id) { card in
-                            DeletedCardRow(
-                                card: card,
-                                folders: folders,
-                                onRestore: {
-                                    card.restore(at: Date())
-                                    try? context.save()
-                                },
-                                onPermanentDelete: {
-                                    context.delete(card)
-                                    try? context.save()
-                                }
-                            )
-                        }
                     }
+                    
+                    CardStatusSection(
+                        title: "Deleted",
+                        cards: deletedCards,
+                        folders: folders,
+                        onDelete: permanentlyDeleteCards,
+                        onPriorityChanged: nil,
+                        priorityChangedForCardID: nil,
+                        lastDeselectedCardID: lastDeselectedCardID,
+                        selectionMode: selectionMode,
+                        selectedCards: $selectedCards
+                    )
+                    .environment(\.ascending, ascending)
+                    .environment(\.sortCriteria, sortCriteria)
                 }
             }
         }
@@ -254,11 +300,21 @@ extension CardListView {
     
     var createdAtSection: some View {
         List {
+            Section {
+                cardTypeSelectedFilteredOption
+            }
+            .listRowInsets(EdgeInsets())
+            .listRowBackground(Color.clear)
+            
             if !selectedCardModel.isNewlyCreated {
                 TipView(addWidgetTip)
             }
             TipView(customizeWidgetTip)
-            ForEach(sortedKeys.indices, id: \.self) { idx in
+            
+            if activeTypeFilters.isEmpty {
+                emptyTypeFilterView
+            } else {
+                ForEach(sortedKeys.indices, id: \.self) { idx in
                 let day = sortedKeys[idx]
                 Section(header: Text(displayDateHeader(for: day))) {
                     let cardsForDay = groupedByDay[day] ?? []
@@ -317,11 +373,21 @@ extension CardListView {
                     Divider().padding(.vertical, 4)
                 }
             }
+            }
         }
     }
     var skipCountSection: some View {
         List {
-            let skipEnabledCards = filteredCards.filter {
+            Section {
+                cardTypeSelectedFilteredOption
+            }
+            .listRowInsets(EdgeInsets())
+            .listRowBackground(Color.clear)
+            
+            if activeTypeFilters.isEmpty {
+                emptyTypeFilterView
+            } else {
+                let skipEnabledCards = filteredCards.filter {
                 $0.skipEnabled
             }.sorted(by: {
                 ascending
@@ -428,17 +494,27 @@ extension CardListView {
                     delete(cards: skipDisabledCards, at: offsets)
                 }
             }
+            }
         }
     }
     var seenCountSection: some View {
         List {
-            ForEach(
-                filteredCards.sorted(by: {
-                    ascending
-                        ? $0.seenCount < $1.seenCount
-                        : $0.seenCount > $1.seenCount
-                })
-            ) { card in
+            Section {
+                cardTypeSelectedFilteredOption
+            }
+            .listRowInsets(EdgeInsets())
+            .listRowBackground(Color.clear)
+            
+            if activeTypeFilters.isEmpty {
+                emptyTypeFilterView
+            } else {
+                ForEach(
+                    filteredCards.sorted(by: {
+                        ascending
+                            ? $0.seenCount < $1.seenCount
+                            : $0.seenCount > $1.seenCount
+                    })
+                ) { card in
                 if selectionMode {
                     HStack {
                         Image(
@@ -482,19 +558,29 @@ extension CardListView {
             .onDelete { offsets in
                 delete(cards: filteredCards, at: offsets)
             }
+            }
         }
     }
     
     var contentSortSection: some View {
         List {
-            ForEach(
-                filteredCards.sorted(by: {
-                    let comparison = $0.content.localizedStandardCompare($1.content)
-                    return ascending
-                        ? comparison == .orderedAscending
-                        : comparison == .orderedDescending
-                })
-            ) { card in
+            Section {
+                cardTypeSelectedFilteredOption
+            }
+            .listRowInsets(EdgeInsets())
+            .listRowBackground(Color.clear)
+            
+            if activeTypeFilters.isEmpty {
+                emptyTypeFilterView
+            } else {
+                ForEach(
+                    filteredCards.sorted(by: {
+                        let comparison = $0.content.localizedStandardCompare($1.content)
+                        return ascending
+                            ? comparison == .orderedAscending
+                            : comparison == .orderedDescending
+                    })
+                ) { card in
                 if selectionMode {
                     HStack {
                         Image(
@@ -536,6 +622,7 @@ extension CardListView {
             .onDelete { offsets in
                 delete(cards: filteredCards, at: offsets)
             }
+            }
         }
     }
     
@@ -544,11 +631,18 @@ extension CardListView {
         switch sortCriteria {
         case .enqueuedAt:
             List {
+                
+                    cardTypeSelectedFilteredOption
+                    .listRowSeparator(.hidden)
+                
+                
                 if !selectedCardModel.isNewlyCreated { TipView(addWidgetTip) }
                 TipView(customizeWidgetTip)
                 
 
-                if activeStatusFilters.isEmpty {
+                if activeTypeFilters.isEmpty {
+                    emptyTypeFilterView
+                } else if activeStatusFilters.isEmpty {
                     emptyStatusFilterView
                 } else {
                     if shouldShowQueueSection {
@@ -579,3 +673,4 @@ extension CardListView {
     
     
 }
+

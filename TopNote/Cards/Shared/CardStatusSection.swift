@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import SwiftData
+import WidgetKit
 
 struct CardStatusSection: View {
     @Environment(\.modelContext) private var context
@@ -31,18 +32,27 @@ struct CardStatusSection: View {
     // Track the card IDs in the order they were when selection started
     // This prevents visual reordering during editing
     @State private var frozenOrder: [UUID] = []
+    @State private var frozenOrderSet: Set<UUID> = []  // O(1) lookup optimization for large card counts
     @State private var lastSelectedCardID: UUID? = nil
+    
+    // Cached sorted cards to prevent redundant sorting
+    @State private var cachedSortedCards: [Card] = []
+    @State private var lastCardCount: Int = 0
+    @State private var lastCardHash: Int = 0
+    @State private var lastSortHash: Int = 0  // Tracks sort-affecting properties
     
     // Debounce timer for sort updates after property changes
     @State private var pendingSortUpdate: Task<Void, Never>? = nil
+    @State private var pendingReorderTask: Task<Void, Never>? = nil  // Debounced reorder
     
     // Debounce interval in seconds - prevents rapid reordering during edits
-    private let sortDebounceInterval: TimeInterval = 0.3
+    private let sortDebounceInterval: TimeInterval = 0.7
 
     /// Computes the sorted order without considering frozen order
     /// Used to capture the correct display order before freezing
     private func computeSortedOrder() -> [Card] {
-        cards.sorted(by: { card1, card2 in
+        print("❄️ [COMPUTESORTEDORDER] Computing sorted order for \(cards.count) cards")
+        let sorted = cards.sorted(by: { card1, card2 in
             // For content sorting, use alphabetical comparison
             if sortCriteria == .content {
                 let comparison = card1.content.localizedStandardCompare(card2.content)
@@ -72,21 +82,131 @@ struct CardStatusSection: View {
             }
             return card1.id.uuidString < card2.id.uuidString
         })
+        print("❄️ [COMPUTESORTEDORDER] Sorted \(sorted.count) cards")
+        return sorted
+    }
+    
+    /// Captures frozen order efficiently - only called when selection changes
+    /// This prevents O(n²) operations by using Set for lookups
+    private func captureFrozenOrder() {
+        print("📌 [CAPTUREDFROZENORDER] Capturing frozen order")
+        let sorted = computeSortedOrder()
+        frozenOrder = sorted.map { $0.id }
+        frozenOrderSet = Set(frozenOrder)  // O(1) lookup for filter operations
+        print("📌 [CAPTUREDFROZENORDER] Captured \(frozenOrder.count) card IDs")
+    }
+    
+    /// Clears frozen order state
+    private func clearFrozenOrder() {
+        print("🧯 [CLEARFROZENORDER] Clearing frozen order (had \(frozenOrder.count) items)")
+        frozenOrder = []
+        frozenOrderSet = []
+    }
+
+    /// Computes a hash for the current cards array to detect changes
+    private var currentCardHash: Int {
+        cards.reduce(0) { $0 ^ $1.id.hashValue }
+    }
+    
+    /// Computes a hash for sort-affecting properties only (priority, nextTimeInQueue)
+    /// Content is only included when sorting by content
+    private var currentSortHash: Int {
+        cards.reduce(0) { hash, card in
+            var cardHash = card.id.hashValue
+            cardHash ^= card.priority.sortValue.hashValue
+            cardHash ^= card.nextTimeInQueue.hashValue
+            if sortCriteria == .content {
+                cardHash ^= card.content.hashValue
+            }
+            return hash ^ cardHash
+        }
+    }
+    
+    /// Refreshes the cached sorted cards if needed
+    private func refreshSortedCacheIfNeeded() {
+        let hash = currentCardHash
+        guard lastCardCount != cards.count || lastCardHash != hash || cachedSortedCards.isEmpty else {
+            print("💾 [SORTCACHE] Cache still valid for \(cards.count) cards")
+            return // Cache is still valid
+        }
+        
+        print("💾 [SORTCACHE] Refreshing sorted cache for \(cards.count) cards")
+        
+        // Update cache tracking
+        lastCardCount = cards.count
+        lastCardHash = hash
+        
+        // Compute sorted cards
+        if !frozenOrder.isEmpty {
+            print("💾 [SORTCACHE] Using frozen order with \(frozenOrder.count) items")
+            let cardDict = Dictionary(uniqueKeysWithValues: cards.map { ($0.id, $0) })
+            let reordered = frozenOrder.compactMap { cardDict[$0] }
+            let newCards = cards.filter { !frozenOrderSet.contains($0.id) }
+            cachedSortedCards = reordered + newCards
+        } else {
+            cachedSortedCards = computeSortedOrder()
+        }
+        print("💾 [SORTCACHE] Cached \(cachedSortedCards.count) sorted cards")
+    }
+    
+    /// Schedules a debounced reorder when sort-affecting properties change
+    /// This prevents rapid reordering during editing while ensuring eventual consistency
+    private func scheduleDebounceReorder() {
+        // Cancel any pending reorder
+        pendingReorderTask?.cancel()
+        
+        // Don't debounce if frozen (user is actively editing)
+        guard frozenOrder.isEmpty else {
+            print("⏳ [REORDER] Skipping debounce - frozen order active")
+            return
+        }
+        
+        print("⏳ [REORDER] Scheduling debounced reorder in \(sortDebounceInterval)s")
+        
+        pendingReorderTask = Task { @MainActor in
+            do {
+                try await Task.sleep(nanoseconds: UInt64(sortDebounceInterval * 1_000_000_000))
+                
+                guard !Task.isCancelled else { return }
+                
+                print("⏳ [REORDER] Debounce complete - executing reorder")
+                
+                // Update sort hash tracking
+                lastSortHash = currentSortHash
+                
+                // Recompute sorted cards with animation
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    cachedSortedCards = computeSortedOrder()
+                }
+                
+                // Trigger widget reload after reorder settles
+                WidgetCenter.shared.reloadAllTimelines()
+                
+            } catch {
+                // Task was cancelled - that's fine
+            }
+        }
     }
 
     private var sortedCards: [Card] {
-        let sorted = computeSortedOrder()
-        
-        // Use frozen order if we have one and a card is selected or was recently deselected
-        // This prevents jarring reordering during and shortly after editing
-        if !frozenOrder.isEmpty {
-            let cardDict = Dictionary(uniqueKeysWithValues: sorted.map { ($0.id, $0) })
-            let reordered = frozenOrder.compactMap { cardDict[$0] }
-            let newCards = sorted.filter { !frozenOrder.contains($0.id) }
-            return reordered + newCards
+        // Return cached value - actual computation happens in refreshSortedCacheIfNeeded()
+        // which is called from .onAppear and .onChange
+        if cachedSortedCards.isEmpty && !cards.isEmpty {
+            // First access before onAppear - compute synchronously and cache it
+            // Note: Can't mutate @State in computed property directly, 
+            // but the value will be cached on the next refresh
+            if !frozenOrder.isEmpty {
+                let cardDict = Dictionary(uniqueKeysWithValues: cards.map { ($0.id, $0) })
+                let reordered = frozenOrder.compactMap { cardDict[$0] }
+                let newCards = cards.filter { !frozenOrderSet.contains($0.id) }
+                print("🔄 [SORTEDCARDS] Initial sync compute with frozen order: \(reordered.count + newCards.count) cards")
+                return reordered + newCards
+            } else {
+                print("🔄 [SORTEDCARDS] Initial sync compute: \(cards.count) cards")
+                return computeSortedOrder()
+            }
         }
-        
-        return sorted
+        return cachedSortedCards
     }
 
     var body: some View {
@@ -138,10 +258,26 @@ struct CardStatusSection: View {
                         // Keep animations light to prevent choppiness
                         transaction.animation = .easeInOut(duration: 0.15)
                     }
+                    // NOTE: Per-row animation removed - causes O(n) state tracking with 1000+ cards
                 }
             }
             .onDelete { offsets in
                 onDelete(sortedCards, offsets)
+            }
+        }
+        .onAppear {
+            lastSortHash = currentSortHash
+            refreshSortedCacheIfNeeded()
+        }
+        .onChange(of: cards) { _, _ in
+            // Check if sort-affecting properties changed
+            let newHash = currentSortHash
+            if lastSortHash != newHash {
+                // Sort order may need updating - schedule debounced reorder
+                scheduleDebounceReorder()
+            } else if lastCardCount != cards.count {
+                // Only count changed (card added/removed) - immediate refresh
+                refreshSortedCacheIfNeeded()
             }
         }
         // Handle frozen order clearing on deselection with debounce
@@ -150,14 +286,25 @@ struct CardStatusSection: View {
                 // Card deselected - debounce clearing frozen order
                 scheduleFrozenOrderClear()
             }
+            // Refresh cache when selection changes
+            refreshSortedCacheIfNeeded()
             // Note: Frozen order is now captured in select() BEFORE selection changes
         }
-        // Handle priority changes - extend frozen period when priority changes
+        // Handle priority changes - ensure frozen order is set and extend freeze period
         .onChange(of: priorityChangedForCardID) { oldID, newID in
             if newID != nil && selectedCardModel.selectedCard != nil {
-                // Priority changed while a card is selected - extend freeze
-                scheduleFrozenOrderClear()
+                // Priority changed while a card is selected
+                // Ensure frozen order is captured (defensive, should already be set)
+                if frozenOrder.isEmpty {
+                    captureFrozenOrder()
+                }
+                // Cancel any pending clear to extend the freeze
+                pendingSortUpdate?.cancel()
             }
+        }
+        // Refresh cache when frozen order changes
+        .onChange(of: frozenOrder) { _, _ in
+            refreshSortedCacheIfNeeded()
         }
     }
     
@@ -175,7 +322,7 @@ struct CardStatusSection: View {
                 // Only clear if no card is selected
                 if selectedCardModel.selectedCard == nil {
                     withAnimation(.easeInOut(duration: 0.3)) {
-                        frozenOrder = []
+                        clearFrozenOrder()
                     }
                 }
             } catch {
@@ -185,28 +332,31 @@ struct CardStatusSection: View {
     }
 
     /// Single-select logic: selecting a card deselects any previously selected card.
-    /// Uses UUID-based selection to ensure fresh card references are fetched from the context.
+    /// Uses the unified selection method on SelectedCardModel for consistent behavior.
     func select(_ card: Card) {
-        if selectedCardModel.selectedCard?.id == card.id {
-            // Deselecting by tapping selected card
-            try? context.save()
-            selectedCardModel.clearSelection()
-        } else {
-            // Cancel any pending frozen order clear
-            pendingSortUpdate?.cancel()
-            
-            // IMPORTANT: Capture frozen order BEFORE changing selection
-            // This ensures we freeze the exact visual order the user sees
-            if selectedCardModel.selectedCard == nil {
-                // Only freeze when going from no selection to selection
-                // (not when switching between cards)
-                frozenOrder = computeSortedOrder().map { $0.id }
-            }
-            
-            // Use UUID-based selection to ensure we get a fresh reference from the context
-            // This prevents stale reference issues that can cause crashes
-            selectedCardModel.selectCard(with: card.id, modelContext: context, isNew: false)
-        }
+        print("👆 [SELECT] Selecting card: \(card.id)")
+        selectedCardModel.select(
+            card: card,
+            in: context,
+            isNew: false,
+            willSelect: { [self] in
+                print("👆 [SELECT] willSelect callback - about to capture frozen order")
+                // Cancel any pending frozen order clear
+                pendingSortUpdate?.cancel()
+                
+                // IMPORTANT: Capture frozen order BEFORE changing selection
+                // This ensures we freeze the exact visual order the user sees
+                // Use optimized capture method that also builds the Set for O(1) lookups
+                captureFrozenOrder()
+            },
+            willDeselect: { [self] in
+                print("👆 [SELECT] willDeselect callback - deselecting by tapping selected card")
+                // Deselecting by tapping selected card
+                try? context.save()
+                selectedCardModel.clearSelection()
+            },
+            saveBeforeDeselect: false  // We handle saving in willDeselect
+        )
     }
 
 }

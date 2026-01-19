@@ -128,7 +128,10 @@ final class SelectedCardModel: ObservableObject {
     /// Clears the current selection and resets the `isNewlyCreated` flag and snapshot.
     func clearSelection() {
         if let previousCard = selectedCard {
+            print("🧯 [CLEARSELECTION] Clearing selection for card: \(previousCard.id.uuidString)")
             TopNoteLogger.selection.debug("Clearing selection for card: \(previousCard.id.uuidString)")
+        } else {
+            print("🧯 [CLEARSELECTION] Clearing selection (no card was selected)")
         }
         selectedCard = nil
         isNewlyCreated = false
@@ -186,6 +189,76 @@ final class SelectedCardModel: ObservableObject {
             return nil
         }
         return (draftContent, draftAnswer)
+    }
+    
+    // MARK: - Unified Selection API
+    
+    /// Guards against re-entrant selection calls that could cause race conditions
+    private var isSelecting: Bool = false
+    
+    /// Unified method for selecting a card with proper lifecycle callbacks.
+    /// This method handles both selecting a new card and toggling off a selected card.
+    /// Includes re-entry guard to prevent race conditions during rapid selection changes.
+    ///
+    /// - Parameters:
+    ///   - card: The card to select (or deselect if already selected)
+    ///   - modelContext: The SwiftData context for UUID-based fetch
+    ///   - isNew: Whether this is a newly created card
+    ///   - willSelect: Callback invoked BEFORE selection changes (use for frozen order capture)
+    ///   - willDeselect: Callback invoked when toggling off a selected card (use for finishEdits)
+    ///   - saveBeforeDeselect: Whether to save context before clearing selection on toggle-off
+    func select(
+        card: Card,
+        in modelContext: ModelContext,
+        isNew: Bool = false,
+        willSelect: (() -> Void)? = nil,
+        willDeselect: (() -> Void)? = nil,
+        saveBeforeDeselect: Bool = true
+    ) {
+        print("🎯 [SELECTEDCARDMODEL SELECT] Called for card: \(card.id)")
+        // Prevent re-entry during selection - protects against rapid taps causing crashes
+        guard !isSelecting else {
+            print("⚠️ [SELECTEDCARDMODEL SELECT] Re-entry blocked - selection already in progress")
+            TopNoteLogger.selection.warning("Selection already in progress, ignoring duplicate call")
+            return
+        }
+        isSelecting = true
+        defer { 
+            print("🎯 [SELECTEDCARDMODEL SELECT] Selection complete, releasing lock")
+            isSelecting = false 
+        }
+        
+        if selectedCard?.id == card.id {
+            // Toggling off: user tapped the already-selected card
+            print("🔄 [SELECTEDCARDMODEL SELECT] Toggling OFF - same card tapped")
+            TopNoteLogger.selection.debug("Toggling off selection for card: \(card.id.uuidString)")
+            if let willDeselect = willDeselect {
+                print("🔄 [SELECTEDCARDMODEL SELECT] Calling willDeselect callback")
+                willDeselect()
+            } else {
+                print("🔄 [SELECTEDCARDMODEL SELECT] Default deselect: save=\(saveBeforeDeselect)")
+                // Default behavior: save and clear
+                if saveBeforeDeselect {
+                    try? modelContext.save()
+                }
+                clearSelection()
+            }
+        } else {
+            // Selecting a new card
+            print("✅ [SELECTEDCARDMODEL SELECT] Selecting NEW card (old: \(selectedCard?.id.uuidString ?? "nil"))")
+            TopNoteLogger.selection.debug("Selecting new card: \(card.id.uuidString)")
+            
+            // Invoke willSelect callback BEFORE changing selection
+            // This allows callers to capture frozen order, cancel pending tasks, etc.
+            if let willSelect = willSelect {
+                print("✅ [SELECTEDCARDMODEL SELECT] Calling willSelect callback")
+                willSelect()
+            }
+            
+            // Use UUID-based selection to get a fresh reference from the context
+            // This prevents stale object reference crashes
+            selectCard(with: card.id, modelContext: modelContext, isNew: isNew)
+        }
     }
 }
 

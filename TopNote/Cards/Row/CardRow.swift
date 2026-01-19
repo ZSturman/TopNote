@@ -39,6 +39,9 @@ struct CardRow: View {
     @State var showingRatingsPolicyInfo = false
     @State var showingSkipInfo = false
     @State var showingEnqueueIntervalInfo = false
+    
+    // Deleted card state
+    @State var showDeleteConfirmation = false
 
     enum CardRowSheet: Identifiable {
         case details, move, tags
@@ -109,22 +112,62 @@ struct CardRow: View {
             }
         }
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
-            CardRowSwipeRight(card: card)
+            if card.isDeleted {
+                CardRowSwipeDeletedRight(card: card)
+            } else {
+                CardRowSwipeRight(card: card)
+            }
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-            CardRowSwipeLeft(
-                card: card,
-                showDetails: { activeSheet = .details },
-                moveAction: { activeSheet = .move }
-            )
+            if card.isDeleted {
+                CardRowSwipeDeletedLeft(card: card, showDeleteConfirmation: $showDeleteConfirmation)
+            } else {
+                CardRowSwipeLeft(
+                    card: card,
+                    showDetails: { activeSheet = .details },
+                    moveAction: { activeSheet = .move }
+                )
+            }
+        }
+        .confirmationDialog(
+            "Permanently Delete?",
+            isPresented: $showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Forever", role: .destructive) {
+                // Clear selection first to prevent state issues
+                selectedCardModel.clearSelection()
+                // Use async to let the UI update before deleting
+                DispatchQueue.main.async {
+                    modelContext.delete(card)
+                    try? modelContext.save()
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This action cannot be undone. The card will be permanently removed.")
         }
         .contextMenu {
-            CardRowContextMenu(
-                card: card,
-                showDetails: { activeSheet = .details },
-                moveAction: { activeSheet = .move },
-                tagAction: { activeSheet = .tags }
-            )
+            if card.isDeleted {
+                Button {
+                    card.restore(at: Date())
+                    try? modelContext.save()
+                } label: {
+                    Label("Restore", systemImage: "arrow.uturn.backward")
+                }
+                Button(role: .destructive) {
+                    showDeleteConfirmation = true
+                } label: {
+                    Label("Delete Forever", systemImage: "trash.fill")
+                }
+            } else {
+                CardRowContextMenu(
+                    card: card,
+                    showDetails: { activeSheet = .details },
+                    moveAction: { activeSheet = .move },
+                    tagAction: { activeSheet = .tags }
+                )
+            }
         }
         .onChange(of: isSelected) { _, newValue in
             handleSelectionChange(newValue: newValue)

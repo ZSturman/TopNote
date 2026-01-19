@@ -41,14 +41,28 @@ enum CardFilterOption: String, CaseIterable, Identifiable {
     var localizedName: String {
         switch self {
         case .todo:      return "To-Do"
-        case .flashcard: return "Flashcards"
-        case .note:      return "Notes"
+        case .flashcard: return "Flashcard"
+        case .note:      return "Note"
         case .enqueue:   return "Queue"
         case .upcoming:  return "Upcoming"
         case .archived:  return "Archived"
         case .deleted:   return "Deleted"
         // MARK: - IMAGE DISABLED
         // case .hasAttachment: return "Has Attachment"
+        }
+    }
+    
+    var systemImage: String {
+        switch self {
+        case .todo:      return "checklist"
+        case .flashcard: return "rectangle.on.rectangle.angled"
+        case .note:      return "doc.text"
+        case .enqueue:   return "clock.arrow.circlepath"
+        case .upcoming:  return "calendar"
+        case .archived:  return "archivebox"
+        case .deleted:   return "trash"
+        // MARK: - IMAGE DISABLED
+        // case .hasAttachment: return "paperclip"
         }
     }
 }

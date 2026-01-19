@@ -56,6 +56,22 @@ extension CardDetailView {
         @Binding var showMoveFullScreen: Bool
         @Binding var showTagFullScreen: Bool
         
+        @State private var tagSearchText: String = ""
+        @FocusState private var isTagFieldFocused: Bool
+        
+        // Filter available tags based on search text
+        private var filteredTags: [CardTag] {
+            let trimmedInput = tagSearchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            return tags.filter { tag in
+                let isAlreadyAdded = card.unwrappedTags.contains(where: { $0.id == tag.id })
+                if trimmedInput.isEmpty {
+                    return !isAlreadyAdded
+                } else {
+                    return tag.name.lowercased().contains(trimmedInput) && !isAlreadyAdded
+                }
+            }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        }
+        
         var body: some View {
             Section(header: Text("Organize")) {
                 // Folder picker
@@ -96,53 +112,84 @@ extension CardDetailView {
                     }
                 }
                 
-                // Tags display and picker
+                // Tags section with TextField and autocomplete
                 VStack(alignment: .leading, spacing: 8) {
+                    // Display existing tags as removable chips
                     if !card.unwrappedTags.isEmpty {
                         FlowLayout(spacing: 6) {
                             ForEach(card.unwrappedTags.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }) { tag in
-                                Text(tag.name)
-                                    .font(.caption)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 4)
-                                    .background(Color.blue.opacity(0.15))
-                                    .foregroundColor(.blue)
-                                    .cornerRadius(8)
-                                    .onTapGesture {
-                                        card.tags?.removeAll(where: { $0.id == tag.id })
-                                    }
+                                HStack(spacing: 4) {
+                                    Text(tag.name)
+                                        .font(.caption)
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 4)
+                                .background(Color.blue.opacity(0.15))
+                                .foregroundColor(.blue)
+                                .cornerRadius(8)
+                                .onTapGesture {
+                                    card.tags?.removeAll(where: { $0.id == tag.id })
+                                }
                             }
                         }
                     }
                     
-                    Menu {
-                        Button("Add Tag...") { showTagFullScreen = true }
-                        Divider()
-                        ForEach(tags.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }) { tag in
-                            Button(action: {
-                                if card.unwrappedTags.contains(where: { $0.id == tag.id }) {
-                                    card.tags?.removeAll(where: { $0.id == tag.id })
-                                } else {
-                                    if card.tags == nil { card.tags = [] }
-                                    card.tags?.append(tag)
-                                }
-                            }) {
-                                HStack {
-                                    Text(tag.name)
-                                    if card.unwrappedTags.contains(where: { $0.id == tag.id }) {
-                                        Spacer()
-                                        Image(systemName: "checkmark")
+                    // Tag input TextField
+                    HStack {
+                        Image(systemName: "tag")
+                            .foregroundColor(.secondary)
+                            .font(.caption)
+                        TextField("Add tag...", text: $tagSearchText)
+                            .textFieldStyle(.plain)
+                            .font(.subheadline)
+                            .focused($isTagFieldFocused)
+                            .onSubmit {
+                                // Create new tag on submit if text is not empty
+                                let trimmed = tagSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
+                                if !trimmed.isEmpty {
+                                    // Check if tag already exists
+                                    if let existingTag = tags.first(where: { $0.name.lowercased() == trimmed.lowercased() }) {
+                                        if !card.unwrappedTags.contains(where: { $0.id == existingTag.id }) {
+                                            if card.tags == nil { card.tags = [] }
+                                            card.tags?.append(existingTag)
+                                        }
+                                    } else {
+                                        // Show add tag sheet for new tag creation
+                                        showTagFullScreen = true
                                     }
+                                    tagSearchText = ""
                                 }
                             }
-                        }
-                    } label: {
-                        HStack {
-                            Text("Tags")
-                                .foregroundStyle(.primary)
-                            Spacer()
-                            Image(systemName: "plus.circle.fill")
-                                .foregroundStyle(.blue)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .background(Color.secondary.opacity(0.1))
+                    .cornerRadius(8)
+                    
+                    // Horizontal scroll view of tag suggestions
+                    if !filteredTags.isEmpty {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(filteredTags) { tag in
+                                    Button {
+                                        if card.tags == nil { card.tags = [] }
+                                        card.tags?.append(tag)
+                                        tagSearchText = ""
+                                    } label: {
+                                        Text(tag.name)
+                                            .font(.caption)
+                                            .padding(.horizontal, 10)
+                                            .padding(.vertical, 6)
+                                            .background(Color.secondary.opacity(0.15))
+                                            .foregroundColor(.primary)
+                                            .cornerRadius(8)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
                         }
                     }
                 }

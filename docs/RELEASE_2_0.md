@@ -1,5 +1,12 @@
 # Top Note 2.0 release record
 
+## Status (2026-11-19)
+
+- Source: `main` / `release/2.0` at the commit that adds this file's parent (`cce0d58`); build 41 was archived from a clean `cce0d58` tree.
+- App Store Connect: version **2.0.0 (41)** submitted, **Waiting for Review**, release **Manual** (nothing is public until released). Build 40 was never submitted.
+- Listing updated: subtitle "Notes, flashcards & to-dos", description, keywords, promotional text, What's New, 8 iPhone 6.9" and 8 iPad 13" screenshots (old 1.x 6.5" screenshots removed from 2.0), export compliance (no non-exempt encryption), age-rating questions (dating, shared location, social media: none), App Review notes. Name, privacy policy URL, support URL, privacy answers and review contact kept as they were.
+- After approval: `ASC_ISSUER_ID=<issuer> python3 Scripts/asc_release.py release` (or App Store Connect › Top Note › 2.0.0 › Release This Version). `status` shows the current state.
+
 Version 2.0.0, build 41. Build 40 (uploaded earlier) is superseded and must not be submitted: build 41 adds the store-recovery safety fix and the Reminders due-date fix below.
 
 ## Fixes made during release testing

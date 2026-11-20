@@ -1,0 +1,13 @@
+Top Note 2.0 is a brand-new Top Note: simpler to use and more capable.
+
+• Up Next: a new home that shows the one card that matters now, with Undo for every action, today's progress and your streak.
+• Better flashcards: Good now spaces a card out, each rating button shows when you'll see the card again, a strength meter shows what's sticking, and you can review ahead any time.
+• Notes on paper: notes have their own look, Markdown, a history of every time you met them again, and Add a thought.
+• Apple Reminders: keep to-dos in sync with a Reminders list, both ways.
+• Siri, Shortcuts and Control Center: capture and check what's next without opening the app.
+• Lock Screen widget, plus redesigned Home Screen widgets with clear, labeled buttons.
+• One capture sheet for every kind of card, with Save and add another for flashcards.
+• A launch screen, a short welcome with examples, and tips that appear one at a time.
+• Fixes: widgets now refresh reliably after changes, and a library that can't be opened is set aside safely instead of being deleted.
+
+Your cards, folders and tags come along unchanged.

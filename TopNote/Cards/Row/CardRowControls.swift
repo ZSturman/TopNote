@@ -58,9 +58,6 @@ struct CardPoliciesMenu: View {
     var card: Card
 
     let flashcardRatingPolicyTip = FlashcardRatingPolicyTip()
-    let firstNoteTip = FirstNoteTip_Skip()
-    let firstTodoTip = FirstTodoTip_Skip()
-    let firstFlashcardTip = FirstFlashcardTip_Skip()
 
     
     var body: some View {
@@ -124,27 +121,6 @@ struct CardPoliciesMenu: View {
                 }
             }
             .disabled(!card.skipEnabled)
-            .overlay {
-                if card.cardType == .note {
-                    Color.clear.popoverTip(firstNoteTip, arrowEdge: .top)
-                } else if card.cardType == .todo {
-                    Color.clear.popoverTip(firstTodoTip, arrowEdge: .top)
-                } else {
-                    Color.clear.popoverTip(firstFlashcardTip, arrowEdge: .top)
-                }
-            }
-            .onAppear {
-                Task {
-                    switch card.cardType {
-                    case .note:
-                        await FirstNoteTip_Skip.createdFirstNoteEvent.donate()
-                    case .todo:
-                        await FirstTodoTip_Skip.createdFirstTodoEvent.donate()
-                    case .flashcard:
-                        await FirstFlashcardTip_Skip.createdFirstFlashcardEvent.donate()
-                    }
-                }
-            }
             
             
             if card.cardType == .flashcard {
@@ -199,11 +175,35 @@ struct CardPoliciesMenu: View {
                     }
                     .menuActionDismissBehavior(.disabled)
                     
-                    // Note: "Good" rating maintains the current interval (no policy adjustment)
-                    Text("Good: Keeps current schedule")
+                    Menu {
+                        Text("Good spaces the card out a little.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Divider()
+                        
+                        ForEach(RepeatPolicy.allCases, id: \.self) { policy in
+                            Button(action: {
+                                card.ratingMedPolicy = policy
+                            }) {
+                                HStack {
+                                    Text(policy.rawValue)
+                                    if card.ratingMedPolicy == policy {
+                                        Spacer()
+                                        Image(systemName: "checkmark")
+                                    }
+                                }
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text("On Good:")
+                            Text(card.ratingMedPolicy.rawValue)
+                                .fontWeight(.semibold)
+                        }
                         .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.vertical, 4)
+                    }
+                    .menuActionDismissBehavior(.disabled)
 
                     Menu {
                         Text("Hard brings it back sooner for review.")

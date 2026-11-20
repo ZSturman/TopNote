@@ -95,7 +95,7 @@ struct QueueManager {
         guard let topCard = queueCards.first else { return }
         topCard.skip(at: currentDate)
         try context.save()
-        WidgetCenter.shared.reloadTimelines(ofKind: "TopNoteWidget")
+        TopNoteShared.reloadWidgets()
     }
 
     func nextTopCard(currentDate: Date, configuration: ConfigurationAppIntent) async throws {
@@ -103,7 +103,7 @@ struct QueueManager {
         guard let topCard = queueCards.first else { return }
         topCard.next(at: currentDate)
         try context.save()
-        WidgetCenter.shared.reloadTimelines(ofKind: "TopNoteWidget")
+        TopNoteShared.reloadWidgets()
     }
 
     func completeTopCard(currentDate: Date, configuration: ConfigurationAppIntent) async throws {
@@ -111,7 +111,7 @@ struct QueueManager {
         guard let todoCard = queueCards.first(where: { $0.cardType == .todo }) else { return }
         todoCard.markAsComplete(at: currentDate)
         try context.save()
-        WidgetCenter.shared.reloadTimelines(ofKind: "TopNoteWidget")
+        TopNoteShared.reloadWidgets()
     }
 
     func rateTopFlashcard(
@@ -125,7 +125,7 @@ struct QueueManager {
         guard rating >= 0 && rating < ratingTypes.count else { return }
         flashcard.submitFlashcardRating(ratingTypes[rating], at: currentDate)
         try context.save()
-        WidgetCenter.shared.reloadTimelines(ofKind: "TopNoteWidget")
+        TopNoteShared.reloadWidgets()
     }
 
     func revealTopCardAnswer(currentDate: Date, configuration: ConfigurationAppIntent) async throws {
@@ -133,6 +133,6 @@ struct QueueManager {
         guard let flashcard = queueCards.first(where: { $0.cardType == .flashcard }) else { return }
         flashcard.answerRevealed = true
         try context.save()
-        WidgetCenter.shared.reloadTimelines(ofKind: "TopNoteWidget")
+        TopNoteShared.reloadWidgets()
     }
 }

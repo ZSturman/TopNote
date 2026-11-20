@@ -133,14 +133,7 @@ struct CardListView: View {
     @State var appOpenCount = 0
     @State var hasViewedQueueCard = false
     
-    let addFirstCardTip = FirstNoteTip()
-    let addWidgetTip = AddWidgetTip()
-    let firstQueueCardTip = FirstQueueCardTip()
-    let customizeWidgetTip = CustomizeWidgetTip()
-    let getStartedTip = GetStartedTip()
-    let firstNoteTip = FirstNoteTip_Skip()
-    let firstTodoTip = FirstTodoTip_Skip()
-    let firstFlashcardTip = FirstFlashcardTip_Skip()
+    let librarySwipeTip = LibrarySwipeTip()
     
     enum ImportMode {
         case json
@@ -239,10 +232,9 @@ struct CardListView: View {
                 }
             }
             .sheet(isPresented: $showNewCardSheet) {
-                NewCardSheet(
-                    cardType: newCardType,
-                    currentFolder: currentFolderForNewCard,
-                    currentTagIDs: currentSelectedTagIDs(),
+                CaptureSheet(
+                    initialType: newCardType,
+                    defaultFolder: currentFolderForNewCard,
                     onSave: { newCard in
                         handleNewCardCreated(newCard)
                     }

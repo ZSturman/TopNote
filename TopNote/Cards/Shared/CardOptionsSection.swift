@@ -73,12 +73,10 @@ struct CardOptionsSection: View {
                     }
                 }
                 
-                // Note: "Good" rating maintains current interval (no policy adjustment)
-                HStack {
-                    Text("On Good")
-                    Spacer()
-                    Text("Keeps current schedule")
-                        .foregroundStyle(.secondary)
+                Picker("On Good", selection: $ratingMedPolicy) {
+                    ForEach(RepeatPolicy.allCases, id: \.self) { policy in
+                        Text(policy.rawValue).tag(policy)
+                    }
                 }
                 
                 Picker("On Hard", selection: $ratingHardPolicy) {
@@ -98,14 +96,16 @@ extension CardOptionsSection {
     static func defaults(for cardType: CardType) -> CardOptionDefaults {
         switch cardType {
         case .flashcard:
+            // Recallable's standard: start three days out, Good and Easy space the card out,
+            // Hard brings it back sooner.
             return CardOptionDefaults(
                 isRecurring: true,
-                repeatInterval: .every2Months,
-                skipEnabled: false,
+                repeatInterval: .every3days,
+                skipEnabled: true,
                 skipPolicy: .none,
                 resetRepeatIntervalOnComplete: false,
-                ratingEasyPolicy: .mild,
-                ratingMedPolicy: .none,
+                ratingEasyPolicy: .aggressive,
+                ratingMedPolicy: .mild,
                 ratingHardPolicy: .aggressive
             )
         case .todo:
@@ -145,3 +145,4 @@ struct CardOptionDefaults {
     let ratingMedPolicy: RepeatPolicy
     let ratingHardPolicy: RepeatPolicy
 }
+

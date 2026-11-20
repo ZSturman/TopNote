@@ -1,8 +1,6 @@
 //
 //  NoteCardButtonGroup.swift
-//  TopNote
-//
-//  Created by Zachary Sturman on 12/13/25.
+//  TopNoteWidget
 //
 
 import SwiftUI
@@ -14,36 +12,18 @@ struct NoteCardButtonGroup: View {
     let card: CardEntity
     let widgetID: String
 
-    init(skipEnabled: Bool, card: CardEntity, widgetID: String) {
-        self.skipEnabled = skipEnabled
-        self.card = card
-        self.widgetID = widgetID
-    }
-
     var body: some View {
-
-        HStack {
+        HStack(spacing: 6) {
             Button(intent: NextCardIntent(card: card)) {
-                NextButtonUI()
+                WidgetCapsule(title: "Got it", tint: CardType.note.tintColor)
             }
-            .frame(width: buttonSize, height: buttonSize)
-            .buttonStyle(WidgetButtonStyle(color: .blue))
-
-            Spacer()
-
-            RecurringMessage(card: card)
-
-            Spacer()
-
-
+            .buttonStyle(WidgetButtonStyle(color: CardType.note.tintColor))
             if skipEnabled {
                 Button(intent: SkipCardIntent(card: card)) {
-                    SkipButtonUI()
+                    WidgetCapsule(title: "Less often", tint: CardType.note.tintColor, prominent: false)
                 }
-                .frame(width: buttonSize, height: buttonSize)
-                .buttonStyle(WidgetButtonStyle(color: .orange))
+                .buttonStyle(WidgetButtonStyle(color: CardType.note.tintColor))
             }
         }
-        .padding(6)
     }
 }

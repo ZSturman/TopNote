@@ -53,7 +53,7 @@ final class Card {
         let now = Date()
         guard now.timeIntervalSince(lastWidgetReload) > widgetReloadThrottle else { return }
         lastWidgetReload = now
-        WidgetCenter.shared.reloadAllTimelines()
+        TopNoteShared.reloadWidgets()
     }
     
     // MARK: - Properties
@@ -586,9 +586,9 @@ final class Card {
             // multiply the repeatInterval by the ratingEasyPolicy multiplier
             nextInterval = Int(Double(baseInterval) * ratingEasyPolicy.easyMultiplier)
         case .good:
-            // "Good" rating maintains the current interval without any multiplier
-            // The rating is still logged but doesn't affect the repeat interval
-            nextInterval = baseInterval
+            // Good spaces the card out a little (Recallable's practice); a card whose policy
+            // is .none keeps its current interval.
+            nextInterval = Int((Double(baseInterval) * ratingMedPolicy.goodMultiplier).rounded())
         case .hard:
             // multiply the repeatInterval by the ratingHardPolicy multiplier
             nextInterval = Int(Double(baseInterval) * ratingHardPolicy.hardMultiplier)
@@ -606,6 +606,41 @@ final class Card {
     
 
     
+    // MARK: - Interval Preview
+
+    /// Hours until this flashcard returns if it is rated `rating` now, without changing it.
+    /// Shown under each rating button so the choice is concrete.
+    func previewIntervalHours(for rating: RatingType) -> Int {
+        guard isRecurring else { return 0 }
+        // Mirrors scheduleNext exactly, including its rounding.
+        let base = Double(repeatInterval)
+        let hours: Int
+        switch rating {
+        case .easy: hours = Int(base * ratingEasyPolicy.easyMultiplier)
+        case .good: hours = Int((base * ratingMedPolicy.goodMultiplier).rounded())
+        case .hard: hours = Int(base * ratingHardPolicy.hardMultiplier)
+        }
+        return max(24, min(hours, 8760))
+    }
+
+    /// Hours until this card returns if it is skipped now.
+    func previewSkipHours() -> Int {
+        let multiplier = cardType == .note
+            ? max(skipPolicy.skipMultiplier > 0 ? 1.0 / skipPolicy.skipMultiplier : 2.0, 2.0)
+            : skipPolicy.skipMultiplier
+        return max(24, min(Int(Double(repeatInterval) * multiplier), 8760))
+    }
+
+    /// How well a flashcard is known, from how far its spacing has grown.
+    var strength: CardStrength {
+        CardStrength(reviewCount: rating.count, intervalHours: repeatInterval)
+    }
+
+    /// Dates this card was handled from the queue: ratings, completions and Next.
+    var handledDates: [Date] {
+        ratingEvents.map(\.date) + completes + removals
+    }
+
     // MARK: - Public Methods
     /// Determines if the card is due to be enqueued.
     /// - Parameter currentDate: The current date to check against.

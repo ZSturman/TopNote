@@ -1,1 +1,15 @@
 .DS_Store
+
+# Xcode user state and build output
+xcuserdata/
+*.xcuserstate
+build/
+DerivedData/
+*.xcresult
+
+# Signing and App Store Connect credentials must never be committed
+*.p8
+*.p12
+*.mobileprovision
+.env
+.env.*

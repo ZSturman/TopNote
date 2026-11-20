@@ -127,15 +127,6 @@ extension CardListView {
                     )
                     .environment(\.ascending, ascending)
                     .environment(\.sortCriteria, sortCriteria)
-                    .popoverTip(firstQueueCardTip, arrowEdge: .top)
-                    .onAppear {
-                        if !hasViewedQueueCard && !queueCards.isEmpty {
-                            hasViewedQueueCard = true
-                            Task {
-                                await FirstQueueCardTip.viewedFirstQueueCardEvent.donate()
-                            }
-                        }
-                    }
                 }
             }
         }
@@ -306,10 +297,7 @@ extension CardListView {
             .listRowInsets(EdgeInsets())
             .listRowBackground(Color.clear)
             
-            if !selectedCardModel.isNewlyCreated {
-                TipView(addWidgetTip)
-            }
-            TipView(customizeWidgetTip)
+            TipView(librarySwipeTip)
             
             if activeTypeFilters.isEmpty {
                 emptyTypeFilterView
@@ -636,8 +624,7 @@ extension CardListView {
                     .listRowSeparator(.hidden)
                 
                 
-                if !selectedCardModel.isNewlyCreated { TipView(addWidgetTip) }
-                TipView(customizeWidgetTip)
+                TipView(librarySwipeTip)
                 
 
                 if activeTypeFilters.isEmpty {

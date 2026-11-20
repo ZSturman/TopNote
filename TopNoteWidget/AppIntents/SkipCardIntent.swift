@@ -11,9 +11,14 @@ import SwiftData
 
 struct SkipCardIntent: AppIntent {
     static var title: LocalizedStringResource = "Skip Card"
+    static var description = IntentDescription("Sets a card aside for later.")
 
     @Parameter(title: "Card")
     var card: CardEntity
+
+    static var parameterSummary: some ParameterSummary {
+        Summary("Skip \(\.$card)")
+    }
 
     init(card: CardEntity) { self.card = card }
     init() {}
@@ -25,7 +30,7 @@ struct SkipCardIntent: AppIntent {
             try? context.save()
         }
 
-        WidgetCenter.shared.reloadAllTimelines()
+        TopNoteShared.reloadWidgets()
         return .result()
     }
 }

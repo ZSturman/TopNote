@@ -10,10 +10,15 @@ import AppIntents
 import SwiftData
 
 struct CompleteTodoIntent: AppIntent {
-    static var title: LocalizedStringResource = "Complete Todo"
+    static var title: LocalizedStringResource = "Complete To-do"
+    static var description = IntentDescription("Checks off a Top Note to-do. A repeating to-do comes back on schedule.")
 
-    @Parameter(title: "Card")
+    @Parameter(title: "To-do")
     var card: CardEntity
+
+    static var parameterSummary: some ParameterSummary {
+        Summary("Complete \(\.$card)")
+    }
 
     init(card: CardEntity) { self.card = card }
     init() {}
@@ -25,7 +30,7 @@ struct CompleteTodoIntent: AppIntent {
             try? context.save()
         }
 
-        WidgetCenter.shared.reloadAllTimelines()
+        TopNoteShared.reloadWidgets()
         return .result()
     }
 }

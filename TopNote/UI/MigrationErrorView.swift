@@ -94,7 +94,7 @@ struct MigrationErrorView: View {
                 resetDatabase()
             }
         } message: {
-            Text("This will delete all local data and start fresh. Your data may be recoverable from iCloud if you had sync enabled. This action cannot be undone.")
+            Text("Top Note will set the unreadable library aside in a recovery folder on this device and start fresh. Cards synced with iCloud download again.")
         }
     }
     
@@ -102,42 +102,8 @@ struct MigrationErrorView: View {
         isResetting = true
         TopNoteLogger.dataAccess.warning("User initiated database reset from error screen")
         
-        // Delete all database files
-        if let containerURL = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: "group.com.zacharysturman.topnote"
-        ) {
-            let fileManager = FileManager.default
-            
-            if let enumerator = fileManager.enumerator(at: containerURL, includingPropertiesForKeys: nil) {
-                while let fileURL = enumerator.nextObject() as? URL {
-                    let name = fileURL.lastPathComponent
-                    if name.contains(".store") ||
-                       name.contains("sqlite") ||
-                       name.contains("_Data") ||
-                       name.contains("EXTERNAL") ||
-                       name.contains("_SUPPORT") {
-                        try? fileManager.removeItem(at: fileURL)
-                        TopNoteLogger.dataAccess.debug("User reset: deleted \(name)")
-                    }
-                }
-            }
-        }
-        
-        // Also clean app support directory
-        let appSupportURLs = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)
-        for appSupportURL in appSupportURLs {
-            if let enumerator = FileManager.default.enumerator(at: appSupportURL, includingPropertiesForKeys: nil) {
-                while let fileURL = enumerator.nextObject() as? URL {
-                    let name = fileURL.lastPathComponent
-                    if name.contains(".store") ||
-                       name.contains("sqlite") ||
-                       name.contains("_Data") ||
-                       name.contains("EXTERNAL") {
-                        try? FileManager.default.removeItem(at: fileURL)
-                    }
-                }
-            }
-        }
+        // Keep a recovery copy of the unreadable library instead of deleting it.
+        preserveUnreadableStore()
         
         TopNoteLogger.dataAccess.info("Database reset complete. Prompting app restart.")
         

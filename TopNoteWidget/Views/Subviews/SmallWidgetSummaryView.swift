@@ -1,90 +1,42 @@
 //
 //  SmallWidgetSummaryView.swift
-//  TopNote
+//  TopNoteWidget
 //
-//  Created by Zachary Sturman on 12/13/25.
+//  The small widget shows the next card itself; tap it to handle it in the app.
 //
 
 import SwiftUI
 import WidgetKit
 
 struct SmallWidgetSummaryView: View {
-    let queueCount: Int
-    let topCardDate: Date
-    let currentDate: Date
-
-    let selectedCardTypes: [CardType]
-    let selectedFolders: [Folder]
+    let entry: CardEntry
 
     var body: some View {
-        VStack(spacing: 10) {
-            if queueCount == 0 {
-                HStack {
-                    ForEach(selectedCardTypes, id: \.self) { type in
-                        Image(systemName: type.systemImage)
-                            .imageScale(.medium)
-                            .foregroundColor(.secondary)
-                            .accessibilityLabel(Text(type.rawValue))
-                    }
-                }
-
-                AllCaughtUpWidgetView(
-                    selectedCardTypes: selectedCardTypes,
-                    selectedFolders: selectedFolders,
-                    nextCardDate: nil
-                )
-            } else {
-                HStack(spacing: 6) {
-                    ForEach(selectedCardTypes, id: \.self) { type in
-                        Image(systemName: type.systemImage)
-                            .imageScale(.medium)
-                            .foregroundColor(.accentColor)
-                            .accessibilityLabel(Text(type.rawValue))
-                    }
-                    if !selectedFolders.isEmpty {
-                        Text(selectedFolders.map(\.name).joined(separator: ", "))
-                            .font(.caption)
-                            .foregroundColor(.accentColor)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                    }
-                }
-
-                Image(systemName: "tray.full")
-                    .font(.largeTitle)
-                    .foregroundColor(.accentColor)
-
-                Text("\(queueCount)")
-                    .font(.caption).bold()
+        let card = entry.card
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Image(systemName: card.cardType.systemImage)
+                    .foregroundStyle(card.cardType.tintColor)
+                Spacer()
+                Text("\(entry.queueCardCount)")
+                    .font(.caption.weight(.bold))
                     .monospacedDigit()
-                    .accessibilityLabel(Text("\(queueCount) cards in queue"))
-
-                Text("\(formatDuration(since: topCardDate, until: currentDate))")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 2)
+                    .background(card.cardType.tintColor.opacity(0.18), in: Capsule())
+                    .accessibilityLabel("\(entry.queueCardCount) ready")
             }
+            .font(.subheadline)
+            Text(card.content)
+                .font(WidgetPalette.font(for: card.cardType, large: false))
+                .foregroundStyle(card.cardType == .note ? WidgetPalette.ink : .primary)
+                .lineLimit(5)
+                .minimumScaleFactor(0.7)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            Text(card.cardType == .flashcard ? "Tap to answer" : card.cardType == .todo ? "Tap to check off" : "Tap to read")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding()
-    }
-
-    private func formatDuration(since start: Date, until end: Date) -> String {
-        let seconds = Int(end.timeIntervalSince(start))
-        if seconds < 60 {
-            return "Just now"
-        } else if seconds < 3600 {
-            let minutes = seconds / 60
-            return "\(minutes) min"
-        } else if seconds < 86400 {
-            let hours = seconds / 3600
-            return "\(hours) hr"
-        } else if seconds < 604800 {
-            let days = seconds / 86400
-            return "\(days) day\(days > 1 ? "s" : "")"
-        } else {
-            let weeks = seconds / 604800
-            return "\(weeks) week\(weeks > 1 ? "s" : "")"
-        }
+        .padding(14)
     }
 }

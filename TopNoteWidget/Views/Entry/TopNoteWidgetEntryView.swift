@@ -1,8 +1,8 @@
 //
 //  TopNoteWidgetEntryView.swift
-//  TopNote
+//  TopNoteWidget
 //
-//  Created by Zachary Sturman on 12/13/25.
+//  The next card, with the same actions as Up Next in the app.
 //
 
 import SwiftUI
@@ -12,280 +12,155 @@ struct TopNoteWidgetEntryView: View {
     var entry: CardEntry
     @Environment(\.widgetFamily) private var family
 
+    private var isLarge: Bool { family == .systemLarge || family == .systemExtraLarge }
+    private var card: CardEntity { entry.card }
+    private var isFlipped: Bool {
+        card.cardType == .flashcard && WidgetStateManager.shared.isFlipped(widgetID: entry.widgetIdentifier, cardID: card.id)
+    }
+
     var body: some View {
         Group {
-            if family == .systemSmall {
-                SmallWidgetSummaryView(
-                    queueCount: entry.queueCardCount,
-                    topCardDate: entry.card.nextTimeInQueue,
-                    currentDate: entry.date,
-                    selectedCardTypes: entry.selectedCardTypes,
-                    selectedFolders: entry.selectedFolders
-                )
+            if entry.selectedCardTypes.isEmpty {
+                message(symbol: "slider.horizontal.3", title: "Nothing selected", detail: "Touch and hold, then Edit Widget to choose what to show.")
+            } else if entry.queueCardCount == 0 && entry.card.content == "Unable to load cards." {
+                message(symbol: "exclamationmark.triangle", title: "Couldn't load cards", detail: "Open Top Note to refresh.")
+            } else if entry.queueCardCount == 0 {
+                caughtUp
+            } else if family == .systemSmall {
+                SmallWidgetSummaryView(entry: entry)
             } else {
-                GeometryReader { geometry in
-                    ZStack {
-                        backgroundColor()
-
-                        VStack(spacing: 6) {
-                            if isNoCardTypesSelected {
-                                VStack {
-                                    Image(systemName: "slider.horizontal.3")
-                                        .font(.largeTitle)
-                                        .foregroundColor(.gray)
-                                    Text("No card types selected.")
-                                        .font(.caption)
-                                        .multilineTextAlignment(.center)
-                                        .padding(.top, 4)
-                                    Text("Tap and edit this widget to choose what to display!")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                        .multilineTextAlignment(.center)
-                                        .padding(.top, 2)
-                                }
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            } else if entry.queueCardCount == 0 {
-                                VStack {
-                                    HStack {
-                                        ForEach(entry.selectedCardTypes, id: \.self) { type in
-                                            Image(systemName: type.systemImage)
-                                                .imageScale(.medium)
-                                                .foregroundColor(.secondary)
-                                                .accessibilityLabel(Text(type.rawValue))
-                                        }
-                                    }
-                                    AllCaughtUpWidgetView(
-                                        selectedCardTypes: entry.selectedCardTypes,
-                                        selectedFolders: entry.selectedFolders,
-                                        nextCardDate: entry.nextCardForQueue?.nextTimeInQueue
-                                    )
-                                }
-                                .padding()
-                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                            } else {
-                                ZStack(alignment: .top) {
-
-                                    headerRow
-//                                        .opacity(hideText ? 0 : 1)
-//                                        .accessibilityHidden(hideText)
-                                        .padding(.horizontal, 14)
-                                        .padding(.top, 10)
-                                }
-                                .frame(height: 28, alignment: .top)
-
-                                cardContentView(for: entry.card, widgetID: entry.widgetIdentifier)
-                                    .frame(maxWidth: .infinity, alignment: .topLeading)
-                                    .padding(.horizontal, 14)
-                                    .padding(.top, 2)
-                                    .animation(.easeInOut(duration: 0.3), value: entry.card.answerRevealed)
-
-                                Spacer(minLength: 0)
-
-                                cardButtonsView(for: entry.card, widgetID: entry.widgetIdentifier)
-                                    .padding(.horizontal, 10)
-                                    .padding(.bottom, 6)
-                            }
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    }
-                }
-                .containerBackground(.clear, for: .widget)
-                .widgetURL(URL(string: "topnote://card/\(entry.card.id.uuidString)"))
+                cardView
             }
         }
-        .onAppear {
-            let shared = UserDefaults(suiteName: "group.com.zacharysturman.topnote")
-            shared?.set(true, forKey: "hasWidget")
+        .containerBackground(for: .widget) {
+            if entry.queueCardCount > 0 && !entry.selectedCardTypes.isEmpty {
+                Rectangle().fill(WidgetPalette.background(for: card.cardType))
+            } else {
+                Color(uiColor: .secondarySystemBackground)
+            }
         }
+        .widgetURL(entry.queueCardCount > 0 ? TopNoteRoute.card(card.id).url : TopNoteRoute.upNext(nil).url)
     }
 
-    // MARK: Header
+    // MARK: - Card
 
-    private var headerRow: some View {
-        HStack(alignment: .center) {
-            VStack(alignment: .leading, spacing: 2) {
-                combinedFoldersTagsView
-            }
-            .font(.caption)
-            .lineLimit(1)
-            .truncationMode(.tail)
-
-            Spacer()
-
-            countBadge(count: entry.queueCardCount)
+    private var cardView: some View {
+        VStack(alignment: .leading, spacing: isLarge ? 12 : 8) {
+            header
+            content
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            buttons
         }
-        .font(.caption2)
+        .padding(isLarge ? 18 : 14)
     }
 
-    private var combinedFoldersTagsView: some View {
-        let tags = entry.card.tags
-        let folder = entry.card.folder
-
-        return HStack(spacing: 8) {
-            if let folder {
-                HStack(spacing: 2) {
-                    Image(systemName: "folder")
-                        .imageScale(.small)
-                    Text(folder.name)
-                        .font(.caption2)
-                        .minimumScaleFactor(0.7)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                }
-                .foregroundColor(.secondary)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .accessibilityLabel(Text(folder.name))
-            }
-
-            if let tags, !tags.isEmpty {
-                HStack(spacing: 2) {
-                    Image(systemName: "tag")
-                        .imageScale(.small)
-                    Text(tags.joined(separator: ", "))
-                        .font(.caption2)
-                        .minimumScaleFactor(0.7)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                }
-                .foregroundColor(.secondary)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .accessibilityLabel(Text("Tags: \(tags.joined(separator: ", "))"))
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func countBadge(count: Int) -> some View {
-
-        return HStack(spacing: 4) {
-            ForEach(entry.selectedCardTypes, id: \.self) { type in
-                Image(systemName: type.systemImage)
-                    .font(.caption2)
-                    .minimumScaleFactor(0.7)
-                    .imageScale(.medium)
-                    .accessibilityLabel(Text(type.rawValue))
-            }
-
-            Text("\(count)")
-                .font(.caption2).bold()
-                .minimumScaleFactor(0.7)
-                .foregroundColor( .secondary)
+    private var header: some View {
+        HStack(spacing: 5) {
+            Image(systemName: card.cardType.systemImage)
+                .foregroundStyle(card.cardType.tintColor)
+            Text(headerTitle)
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            Spacer(minLength: 4)
+            Text("\(entry.queueCardCount) ready")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
                 .monospacedDigit()
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text("Items: \(count)"))
+        .font(.caption)
     }
 
-    private var isNoCardTypesSelected: Bool {
-        entry.selectedCardTypes.isEmpty
+    private var headerTitle: String {
+        let kind = card.cardType == .flashcard && isFlipped ? "ANSWER" : card.cardType.rawValue.uppercased()
+        if let folder = card.folder?.name, !folder.isEmpty { return "\(kind) · \(folder.uppercased())" }
+        return kind
     }
-
-    private func backgroundColor() -> Color {
-        entry.card.cardType.tintColor.opacity(0.10)
-    }
-
-    private func isEmptyText(_ text: String?) -> Bool {
-        (text ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-
-
 
     @ViewBuilder
-    private func cardButtonsView(for card: CardEntity, widgetID: String) -> some View {
-        let isFlipped = card.cardType == .flashcard &&
-            WidgetStateManager.shared.isFlipped(widgetID: widgetID, cardID: card.id)
-
-        switch card.cardType {
-        case .flashcard:
-            FlashcardButtonGroup(
-                isCardFlipped: isFlipped,
-                skipCount: card.skipCount,
-                skipEnabled: card.skipEnabled,
-                card: card,
-                widgetID: widgetID,
-            )
-        case .todo:
-            TodoCardButtonGroup(
-                skipEnabled: card.skipEnabled,
-                card: card,
-                widgetID: widgetID,
-            )
-        case .note:
-            NoteCardButtonGroup(
-                skipEnabled: card.skipEnabled,
-                card: card,
-                widgetID: widgetID,
-            )
-        }
-    }
-
-
-    @ViewBuilder
-    private func cardContentView(for card: CardEntity, widgetID: String) -> some View {
-        let isFlipped = card.cardType == .flashcard &&
-            WidgetStateManager.shared.isFlipped(widgetID: widgetID, cardID: card.id)
-
+    private var content: some View {
         switch card.cardType {
         case .flashcard:
             if isFlipped {
-                let isLargeWidget = family == .systemLarge || family == .systemExtraLarge
-                let contentHeight: CGFloat = isLargeWidget ? 50 : 28
-
-                VStack(spacing: isLargeWidget ? 4 : 2) {
-                    HStack(alignment: .top, spacing: 6) {
-                        if !isEmptyText(card.content) {
-                            Text(card.content)
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                                .lineLimit(isLargeWidget ? 2 : 1)
-                                .minimumScaleFactor(0.6)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                    }
-                    .frame(height: contentHeight)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        if let answer = card.answer, !isEmptyText(answer) {
-                            Text(answer)
-                                .font(isLargeWidget ? .title3 : .subheadline)
-                                .fontWeight(.regular)
-                                .foregroundColor(.primary)
-                                .lineLimit(isLargeWidget ? 15 : 6)
-                                .minimumScaleFactor(0.5)
-                                .fixedSize(horizontal: false, vertical: false)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                    }
-                }
-                .padding(0)
-            } else {
-                if !isEmptyText(card.content) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(card.content)
-                        .font(family == .systemLarge || family == .systemExtraLarge ? .title3 : .subheadline)
-                        .fontWeight(.regular)
-                        .foregroundColor(.primary)
-                        .lineLimit(family == .systemLarge || family == .systemExtraLarge ? 12 : 5)
-                        .minimumScaleFactor(0.5)
-                        .fixedSize(horizontal: false, vertical: false)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(isLarge ? 2 : 1)
+                    Text(card.answer ?? "")
+                        .font(WidgetPalette.font(for: .flashcard, large: isLarge))
+                        .lineLimit(isLarge ? 10 : 3)
+                        .minimumScaleFactor(0.6)
                 }
-            }
-        case .todo, .note:
-            if !isEmptyText(card.content) {
+            } else {
                 Text(card.content)
-                    .font(family == .systemLarge || family == .systemExtraLarge ? .title3 : .subheadline)
-                    .fontWeight(.regular)
-                    .foregroundColor(.primary)
-                    .lineLimit(family == .systemLarge || family == .systemExtraLarge ? 12 : 5)
-                    .minimumScaleFactor(0.5)
-                    .fixedSize(horizontal: false, vertical: false)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .font(WidgetPalette.font(for: .flashcard, large: isLarge))
+                    .lineLimit(isLarge ? 10 : 4)
+                    .minimumScaleFactor(0.6)
             }
+        case .todo:
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Image(systemName: "circle")
+                    .foregroundStyle(CardType.todo.tintColor)
+                Text(card.content)
+                    .font(WidgetPalette.font(for: .todo, large: isLarge))
+                    .lineLimit(isLarge ? 10 : 4)
+                    .minimumScaleFactor(0.6)
+            }
+        case .note:
+            Text(plainNote(card.content))
+                .font(WidgetPalette.font(for: .note, large: isLarge))
+                .foregroundStyle(WidgetPalette.ink)
+                .lineSpacing(2)
+                .lineLimit(isLarge ? 12 : 4)
+                .minimumScaleFactor(0.6)
         }
     }
-}
 
+    @ViewBuilder
+    private var buttons: some View {
+        switch card.cardType {
+        case .flashcard:
+            FlashcardButtonGroup(isCardFlipped: isFlipped, skipCount: card.skipCount, skipEnabled: card.skipEnabled, card: card, widgetID: entry.widgetIdentifier)
+        case .todo:
+            TodoCardButtonGroup(skipEnabled: card.skipEnabled, card: card, widgetID: entry.widgetIdentifier)
+        case .note:
+            NoteCardButtonGroup(skipEnabled: card.skipEnabled, card: card, widgetID: entry.widgetIdentifier)
+        }
+    }
+
+    /// Widgets show notes as plain text; Markdown markers are removed.
+    private func plainNote(_ text: String) -> AttributedString {
+        (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(text)
+    }
+
+    // MARK: - Empty states
+
+    private var caughtUp: some View {
+        VStack(spacing: 6) {
+            Image(systemName: "checkmark.seal.fill")
+                .font(family == .systemSmall ? .title2 : .largeTitle)
+                .foregroundStyle(.green)
+            Text("All caught up")
+                .font(.headline)
+            if let next = entry.nextCardForQueue?.nextTimeInQueue {
+                Text("Next \(next, style: .relative)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding()
+    }
+
+    private func message(symbol: String, title: String, detail: String) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: symbol).font(.title2).foregroundStyle(.secondary)
+            Text(title).font(.headline)
+            Text(detail).font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding()
+    }
+}

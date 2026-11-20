@@ -15,6 +15,8 @@
 		EF6B30DF2E4D0CA7005A2796 /* AppIconV2.icon in Resources */ = {isa = PBXBuildFile; fileRef = EF6B30DD2E4D0CA6005A2796 /* AppIconV2.icon */; };
 		EF6B30E12E4D1194005A2796 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = EF6B30E02E4D1194005A2796 /* AppIcon.icon */; };
 		EF6B30E22E4D1194005A2796 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = EF6B30E02E4D1194005A2796 /* AppIcon.icon */; };
+		EF949D2D2F30B08F00C882D5 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = EF949D2C2F30B08F00C882D5 /* Localizable.xcstrings */; };
+		EF949D2E2F30B08F00C882D5 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = EF949D2C2F30B08F00C882D5 /* Localizable.xcstrings */; };
 		EFBE070F2D63E4DC004B39A0 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EFBE070E2D63E4DC004B39A0 /* WidgetKit.framework */; };
 		EFBE07112D63E4DC004B39A0 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EFBE07102D63E4DC004B39A0 /* SwiftUI.framework */; };
 		EFBE07202D63E4DF004B39A0 /* TopNoteWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = EFBE070C2D63E4DC004B39A0 /* TopNoteWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -65,6 +67,7 @@
 		EF48D3C42EC96B21000F9E21 /* UnitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = UnitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EF6B30DD2E4D0CA6005A2796 /* AppIconV2.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIconV2.icon; sourceTree = "<group>"; };
 		EF6B30E02E4D1194005A2796 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon; sourceTree = "<group>"; };
+		EF949D2C2F30B08F00C882D5 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; name = Localizable.xcstrings; path = TopNote/Localizable.xcstrings; sourceTree = "<group>"; };
 		EFBE06F22D63E4C3004B39A0 /* TopNote.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TopNote.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EFBE070C2D63E4DC004B39A0 /* TopNoteWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TopNoteWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		EFBE070E2D63E4DC004B39A0 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
@@ -77,7 +80,10 @@
 		EF2D8A352EF058600028F011 /* Exceptions for "UnitTests" folder in "TopNote" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				AppIntentTests.swift,
 				CardDisplayTests.swift,
+				RemindersSyncTests.swift,
+				TopNote2Tests.swift,
 				UnitTests.swift,
 				WidgetImagePipelineTests.swift,
 				WidgetTimelineTests.swift,
@@ -107,6 +113,7 @@
 				AppIntents/CardEntityQuery.swift,
 				AppIntents/CompleteTodoIntent.swift,
 				AppIntents/NextCardIntent.swift,
+				AppIntents/OpenTopNoteIntents.swift,
 				AppIntents/SharedIntentHelpers.swift,
 				AppIntents/ShowFlashcardAnswerIntent.swift,
 				AppIntents/SkipCardIntent.swift,
@@ -119,6 +126,7 @@
 				Support/DefaultCard.swift,
 				"Utilities/View+WidgetBackground.swift",
 				Utilities/WidgetLogger.swift,
+				Views/WidgetPalette.swift,
 				Views/Buttons/FlashcardButtonGroup.swift,
 				Views/Buttons/NextButtonUI.swift,
 				Views/Buttons/NoteCardButtonGroup.swift,
@@ -165,8 +173,8 @@
 				Models/RatingType.swift,
 				Models/RepeatInterval.swift,
 				Models/RepeatPolicy.swift,
+				Models/TopNoteShared.swift,
 				Persistence/SharedModel.swift,
-				Tips/Tips.swift,
 			);
 			target = EFBE070B2D63E4DC004B39A0 /* TopNoteWidgetExtension */;
 		};
@@ -245,6 +253,7 @@
 		EFBE06E92D63E4C3004B39A0 = {
 			isa = PBXGroup;
 			children = (
+				EF949D2C2F30B08F00C882D5 /* Localizable.xcstrings */,
 				EF2D8A2E2EF0572A0028F011 /* TopNote.xctestplan */,
 				EFBE07282D63E58F004B39A0 /* TopNoteWidgetExtension.entitlements */,
 				EFBE06F42D63E4C3004B39A0 /* TopNote */,
@@ -437,6 +446,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EF949D2D2F30B08F00C882D5 /* Localizable.xcstrings in Resources */,
 				EF2D8A302EF0574B0028F011 /* TopNote.xctestplan in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -447,6 +457,7 @@
 			files = (
 				EF6B30E22E4D1194005A2796 /* AppIcon.icon in Resources */,
 				EF6B30DE2E4D0CA7005A2796 /* AppIconV2.icon in Resources */,
+				EF949D2E2F30B08F00C882D5 /* Localizable.xcstrings in Resources */,
 				EF41C96F2E4CC784006A392C /* AppIconV1.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -607,7 +618,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = TopNote/TopNote.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 36;
+				CURRENT_PROJECT_VERSION = 41;
 				DEVELOPMENT_ASSET_PATHS = "\"TopNote/Preview Content\"";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
@@ -626,7 +637,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.10.3;
+				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = zacharysturman.TopNote;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = NO;
@@ -647,7 +658,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = TopNote/TopNote.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 36;
+				CURRENT_PROJECT_VERSION = 41;
 				DEVELOPMENT_ASSET_PATHS = "\"TopNote/Preview Content\"";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
@@ -666,7 +677,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.10.3;
+				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = zacharysturman.TopNote;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = NO;
@@ -745,6 +756,7 @@
 				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
 				SUPPORTS_MACCATALYST = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
@@ -808,6 +820,7 @@
 				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
 				SUPPORTS_MACCATALYST = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
@@ -819,7 +832,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = TopNoteWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 27;
+				CURRENT_PROJECT_VERSION = 41;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TopNoteWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = TopNoteWidget;
@@ -829,7 +842,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.10.0;
+				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = zacharysturman.TopNote.TopNoteWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -846,7 +859,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = TopNoteWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 27;
+				CURRENT_PROJECT_VERSION = 41;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TopNoteWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = TopNoteWidget;
@@ -856,7 +869,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.10.0;
+				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = zacharysturman.TopNote.TopNoteWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;

@@ -111,14 +111,14 @@ enum RepeatPolicy: String, CaseIterable, Codable {
     }
     
     var easyPolicyDescription: String {
-        return "Easy ratings decrease the current repeat interval by a factor of \(String(format: "%.2f", easyMultiplier)) meaning the card will be shown less frequently."
+        return "Easy ratings lengthen the current repeat interval by a factor of \(String(format: "%.2f", easyMultiplier)) meaning the card will be shown less frequently."
     }
     
     var goodPolicyDescription: String {
-        return "Good ratings decrease the current repeat interval by a factor of \(String(format: "%.2f", goodMultiplier)) meaning the card will be shown less frequently."
+        return "Good ratings lengthen the current repeat interval by a factor of \(String(format: "%.2f", goodMultiplier)) meaning the card will be shown less frequently."
     }
     
     var hardPolicyDescription: String {
-        return "Hard ratings increase the current repeat interval by a factor of \(String(format: "%.2f", hardMultiplier)) meaning the card will be shown more frequently."
+        return "Hard ratings shorten the current repeat interval by a factor of \(String(format: "%.2f", hardMultiplier)) meaning the card will be shown more frequently."
     }
 }

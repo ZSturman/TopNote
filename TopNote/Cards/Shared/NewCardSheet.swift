@@ -71,10 +71,12 @@ struct NewCardSheet: View {
         // Set type-specific defaults
         switch cardType {
         case .flashcard:
-            _skipEnabled = State(initialValue: false)
+            _skipEnabled = State(initialValue: true)
             _skipPolicy = State(initialValue: .none)
             _resetRepeatIntervalOnComplete = State(initialValue: false)
-            _repeatInterval = State(initialValue: .every2Months)
+            _repeatInterval = State(initialValue: .every3days)
+            _ratingEasyPolicy = State(initialValue: .aggressive)
+            _ratingMedPolicy = State(initialValue: .mild)
         case .todo:
             _skipEnabled = State(initialValue: true)
             _skipPolicy = State(initialValue: .aggressive)

@@ -11,6 +11,7 @@ import SwiftData
 
 struct SubmitFlashcardRatingTypeIntent: AppIntent {
     static var title: LocalizedStringResource = "Difficulty Rating"
+    static var isDiscoverable = false
 
     @Parameter(title: "Selected Rating")
     var selectedRating: Int
@@ -34,7 +35,7 @@ struct SubmitFlashcardRatingTypeIntent: AppIntent {
             try? context.save()
         }
 
-        WidgetCenter.shared.reloadAllTimelines()
+        TopNoteShared.reloadWidgets()
         return .result()
     }
 }

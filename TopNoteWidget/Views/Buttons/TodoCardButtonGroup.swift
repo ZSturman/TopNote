@@ -1,8 +1,6 @@
 //
 //  TodoCardButtonGroup.swift
-//  TopNote
-//
-//  Created by Zachary Sturman on 12/13/25.
+//  TopNoteWidget
 //
 
 import SwiftUI
@@ -14,72 +12,16 @@ struct TodoCardButtonGroup: View {
     let card: CardEntity
     let widgetID: String
 
-    init(skipEnabled: Bool, card: CardEntity, widgetID: String) {
-        self.skipEnabled = skipEnabled
-        self.card = card
-        self.widgetID = widgetID
-    }
-
     var body: some View {
-
-        HStack {
+        HStack(spacing: 6) {
             Button(intent: CompleteTodoIntent(card: card)) {
-                ZStack {
-                    Circle()
-                        .fill(Color.green.opacity(0.85))
-                        .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
-                    Image(systemName: "checkmark.circle")
-                        .font(.caption)
-                        .foregroundColor(.white)
-                }
+                WidgetCapsule(title: "Done", systemImage: "checkmark", tint: CardType.todo.tintColor)
             }
-            .frame(width: buttonSize, height: buttonSize)
-            .buttonStyle(WidgetButtonStyle(color: .green))
-
-            Spacer()
-
-            RecurringMessage(card: card)
-
-            Spacer()
-
-//            if showTextToggle {
-//                Button(intent: ToggleWidgetTextIntent(card: card, widgetID: widgetID)) {
-//                    ZStack {
-//                        Circle()
-//                            .fill(Color.gray.opacity(0.85))
-//                            .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
-//
-//                        Image(systemName: "textformat.characters")
-//                            .font(.caption)
-//                            .foregroundColor(.white)
-//
-//                        if !isTextHidden {
-//                            Capsule()
-//                                .fill(Color.white)
-//                                .frame(width: 22, height: 2)
-//                                .rotationEffect(.degrees(33))
-//                                .shadow(color: .gray.opacity(0.1), radius: 3, x: 0, y: 1)
-//                        }
-//                    }
-//                }
-//                .frame(width: buttonSize, height: buttonSize)
-//                .buttonStyle(WidgetButtonStyle(color: .gray))
-//                .accessibilityLabel(Text(isTextHidden ? "Show text" : "Hide text"))
-//            }
-
+            .buttonStyle(WidgetButtonStyle(color: CardType.todo.tintColor))
             Button(intent: SkipCardIntent(card: card)) {
-                ZStack {
-                    Circle()
-                        .fill(Color.orange.opacity(0.85))
-                        .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
-                    Image(systemName: "arrow.trianglehead.counterclockwise.rotate.90")
-                        .font(.caption)
-                        .foregroundColor(.white)
-                }
+                WidgetCapsule(title: "Later", tint: .orange, prominent: false)
             }
-            .frame(width: buttonSize, height: buttonSize)
             .buttonStyle(WidgetButtonStyle(color: .orange))
         }
-        .padding(6)
     }
 }

@@ -48,29 +48,9 @@ extension CardListView {
         // Expand Upcoming section
         isUpcomingExpanded = true
         
-        // Donate tips
-        if wasEmptyBeforeInsert {
-            Task {
-                await AddWidgetTip.createdFirstCardEvent.donate()
-                await GetStartedTip.userTookActionEvent.donate()
-            }
-        } else {
-            Task {
-                await GetStartedTip.userTookActionEvent.donate()
-            }
-        }
-        
-        // Donate to card-type-specific events
-        Task {
-            switch newCard.cardType {
-            case .note:
-                await FirstNoteTip_Skip.createdFirstNoteEvent.donate()
-            case .todo:
-                await FirstTodoTip_Skip.createdFirstTodoEvent.donate()
-            case .flashcard:
-                await FirstFlashcardTip_Skip.createdFirstFlashcardEvent.donate()
-            }
-        }
+        _ = wasEmptyBeforeInsert
+        TopNoteTips.donate(TopNoteTips.cardCreated)
+        if newCard.cardType == .todo { TopNoteTips.donate(TopNoteTips.todoCreated) }
         
         // Scroll to the new card after a brief delay to ensure it's rendered
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -232,11 +212,9 @@ extension CardListView {
         
         // Reset deepLinkedCardID after processing
         deepLinkedCardID = nil }
-    func handleOnAppear() {                 appOpenCount += 1
-        Task {
-            await CustomizeWidgetTip.appOpenedEvent.donate()
-            await GetStartedTip.appOpenedWithoutActionEvent.donate()
-        }}
+    func handleOnAppear() {
+        appOpenCount += 1
+    }
     
     func scrollToCardIDChanged(to newID: UUID?, proxy: ScrollViewProxy) {
         guard let id = newID else { return }
@@ -281,8 +259,7 @@ extension CardListView {
     @ViewBuilder
     var addCardButton: some View {
         Button(action: {
-            showAddCardActionSheet.toggle()
-            addFirstCardTip.invalidate(reason: .actionPerformed)
+            presentNewCardSheet(ofType: CardType(routeName: UserDefaults.standard.string(forKey: "capture.lastType") ?? "") ?? .note)
         }) {
             Image(systemName: "square.and.pencil")
                 .font(.system(size: 24, weight: .bold))
@@ -291,7 +268,6 @@ extension CardListView {
                 .background(Circle().fill(Color.accentColor))
                 .shadow(radius: 4)
         }
-        .popoverTip(addFirstCardTip)
         .padding(.trailing, 16)
         .padding(.bottom, 16)
         .accessibilityIdentifier("addCard")

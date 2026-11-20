@@ -24,21 +24,21 @@ struct TagFilterSheet: View {
                 VStack(alignment: .leading, spacing: 16) {
                     // Instructions
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Tap to cycle: neutral → include → exclude")
+                        Text("Tap to cycle: neutral → include → exclude", comment: "")
                             .font(.caption)
                             .foregroundColor(.secondary)
                         HStack(spacing: 12) {
                             HStack(spacing: 4) {
                                 Circle().fill(Color.gray.opacity(0.3)).frame(width: 8, height: 8)
-                                Text("Neutral").font(.caption2).foregroundColor(.secondary)
+                                Text("Neutral", comment: "").font(.caption2).foregroundColor(.secondary)
                             }
                             HStack(spacing: 4) {
                                 Circle().fill(Color.green).frame(width: 8, height: 8)
-                                Text("Include").font(.caption2).foregroundColor(.secondary)
+                                Text("Include", comment: "").font(.caption2).foregroundColor(.secondary)
                             }
                             HStack(spacing: 4) {
                                 Circle().fill(Color.red).frame(width: 8, height: 8)
-                                Text("Exclude").font(.caption2).foregroundColor(.secondary)
+                                Text("Exclude", comment: "").font(.caption2).foregroundColor(.secondary)
                             }
                         }
                     }
@@ -48,10 +48,10 @@ struct TagFilterSheet: View {
                     // Tags flow layout
                     if tags.isEmpty {
                         VStack(spacing: 8) {
-                            Text("No tags yet")
+                            Text("No tags yet", comment: "")
                                 .font(.headline)
                                 .foregroundColor(.secondary)
-                            Text("Create tags by adding them to cards, or use Edit Tags.")
+                            Text("Create tags by adding them to cards, or use Edit Tags.", comment: "")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                                 .multilineTextAlignment(.center)
@@ -91,17 +91,21 @@ struct TagFilterSheet: View {
                     Spacer(minLength: 20)
                 }
             }
-            .navigationTitle("Filter by Tags")
+            .navigationTitle(Text("Filter by Tags", comment: ""))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") {
+                    Button {
                         dismiss()
+                    } label: {
+                        Text("Done", comment: "")
                     }
                 }
                 ToolbarItem(placement: .primaryAction) {
-                    Button("Edit Tags") {
+                    Button {
                         showEditTagsSheet = true
+                    } label: {
+                        Text("Edit Tags", comment: "")
                     }
                 }
             }

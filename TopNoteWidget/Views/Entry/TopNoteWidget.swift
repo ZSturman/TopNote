@@ -1,8 +1,6 @@
 //
 //  TopNoteWidget.swift
-//  TopNote
-//
-//  Created by Zachary Sturman on 12/13/25.
+//  TopNoteWidget
 //
 
 import WidgetKit
@@ -10,7 +8,7 @@ import SwiftUI
 import AppIntents
 
 struct TopNoteWidget: Widget {
-    let kind: String = "Top Note Widget"
+    let kind: String = TopNoteShared.WidgetKind.card
 
     var body: some WidgetConfiguration {
         AppIntentConfiguration(
@@ -19,11 +17,9 @@ struct TopNoteWidget: Widget {
             provider: Provider()
         ) { entry in
             TopNoteWidgetEntryView(entry: entry)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .containerBackground(.fill.tertiary, for: .widget)
         }
-        .configurationDisplayName("Top Note Widget")
-        .description("Displays a card from your collection.")
+        .configurationDisplayName("Up Next")
+        .description("Your next note, flashcard or to-do. Flip, rate, check off or skip it right here.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge])
         .contentMarginsDisabled()
     }

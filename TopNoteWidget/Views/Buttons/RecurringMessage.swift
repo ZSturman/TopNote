@@ -15,7 +15,7 @@ struct RecurringMessage: View {
             if !card.isRecurring {
                 switch card.cardType {
                 case .todo:
-                    Text("this card will be archived upon complete")
+                    Text("this card will be archived upon complete", comment: "")
                         .font(.caption2)
                         .minimumScaleFactor(0.7)
                         .foregroundColor(.secondary)
@@ -24,14 +24,14 @@ struct RecurringMessage: View {
 
                 case .flashcard:
                     if card.answerRevealed {
-                        Text("this card will be archived when rated")
+                        Text("this card will be archived when rated", comment: "")
                             .font(.caption2)
                             .minimumScaleFactor(0.7)
                             .foregroundColor(.secondary)
                             .frame(maxWidth: .infinity, alignment: .center)
                             .padding(.bottom, 4)
                     } else {
-                        Text("this card will be archived when flipped and rated")
+                        Text("this card will be archived when flipped and rated", comment: "")
                             .font(.caption2)
                             .minimumScaleFactor(0.7)
                             .foregroundColor(.secondary)
@@ -40,7 +40,7 @@ struct RecurringMessage: View {
                     }
 
                 case .note:
-                    Text("this card will be archived when Next is tapped")
+                    Text("this card will be archived when Next is tapped", comment: "")
                         .font(.caption2)
                         .minimumScaleFactor(0.7)
                         .foregroundColor(.secondary)

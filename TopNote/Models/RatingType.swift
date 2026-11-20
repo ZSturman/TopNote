@@ -8,7 +8,7 @@
 import SwiftUI
 
 
-enum RatingType: String, CaseIterable, Identifiable, Codable {
+enum RatingType: String, CaseIterable, Identifiable, Codable, Sendable {
     case easy = "Easy"
     case good = "Good"
     case hard = "Hard"

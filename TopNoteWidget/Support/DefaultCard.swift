@@ -262,7 +262,7 @@ func errorCardEntry(widgetIdentifier: String) -> CardEntry {
         createdAt: Date(),
         cardType: .note,
         priorityTypeRaw: .none,
-        content: "Sample note content",
+        content: "Unable to load cards.",
         isRecurring: false,
         skipCount: 0,
         seenCount: 0,

@@ -1,0 +1,35 @@
+Top Note 2.0 is a brand-new Top Note: simpler to use, more capable, and still built around one idea. Lists you never look at don't help. Top Note shows you the one card that matters right now, in the app, on your Home Screen and with Siri. Handle it, and the next one appears.
+
+THREE KINDS OF CARDS, EACH MADE FOR WHAT IT IS
+
+• Notes come back to you. Ideas, quotes and thoughts resurface on warm paper so they don't get lost. Choose when a note returns (a week, a month, three months or six), tap Got it to send it away until next time or Less often to space it out, and add a dated thought each time you meet it again. Notes support Markdown.
+
+• Flashcards space themselves out. Answer in your head, tap to flip, then rate Hard, Good or Easy. Every button shows exactly when you'll see the card again. Hard brings it back sooner; Good and Easy push it further out. A strength meter shows what's sticking, and flashcards are never overdue: review ahead whenever you like.
+
+• To-dos show up when they're due. Pick Now, Tonight, Tomorrow, Next week or a date, and repeat daily, weekly or monthly. Done checks it off; Later sets it aside for a little while.
+
+IN SYNC WITH APPLE REMINDERS
+Link a Reminders list and to-dos stay in sync both ways. Check something off in either app and it's done in both. New reminders show up in Top Note when they're due, and to-dos you add in Top Note appear in Reminders, Siri and on Apple Watch.
+
+UP NEXT
+A new home screen shows the card that matters now, what's waiting behind it, today's progress and your streak. Filter to just notes, flashcards or to-dos. Every action can be undone.
+
+RIGHT WHERE YOU LOOK
+• Home Screen widgets: flip and rate flashcards, check off to-dos and read notes without opening the app. Give each widget a job by choosing kinds of cards and folders.
+• Lock Screen widget: how many cards are ready, and the next one.
+• Control Center and the Action button: capture a new card in a tap.
+• Siri and Shortcuts: "Add a note in Top Note", "Add a to-do in Top Note", "What's next in Top Note", "Study flashcards in Top Note".
+
+CAPTURE IN SECONDS
+One capture sheet for everything, with the right fields for each kind of card. Add a run of flashcards with Save and add another. On supported devices, generate cards with Apple Intelligence.
+
+HELP AT THE RIGHT MOMENT
+A short welcome, an example set to learn by doing, and tips that appear one at a time, when they're useful.
+
+ORGANIZED WHEN YOU WANT IT
+Folders, tags, priorities, search, filters, import and export live in the Library.
+
+PRIVATE
+No account, ads or tracking. Your cards stay on your devices and sync through your private iCloud.
+
+Upgrading from 1.x? Your cards, folders and tags come along unchanged.

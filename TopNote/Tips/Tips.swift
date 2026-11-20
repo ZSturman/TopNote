@@ -4,56 +4,167 @@
 //
 //  Created by Zachary Sturman on 10/29/25.
 //
+//  Tips appear at the moment they're useful, one at a time. First-run tips show as soon as they
+//  apply; feature tips wait for real use and arrive at most once a day.
+//
 
 import Foundation
 import SwiftUI
 import TipKit
 
-// Tip for creating first note
-struct FirstNoteTip: Tip {
-    var title: Text {
-        Text("Add a new note, flashcard or to-do item")
+enum TopNoteTips {
+    static let appOpened = Tips.Event(id: "appOpened")
+    static let cardHandled = Tips.Event(id: "cardHandled")
+    static let todoCreated = Tips.Event(id: "todoCreated")
+    static let cardCreated = Tips.Event(id: "cardCreated")
+
+    private static let resetKey = "tips.resetOnNextLaunch"
+
+    static func configure() {
+        let arguments = ProcessInfo.processInfo.arguments
+        if arguments.contains("-TopNoteResetTips") || UserDefaults.standard.bool(forKey: resetKey) {
+            try? Tips.resetDatastore()
+            UserDefaults.standard.set(false, forKey: resetKey)
+        }
+        if arguments.contains("-TopNoteHideTips") {
+            Tips.hideAllTipsForTesting()
+        }
+        let frequency: Tips.ConfigurationOption.DisplayFrequency = arguments.contains("-TopNoteImmediateTips") ? .immediate : .daily
+        do {
+            try Tips.configure([.displayFrequency(frequency), .datastoreLocation(.applicationDefault)])
+        } catch {
+            TopNoteLogger.dataAccess.warning("Tips.configure failed: \(error.localizedDescription)")
+        }
     }
-    
-    var image: Image? {
-        Image(systemName: "plus")
+
+    /// Tips come back the next time Top Note opens (the datastore can't reset while in use).
+    static func resetOnNextLaunch() {
+        UserDefaults.standard.set(true, forKey: resetKey)
+    }
+
+    static func donate(_ event: Tips.Event<Tips.EmptyDonation>) {
+        Task { await event.donate() }
+    }
+
+    /// Up Next shows these one at a time, in order, as each becomes relevant.
+    static func upNextGroup() -> TipGroup {
+        TipGroup(.ordered) {
+            WidgetTip()
+            TodoRemindersTip()
+            SiriTip()
+            CustomizeWidgetTip()
+        }
     }
 }
 
-struct AddWidgetTip: Tip {
-    static let createdFirstCardEvent = Event(id: "createdFirstCard")
-    
-    var title: Text { Text("Don't forget the widget") }
-    var message: Text? { Text("Add the widget to your home screen to start seeing your queued notes.") }
-    
-    var image: Image? {
-        Image(systemName: "widget.medium.badge.plus")
-    }
+// MARK: - First run (shown where you can act on them)
 
+struct AddFirstCardTip: Tip {
+    var id: String { "addFirstCard" }
+    var title: Text { Text("Capture your first card") }
+    var message: Text? { Text("Write a note, a flashcard or a to-do. Top Note brings it back when it matters.") }
+    var image: Image? { Image(systemName: "plus.circle.fill") }
+    var options: [any TipOption] { [Tips.IgnoresDisplayFrequency(true)] }
+}
 
-    // Show only when the widget is not present
+struct RevealAnswerTip: Tip {
+    var id: String { "revealAnswer" }
+    var title: Text { Text("Answer in your head first") }
+    var message: Text? { Text("Then tap the card or Show answer to check yourself.") }
+    var image: Image? { Image(systemName: "brain.head.profile") }
+    var options: [any TipOption] { [Tips.IgnoresDisplayFrequency(true)] }
+}
+
+struct RatingTip: Tip {
+    var id: String { "rating" }
+    var title: Text { Text("How well did you know it?") }
+    var message: Text? { Text("Hard brings the card back sooner. Good and Easy space it out. The time under each button is when you'll see it again.") }
+    var image: Image? { Image(systemName: "gauge.with.dots.needle.67percent") }
+    var options: [any TipOption] { [Tips.IgnoresDisplayFrequency(true)] }
+}
+
+struct NoteActionsTip: Tip {
+    var id: String { "noteActions" }
+    var title: Text { Text("Notes come back to you") }
+    var message: Text? { Text("Got it sends this note away until next time. Less often spaces it further. Add a thought to keep a dated reflection with it.") }
+    var image: Image? { Image(systemName: "text.quote") }
+    var options: [any TipOption] { [Tips.IgnoresDisplayFrequency(true)] }
+}
+
+struct TodoActionsTip: Tip {
+    var id: String { "todoActions" }
+    var title: Text { Text("Done or later") }
+    var message: Text? { Text("Done checks it off; a repeating to-do comes back on schedule. Later sets it aside for a few days.") }
+    var image: Image? { Image(systemName: "checkmark.circle") }
+    var options: [any TipOption] { [Tips.IgnoresDisplayFrequency(true)] }
+}
+
+// MARK: - Feature discovery (ordered on Up Next)
+
+/// After a few cards, suggests the Home Screen widget and offers step-by-step help.
+struct WidgetTip: Tip {
+    static let showMeHow = "showWidgetGuide"
+    var id: String { "widgetTip" }
+    var title: Text { Text("Put Top Note on your Home Screen") }
+    var message: Text? { Text("The widget shows your next card, and you can flip, rate, check off or skip it right there.") }
+    var image: Image? { Image(systemName: "widget.medium.badge.plus") }
     var rules: [Rule] {
-        #Rule(Self.createdFirstCardEvent) { $0.donations.count >= 1 }
+        #Rule(TopNoteTips.cardHandled) { $0.donations.count >= 2 }
+    }
+    var actions: [Action] { [Action(id: Self.showMeHow, title: "Show me how")] }
+}
+
+struct TodoRemindersTip: Tip {
+    static let connect = "connectReminders"
+    var id: String { "todoRemindersTip" }
+    var title: Text { Text("Already use Reminders?") }
+    var message: Text? { Text("Link a Reminders list. To-dos stay in sync both ways, and new reminders show up here when they're due.") }
+    var image: Image? { Image(systemName: "list.bullet.circle") }
+    var rules: [Rule] {
+        #Rule(TopNoteTips.todoCreated) { $0.donations.count >= 1 }
+    }
+    var actions: [Action] { [Action(id: Self.connect, title: "Connect Reminders")] }
+}
+
+struct SiriTip: Tip {
+    static let showShortcuts = "showShortcuts"
+    var id: String { "siriTip" }
+    var title: Text { Text("Capture without opening the app") }
+    var message: Text? { Text("Say \"Add a note in Top Note\" or \"What's next in Top Note\". Add a Top Note button to Control Center, or use the Action button.") }
+    var image: Image? { Image(systemName: "mic.circle") }
+    var rules: [Rule] {
+        #Rule(TopNoteTips.appOpened) { $0.donations.count >= 3 }
+        #Rule(TopNoteTips.cardCreated) { $0.donations.count >= 2 }
+    }
+    var actions: [Action] { [Action(id: Self.showShortcuts, title: "See what you can say")] }
+}
+
+struct CustomizeWidgetTip: Tip {
+    var id: String { "customizeWidgetTip" }
+    var title: Text { Text("Give each widget a job") }
+    var message: Text? { Text("Touch and hold a Top Note widget, then Edit Widget to show only flashcards, only to-dos, or certain folders. Add a few with different choices.") }
+    var image: Image? { Image(systemName: "slider.horizontal.2.square.on.square") }
+    var rules: [Rule] {
+        #Rule(TopNoteTips.cardHandled) { $0.donations.count >= 8 }
+        #Rule(TopNoteTips.appOpened) { $0.donations.count >= 5 }
     }
 }
 
-// MARK: - Policy Tips
+// MARK: - Library (shown in context)
+
+struct LibrarySwipeTip: Tip {
+    var id: String { "librarySwipe" }
+    var title: Text { Text("Everything you've captured") }
+    var message: Text? { Text("Swipe a card to handle it, tap to edit, and use folders and tags to organize. Up Next shows only what's ready now.") }
+    var image: Image? { Image(systemName: "hand.draw") }
+}
 
 struct PoliciesTip: Tip {
     static let openedPoliciesEvent = Event(id: "openedPolicies")
-    
-    var title: Text {
-        Text("Control your card schedule")
-    }
-    
-    var message: Text? {
-        Text("Policies let you customize how cards reappear based on your actions. Adjust skip behavior, flashcard ratings, and more to match your learning style.")
-    }
-    
-    var image: Image? {
-        Image(systemName: "slider.horizontal.3")
-    }
-    
+
+    var title: Text { Text("Control your card schedule") }
+    var message: Text? { Text("Policies decide how much each action moves a card: how far Skip, Hard, Good and Easy push it.") }
+    var image: Image? { Image(systemName: "slider.horizontal.3") }
     var rules: [Rule] {
         #Rule(Self.openedPoliciesEvent) { $0.donations.count == 1 }
     }
@@ -61,164 +172,22 @@ struct PoliciesTip: Tip {
 
 struct FlashcardRatingPolicyTip: Tip {
     static let openedFlashcardPoliciesEvent = Event(id: "openedFlashcardPolicies")
-    
-    var title: Text {
-        Text("Flashcard confidence ratings")
-    }
-    
-    var message: Text? {
-        Text("Rate how confident you felt: Easy moves the card further out, Good keeps the normal schedule, and Hard brings it back sooner for review.")
-    }
-    
-    var image: Image? {
-        Image(systemName: "hand.thumbsup.fill")
-    }
-    
+
+    var title: Text { Text("Flashcard confidence ratings") }
+    var message: Text? { Text("Easy and Good move the card further out, and Hard brings it back sooner for review.") }
+    var image: Image? { Image(systemName: "hand.thumbsup.fill") }
     var rules: [Rule] {
         #Rule(Self.openedFlashcardPoliciesEvent) { $0.donations.count == 1 }
     }
 }
 
-struct FirstNoteTip_Skip: Tip {
-    static let createdFirstNoteEvent = Event(id: "createdFirstNote")
-    
-    var title: Text {
-        Text("Skipping notes")
-    }
-    
-    var message: Text? {
-        Text("When you skip a note, it will reappear later than the current repeat interval. This gives you more time before seeing it again.")
-    }
-    
-    var image: Image? {
-        Image(systemName: "doc.text")
-    }
-    
-    var rules: [Rule] {
-        #Rule(Self.createdFirstNoteEvent) { $0.donations.count == 1 }
-    }
-}
-
-struct FirstTodoTip_Skip: Tip {
-    static let createdFirstTodoEvent = Event(id: "createdFirstTodo")
-    
-    var title: Text {
-        Text("Skipping todos")
-    }
-    
-    var message: Text? {
-        Text("When you skip a todo, it will reappear sooner than the current repeat interval. This helps you stay on top of tasks.")
-    }
-    
-    var image: Image? {
-        Image(systemName: "checklist")
-    }
-    
-    var rules: [Rule] {
-        #Rule(Self.createdFirstTodoEvent) { $0.donations.count == 1 }
-    }
-}
-
-struct FirstFlashcardTip_Skip: Tip {
-    static let createdFirstFlashcardEvent = Event(id: "createdFirstFlashcard")
-    
-    var title: Text {
-        Text("Skipping flashcards")
-    }
-    
-    var message: Text? {
-        Text("When you skip a flashcard, it will reappear sooner than the current repeat interval. This ensures you review it more frequently.")
-    }
-    
-    var image: Image? {
-        Image(systemName: "rectangle.portrait.on.rectangle.portrait")
-    }
-    
-    var rules: [Rule] {
-        #Rule(Self.createdFirstFlashcardEvent) { $0.donations.count == 1 }
-    }
-}
-
 struct RecurringOffTip: Tip {
     static let toggledRecurringOffEvent = Event(id: "toggledRecurringOff")
-    
-    var title: Text {
-        Text("One-time card")
-    }
-    
-    var message: Text? {
-        Text("With recurring turned off, this card will be archived after you complete or skip it. It won't return to your queue automatically.")
-    }
-    
-    var image: Image? {
-        Image(systemName: "archivebox")
-    }
-    
+
+    var title: Text { Text("One-time card") }
+    var message: Text? { Text("With repeat turned off, this card archives itself after you handle it. It won't come back on its own.") }
+    var image: Image? { Image(systemName: "archivebox") }
     var rules: [Rule] {
         #Rule(Self.toggledRecurringOffEvent) { $0.donations.count >= 1 }
-    }
-}
-
-// MARK: - Queue & Widget Tips
-
-struct FirstQueueCardTip: Tip {
-    static let viewedFirstQueueCardEvent = Event(id: "viewedFirstQueueCard")
-    
-    var title: Text {
-        Text("Manage cards here or in the widget")
-    }
-    
-    var message: Text? {
-        Text("Swipe cards in the app to handle them quickly, or add the widget to your home screen to see and interact with cards without opening the app.")
-    }
-    
-    var image: Image? {
-        Image(systemName: "hand.draw")
-    }
-    
-    var rules: [Rule] {
-        #Rule(Self.viewedFirstQueueCardEvent) { $0.donations.count == 1 }
-    }
-}
-
-struct CustomizeWidgetTip: Tip {
-    static let appOpenedEvent = Event(id: "appOpened")
-    
-    var title: Text {
-        Text("Customize your widgets")
-    }
-    
-    var message: Text? {
-        Text("Long-press any widget to edit it. Filter by flashcards, notes, or todos—or choose specific folders to focus on what matters most.")
-    }
-    
-    var image: Image? {
-        Image(systemName: "slider.horizontal.2.square.on.square")
-    }
-    
-    var rules: [Rule] {
-        #Rule(Self.appOpenedEvent) { $0.donations.count >= 10 }
-    }
-}
-
-struct GetStartedTip: Tip {
-    static let appOpenedWithoutActionEvent = Event(id: "appOpenedWithoutAction")
-    static let userTookActionEvent = Event(id: "userTookAction")
-    
-    var title: Text {
-        Text("Start using your cards")
-    }
-    
-    var message: Text? {
-        Text("Tap the + button to create your first card, or swipe existing cards to mark them complete or skip them. Your learning journey begins now!")
-    }
-    
-    var image: Image? {
-        Image(systemName: "sparkles")
-    }
-    
-    var rules: [Rule] {
-        #Rule(Self.appOpenedWithoutActionEvent) { $0.donations.count >= 5 }
-        #Rule(Self.userTookActionEvent) { $0.donations.count == 0 }
     }
 }

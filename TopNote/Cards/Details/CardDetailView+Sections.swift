@@ -312,9 +312,15 @@ extension CardDetailView {
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .padding(.top, 8)
-                        Text("Maintains current schedule")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                        Picker("On Good Rating", selection: Binding(get: { card.ratingMedPolicy }, set: {
+                            card.ratingMedPolicy = $0
+                        })) {
+                            ForEach(RepeatPolicy.allCases, id: \.self) { policy in
+                                Text(policy.rawValue).tag(policy)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .accessibilityLabel("On Good Rating Picker")
                         
                         Text("On Hard Rating")
                             .font(.subheadline)

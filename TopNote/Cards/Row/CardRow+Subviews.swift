@@ -377,8 +377,8 @@ extension CardRow {
         var body: some View {
             HStack(alignment: .top, spacing: 8) {
                 
-                Text(card.displayContent)
-                    .font(.headline)
+                Text(card.cardType == .note ? NoteText.attributed(card.displayContent) : AttributedString(card.displayContent))
+                    .font(card.cardType == .note ? .system(.headline, design: .serif) : .headline)
                     .fontWeight(.semibold)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)

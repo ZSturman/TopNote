@@ -1520,16 +1520,16 @@ struct ExportTests {
 
         // Base and current schedule should match for a fresh recurring card
         #expect(card.displayedBaseSchedule == "Every 2 Days" || card.displayedBaseSchedule == card.displayedCurrentInterval)
-        #expect(card.displayedScheduleForRow.contains("Repeats:"))
+        #expect(card.displayedScheduleForRow == "Every 2 Days")
 
         // When the card is enqueued now, displayedDateForQueue should reference "Next:"
         let futureString = card.displayedDateForQueue
-        #expect(futureString.contains("Next: in") || futureString.contains("Next:"))
+        #expect(futureString == "1 hour" || futureString == "2 hours")
 
         // After archiving, the queue string should reflect removal from queue
         card.archive(at: now)
         let archivedString = card.displayedDateForQueue
-        #expect(archivedString.contains("Removed from queue"))
+        #expect(archivedString.isEmpty)
     }
 }
 
@@ -1778,7 +1778,7 @@ struct UIDisplayTests {
         )
         modelContext.insert(card)
         
-        #expect(card.displayContent == "Default content here")
+        #expect(card.displayContent == "")
         #expect(card.content.isEmpty)
     }
     

@@ -10,7 +10,8 @@ import AppIntents
 import SwiftData
 
 struct ShowFlashcardAnswer: AppIntent {
-    static var title: LocalizedStringResource = "Show Back"
+    static var title: LocalizedStringResource = "Show Answer"
+    static var isDiscoverable = false
 
     @Parameter(title: "Card")
     var card: CardEntity
@@ -36,7 +37,7 @@ struct ShowFlashcardAnswer: AppIntent {
             try? context.save()
         }
 
-        WidgetCenter.shared.reloadAllTimelines()
+        TopNoteShared.reloadWidgets()
         return .result()
     }
 }

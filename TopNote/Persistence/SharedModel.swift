@@ -8,6 +8,7 @@
 import Foundation
 import SwiftData
 import SQLite3
+import CoreData
 import os.log
 
 // MARK: - External Storage Cleanup Migration
@@ -202,12 +203,87 @@ public enum ModelContainerResult {
     case failure(ModelContainerError)
 }
 
+/// Decides whether a store that failed to open is corrupt enough to set aside automatically.
+/// SwiftData's error doesn't say why a store failed, so the file itself is checked.
+enum StoreRecoveryPolicy {
+    static var isAppExtension: Bool { Bundle.main.bundlePath.hasSuffix(".appex") }
+
+    static var defaultStoreURL: URL? {
+        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: TopNoteShared.appGroupID)?
+            .appendingPathComponent("Library/Application Support/default.store")
+    }
+
+    /// Only the app sets a store aside, and only one that can be read and is plainly damaged.
+    static func shouldSetAside(storeURL: URL?, isAppExtension: Bool) -> Bool {
+        guard !isAppExtension, let storeURL else { return false }
+        return storeIsCorrupt(at: storeURL)
+    }
+
+    /// True when the file can be read but isn't a healthy SQLite database. A file that can't be
+    /// read at all (for example while the device is locked) is never treated as corrupt.
+    static func storeIsCorrupt(at url: URL) -> Bool {
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return false }
+        defer { try? handle.close() }
+        guard let header = try? handle.read(upToCount: 16) else { return false }
+        guard header == Data("SQLite format 3\0".utf8) else { return true }
+
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(url.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK else {
+            sqlite3_close(db)
+            return false
+        }
+        defer { sqlite3_close(db) }
+        var statement: OpaquePointer?
+        let prepared = sqlite3_prepare_v2(db, "PRAGMA quick_check", -1, &statement, nil)
+        defer { sqlite3_finalize(statement) }
+        if prepared == SQLITE_CORRUPT || prepared == SQLITE_NOTADB { return true }
+        guard prepared == SQLITE_OK else { return false }
+        let step = sqlite3_step(statement)
+        if step == SQLITE_CORRUPT || step == SQLITE_NOTADB { return true }
+        guard step == SQLITE_ROW, let text = sqlite3_column_text(statement, 0) else { return false }
+        return String(cString: text) != "ok"
+    }
+}
+
+/// Moves store files that could not be opened into `Recovery/<date>/` inside the App Group.
+func preserveUnreadableStore() {
+    let fileManager = FileManager.default
+    guard let containerURL = fileManager.containerURL(
+        forSecurityApplicationGroupIdentifier: TopNoteShared.appGroupID
+    ) else { return }
+    let stamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
+    let recoveryURL = containerURL.appendingPathComponent("Recovery/\(stamp)", isDirectory: true)
+    try? fileManager.createDirectory(at: recoveryURL, withIntermediateDirectories: true)
+    let searchRoots = [containerURL, containerURL.appendingPathComponent("Library/Application Support")]
+    for root in searchRoots {
+        guard let items = try? fileManager.contentsOfDirectory(at: root, includingPropertiesForKeys: nil) else { continue }
+        for item in items where item.lastPathComponent.contains(".store") || item.lastPathComponent.hasSuffix("_SUPPORT") {
+            do {
+                try fileManager.moveItem(at: item, to: recoveryURL.appendingPathComponent(item.lastPathComponent))
+                TopNoteLogger.dataAccess.warning("Preserved unreadable store file: \(item.lastPathComponent)")
+            } catch {
+                TopNoteLogger.dataAccess.error("Could not preserve \(item.lastPathComponent): \(error.localizedDescription)")
+            }
+        }
+    }
+}
+
 /// Attempts to create the shared model container with graceful error handling
 private func createModelContainer() -> ModelContainerResult {
+    let schema = Schema([Card.self, Folder.self, CardTag.self])
+
+    // UI tests and screenshot runs use a throwaway library, never the person's store.
+    if TopNoteShared.usesInMemoryStore {
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
+        do {
+            return .success(try ModelContainer(for: schema, configurations: [config]))
+        } catch {
+            return .failure(.creationFailed(underlying: error))
+        }
+    }
+
     // Clean up legacy external storage BEFORE creating the container
     cleanupLegacyExternalStorage()
-    
-    let schema = Schema([Card.self, Folder.self, CardTag.self])
     
     // Use App Group container for shared access between app and widget
     let config = ModelConfiguration(
@@ -222,47 +298,19 @@ private func createModelContainer() -> ModelContainerResult {
         TopNoteLogger.dataAccess.info("Successfully created model container")
         return .success(container)
     } catch {
-        TopNoteLogger.dataAccess.error("Model container creation failed: \(error.localizedDescription)")
-        TopNoteLogger.dataAccess.warning("Attempting recovery by deleting corrupted data...")
-        
-        // NUCLEAR OPTION: Delete the entire database and recreate
-        if let containerURL = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: "group.com.zacharysturman.topnote"
-        ) {
-            let fileManager = FileManager.default
-            
-            // Find and delete ALL database-related files
-            if let enumerator = fileManager.enumerator(at: containerURL, includingPropertiesForKeys: nil) {
-                while let fileURL = enumerator.nextObject() as? URL {
-                    let name = fileURL.lastPathComponent
-                    if name.contains(".store") || 
-                       name.contains("sqlite") || 
-                       name.contains("_Data") ||
-                       name.contains("EXTERNAL") ||
-                       name.contains("_SUPPORT") {
-                        try? fileManager.removeItem(at: fileURL)
-                        TopNoteLogger.dataAccess.debug("Deleted during recovery: \(name)")
-                    }
-                }
-            }
+        TopNoteLogger.dataAccess.error("Model container creation failed: \(String(describing: error))")
+
+        // Only the app, and only for a store that is genuinely unreadable, sets files aside.
+        // A widget refreshing before first unlock (or any other transient failure) must never
+        // move a healthy library; it fails and shows nothing until the store opens again.
+        guard StoreRecoveryPolicy.shouldSetAside(storeURL: StoreRecoveryPolicy.defaultStoreURL, isAppExtension: StoreRecoveryPolicy.isAppExtension) else {
+            return .failure(.creationFailed(underlying: error))
         }
-        
-        // Also check main app support directory
-        let appSupportURLs = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)
-        for appSupportURL in appSupportURLs {
-            if let enumerator = FileManager.default.enumerator(at: appSupportURL, includingPropertiesForKeys: nil) {
-                while let fileURL = enumerator.nextObject() as? URL {
-                    let name = fileURL.lastPathComponent
-                    if name.contains(".store") || 
-                       name.contains("sqlite") || 
-                       name.contains("_Data") ||
-                       name.contains("EXTERNAL") {
-                        try? FileManager.default.removeItem(at: fileURL)
-                        TopNoteLogger.dataAccess.debug("Deleted from app support during recovery: \(name)")
-                    }
-                }
-            }
-        }
+        TopNoteLogger.dataAccess.warning("Moving the unreadable store aside and starting fresh...")
+
+        // Never delete a library that failed to open. Move the store files aside into a dated
+        // recovery folder so they can be restored or inspected, then start with an empty store.
+        preserveUnreadableStore()
         
         // Retry container creation
         do {

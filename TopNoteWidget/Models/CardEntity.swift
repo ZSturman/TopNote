@@ -37,12 +37,17 @@ struct CardEntity: AppEntity {
 
     static var typeDisplayRepresentation: TypeDisplayRepresentation {
         TypeDisplayRepresentation(
-            name: LocalizedStringResource("Cards", table: "AppIntents")
+            name: LocalizedStringResource("Card", table: "AppIntents")
         )
     }
 
     var displayRepresentation: DisplayRepresentation {
-        DisplayRepresentation(stringLiteral: content)
+        let firstLine = content.split(whereSeparator: \.isNewline).first.map(String.init) ?? content
+        return DisplayRepresentation(
+            title: "\(firstLine)",
+            subtitle: "\(cardType.rawValue)",
+            image: .init(systemName: cardType.systemImage)
+        )
     }
 }
 

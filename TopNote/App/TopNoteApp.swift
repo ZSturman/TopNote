@@ -18,6 +18,14 @@ struct TopNoteApp: App {
     
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var containerState = ModelContainerState.shared
+
+    init() {
+        // Tips must be configured before any view that shows one is created.
+        TopNoteTips.configure()
+        if ProcessInfo.processInfo.arguments.contains("-TopNoteScreenshotData") {
+            ScreenshotData.insert(into: sharedModelContainer)
+        }
+    }
     
     var body: some Scene {
         WindowGroup {
@@ -28,17 +36,6 @@ struct TopNoteApp: App {
                 ContentView()
                 // 3) Inject both the SwiftData container and your manager
                     .modelContainer(modelContainer)
-                    .task {
-                            do {
-                                try Tips.configure([
-                                    .displayFrequency(.immediate),
-                                    .datastoreLocation(.applicationDefault)
-                                ])
-                            } catch {
-                                // Configuration failures shouldn't crash the app
-                                TopNoteLogger.dataAccess.warning("Tips.configure failed: \(error.localizedDescription)")
-                            }
-                    }
                     .task {
                         // Start CloudKit sync handler
                         CloudKitSyncHandler.shared.startListening(for: modelContainer)
@@ -52,7 +49,9 @@ struct TopNoteApp: App {
                     }
                     #if DEBUG
                     .task {
-                        seedDemoDataIfNeeded(into: modelContainer)
+                        if ProcessInfo.processInfo.arguments.contains("-TopNoteSeedDemo") {
+                            seedDemoDataIfNeeded(into: modelContainer)
+                        }
                     }
                     #endif
                     .task {
@@ -75,6 +74,10 @@ struct TopNoteApp: App {
     // MARK: - Badge Authorization
     
     private func requestBadgeAuthorizationIfNeeded() async {
+        // The badge isn't worth a permission prompt before someone has a card.
+        let context = ModelContext(modelContainer)
+        guard ((try? context.fetchCount(FetchDescriptor<Card>())) ?? 0) > 0,
+              !TopNoteShared.usesInMemoryStore else { return }
         let center = UNUserNotificationCenter.current()
         let settings = await center.notificationSettings()
         // If undetermined, ask; if denied, we cannot set badges

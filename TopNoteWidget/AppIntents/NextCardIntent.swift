@@ -10,10 +10,15 @@ import AppIntents
 import SwiftData
 
 struct NextCardIntent: AppIntent {
-    static var title: LocalizedStringResource = "Next Card"
+    static var title: LocalizedStringResource = "Mark Card as Seen"
+    static var description = IntentDescription("Sends a note or card away until it's next due, like Got it in the app.")
 
     @Parameter(title: "Card")
     var card: CardEntity
+
+    static var parameterSummary: some ParameterSummary {
+        Summary("Mark \(\.$card) as seen")
+    }
 
     init(card: CardEntity) { self.card = card }
     init() {}
@@ -25,7 +30,7 @@ struct NextCardIntent: AppIntent {
             try? context.save()
         }
 
-        WidgetCenter.shared.reloadAllTimelines()
+        TopNoteShared.reloadWidgets()
         return .result()
     }
 }
